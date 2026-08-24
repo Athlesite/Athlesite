@@ -2,6 +2,8 @@ import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 
 export function ProfileBio({ bio }: { bio: string }) {
+  if (!bio) return null;
+
   return (
     <Section className="border-b border-border">
       <Container className="max-w-3xl">

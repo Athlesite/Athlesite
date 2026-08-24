@@ -1,19 +1,27 @@
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { ProfileContactPath } from "@/components/profile/ProfileContactPath";
-import type { ExampleAthlete } from "@/lib/example-athlete";
+import type { AthleteProfileView } from "@/lib/athlete-profile";
 
-export function ProfileRecruitingNil({ athlete }: { athlete: ExampleAthlete }) {
+export function ProfileRecruitingNil({ athlete }: { athlete: AthleteProfileView }) {
+  const facts = [
+    athlete.position,
+    athlete.classYear ? `Class of ${athlete.classYear}` : "",
+    athlete.location,
+    athlete.heightWeight,
+  ].filter(Boolean);
+
   return (
     <Section className="border-b border-border">
       <Container className="max-w-3xl">
         <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-[var(--athlete-accent-light)]">
           Recruiting
         </p>
-        <p className="mt-4 text-base font-medium text-foreground sm:text-lg">
-          {athlete.position} · Class of {athlete.classYear} · {athlete.location} ·{" "}
-          {athlete.heightWeight}
-        </p>
+        {facts.length > 0 ? (
+          <p className="mt-4 text-base font-medium text-foreground sm:text-lg">
+            {facts.join(" · ")}
+          </p>
+        ) : null}
         <p className="mt-3 text-base text-muted-foreground sm:text-lg">
           {athlete.name} is open to recruiting conversations with college programs at the
           next level.

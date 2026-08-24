@@ -1,11 +1,12 @@
 import { cn } from "@/lib/cn";
 
 type ExampleBadgeProps = {
-  variant?: "pill" | "banner";
+  variant?: "pill" | "banner" | "quiet";
+  message?: string;
   className?: string;
 };
 
-export function ExampleBadge({ variant = "pill", className }: ExampleBadgeProps) {
+export function ExampleBadge({ variant = "pill", message, className }: ExampleBadgeProps) {
   if (variant === "banner") {
     return (
       <div
@@ -14,8 +15,21 @@ export function ExampleBadge({ variant = "pill", className }: ExampleBadgeProps)
           className
         )}
       >
-        This is a fictional example profile created to demonstrate Athlesite. All
-        information shown is sample data.
+        {message ??
+          "This is a fictional example profile created to demonstrate Athlesite. All information shown is sample data."}
+      </div>
+    );
+  }
+
+  if (variant === "quiet") {
+    return (
+      <div
+        className={cn(
+          "border-b border-border/60 px-6 py-2 text-center text-xs text-muted-foreground",
+          className
+        )}
+      >
+        {message ?? "Preview profile · saved on this device"}
       </div>
     );
   }

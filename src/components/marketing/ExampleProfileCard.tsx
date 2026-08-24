@@ -4,7 +4,7 @@ import { ExampleBadge } from "@/components/profile/ExampleBadge";
 import { SocialGlyph, PlayGlyph } from "@/components/profile/glyphs";
 
 const recruitingFields = [
-  { label: "Position", value: exampleAthlete.positionAbbr },
+  { label: "Position", value: exampleAthlete.position },
   { label: "Class", value: exampleAthlete.classYear },
   { label: "Location", value: exampleAthlete.location },
 ];
@@ -54,13 +54,15 @@ export function ExampleProfileCard() {
               Highlights
             </p>
             <div className="mt-3 grid grid-cols-3 gap-3">
-              {exampleAthlete.highlights.map((label) => (
+              {exampleAthlete.highlights.map((link, index) => (
                 <div
-                  key={label}
+                  key={index}
                   className="flex aspect-video flex-col items-center justify-center gap-2 rounded-lg border border-border bg-surface"
                 >
                   <PlayGlyph size={18} />
-                  <span className="text-[11px] text-muted-foreground">{label}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {link.label || `Highlight ${index + 1}`}
+                  </span>
                 </div>
               ))}
             </div>
