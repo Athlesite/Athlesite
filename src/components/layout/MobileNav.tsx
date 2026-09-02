@@ -26,7 +26,7 @@ export function MobileNav({ links }: { links: NavLink[] }) {
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -41,7 +41,7 @@ export function MobileNav({ links }: { links: NavLink[] }) {
       {open ? (
         <div
           id={panelId}
-          className="fixed inset-x-0 top-16 z-30 border-b border-border bg-background px-6 py-8 sm:top-20"
+          className="fixed inset-x-0 top-16 z-30 border-b border-border bg-background px-6 py-8"
         >
           <nav aria-label="Mobile" className="flex flex-col gap-6">
             {links.map((link) => (

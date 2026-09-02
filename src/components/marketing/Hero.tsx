@@ -1,110 +1,139 @@
+import Image from "next/image";
+import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
+import { HeroAtmosphere, HeroStage } from "@/components/marketing/hero/HeroStage";
+import { JordanPhone } from "@/components/marketing/hero/JordanPhone";
+import { ATHLETE_PLATE } from "@/components/marketing/hero/composition";
 
-const heroStats = [
-  { value: "1,240", label: "Yards" },
-  { value: "14", label: "TDs" },
-  { value: "4.6", label: "40 yd" },
-];
+const TRUST_AVATARS = [1, 2, 3, 4];
+const STARS = [1, 2, 3, 4, 5];
 
 export function Hero() {
   return (
-    <section className="relative isolate overflow-hidden">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-[-10rem] top-24 h-[34rem] w-[34rem] rounded-full bg-accent/15 blur-[120px]" />
-        <div className="absolute right-[-12rem] top-[-8rem] h-[38rem] w-[38rem] rounded-full bg-[#765cff]/15 blur-[140px]" />
-        <div className="absolute inset-0 [background-image:linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] [background-size:72px_72px] opacity-[0.12]" />
+    <section className="relative isolate overflow-hidden bg-background">
+      <HeroAtmosphere />
+
+      {/* Full cinematic composition — desktop only */}
+      <div className="hidden xl:block">
+        <HeroStage />
       </div>
 
-      <Container className="grid min-h-[calc(100svh-5rem)] items-center gap-14 py-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:py-20">
-        <div className="max-w-2xl">
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.24em] text-accent-light">
-            Athlete Identity Platform
-          </p>
-          <h1 className="mt-6 text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-foreground sm:text-6xl lg:text-7xl xl:text-[5.4rem]">
-            Your Name.
-            <br />
-            Your Game.
-            <br />
-            <span className="text-accent-light">Your Brand.</span>
-          </h1>
-          <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-            One professional digital home for your identity, recruiting story, highlights,
-            brand, and opportunities — built to look like you, not a database entry.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Button href="/get-started">Create Your Athlesite</Button>
-            <Button href="#for-athletes" variant="secondary">
-              See It In Action
-            </Button>
-          </div>
-          <p className="mt-6 text-xs uppercase tracking-[0.16em] text-muted-foreground">
-            Built for athletes · Shareable anywhere · Yours to grow
-          </p>
-        </div>
+      {/*
+        Below the cinematic breakpoint the athlete stays in the scene as a
+        bleeding backdrop rather than being squeezed into a shrunken stage.
+      */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-[16%] top-0 h-[56%] w-[82%] max-w-[540px] opacity-55 sm:-right-[4%] sm:opacity-65 xl:hidden"
+        style={{
+          maskImage: "linear-gradient(to bottom, #000 0%, #000 58%, transparent 92%)",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 58%, transparent 92%)",
+        }}
+      >
+        <Image
+          src={ATHLETE_PLATE}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 82vw, 540px"
+          className="object-cover object-top"
+          priority
+        />
+      </div>
 
-        <div className="relative mx-auto w-full max-w-2xl lg:mx-0">
-          <div aria-hidden="true" className="absolute -inset-8 rounded-[3rem] bg-accent/10 blur-3xl" />
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#090b12] shadow-2xl shadow-black/40">
-            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-              <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-              <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
-              <span className="ml-3 text-[10px] uppercase tracking-[0.18em] text-white/40">
-                athlesite.com/jordanbell
+      <Container
+        size="wide"
+        className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center py-16 lg:min-h-[calc(100svh-92px)] lg:py-16 xl:justify-start xl:py-0 xl:pt-[66px]"
+      >
+        <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:gap-10 xl:block">
+          <div className="max-w-[560px] lg:max-w-[520px] xl:max-w-[600px]">
+            <p className="font-condensed text-[11px] font-semibold uppercase leading-none tracking-[0.34em] text-accent-light sm:text-[12.5px]">
+              Athlete Identity Platform
+            </p>
+
+            <h1 className="mt-[22px] font-display text-[clamp(2.9rem,10vw,4.6rem)] uppercase leading-[1.05] tracking-[-0.005em] xl:text-[88px]">
+              <span className="block bg-linear-to-b from-[#f7f6f2] via-[#f4f3ef] to-[#b9bcc2] bg-clip-text text-transparent">
+                Your Name.
               </span>
+              <span className="block bg-linear-to-b from-[#f7f6f2] via-[#f4f3ef] to-[#b9bcc2] bg-clip-text text-transparent">
+                Your Game.
+              </span>
+              <span className="block bg-linear-to-b from-[#8b97dc] via-[#5968c4] to-[#3c4785] bg-clip-text text-transparent">
+                Your Brand.
+              </span>
+            </h1>
+
+            <p className="mt-7 max-w-[470px] text-[15px] leading-[1.8] text-white/72 sm:text-[17px]">
+              Athlesite gives athletes one professional digital home to share their story,
+              connect with opportunities, and build their brand — all in one link.
+            </p>
+
+            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-4">
+              <Button
+                href="/get-started"
+                shape="rounded"
+                className="h-[46px] px-7 text-[15px] font-semibold shadow-[0_14px_34px_-18px_rgba(89,104,196,0.85)]"
+              >
+                Create Your Athlesite
+              </Button>
+
+              <Link
+                href="/athletes/jordan-bell"
+                className="group inline-flex items-center gap-3.5 rounded-full text-[15px] font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <span className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border border-border-strong text-foreground/80 transition-colors group-hover:border-accent group-hover:text-accent-light">
+                  <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true">
+                    <path d="M1 1.1 9 6l-8 4.9z" fill="currentColor" />
+                  </svg>
+                </span>
+                See It In Action
+              </Link>
             </div>
 
-            <div className="relative min-h-[28rem] overflow-hidden sm:min-h-[33rem]">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: "url('/marketing/jordan-football.svg')" }}
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
-                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/60">
-                  Wide Receiver · Class of 2027
-                </p>
-                <div className="mt-2 flex items-end justify-between gap-4">
-                  <div>
-                    <h2 className="text-4xl font-semibold tracking-[-0.04em] text-white sm:text-6xl">
-                      Jordan Bell
-                    </h2>
-                    <p className="mt-2 text-sm text-white/60">Round Rock, Texas</p>
-                  </div>
-                  <span className="text-7xl font-black leading-none tracking-[-0.08em] text-white/20 sm:text-8xl">
-                    11
+            <div className="mt-11 flex items-center gap-4">
+              <div className="flex -space-x-2.5">
+                {TRUST_AVATARS.map((n) => (
+                  <span
+                    key={n}
+                    className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-background"
+                  >
+                    <Image
+                      src={`/marketing/athlete-avatar-${n}.webp`}
+                      alt=""
+                      fill
+                      sizes="36px"
+                      className="object-cover"
+                    />
                   </span>
-                </div>
+                ))}
               </div>
-            </div>
-
-            <div className="grid grid-cols-3 border-t border-white/10 bg-black/70">
-              {heroStats.map((stat) => (
-                <div key={stat.label} className="px-4 py-4 text-center sm:px-6">
-                  <p className="text-xl font-semibold text-white sm:text-2xl">{stat.value}</p>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/40">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
+              <div>
+                <span className="flex gap-[3px] text-highlight" aria-hidden="true">
+                  {STARS.map((n) => (
+                    <StarGlyph key={n} />
+                  ))}
+                </span>
+                <p className="mt-1 text-[13px] text-white/62">Trusted by athletes nationwide</p>
+              </div>
             </div>
           </div>
 
-          <div className="absolute -bottom-8 right-2 hidden w-[10.5rem] overflow-hidden rounded-[1.7rem] border-[6px] border-[#11131a] bg-black shadow-2xl shadow-black/50 sm:block lg:-right-8">
-            <div
-              className="relative aspect-[9/16] bg-cover bg-center"
-              style={{ backgroundImage: "url('/marketing/jordan-football.svg')" }}
-            >
-              <div className="absolute inset-0 bg-linear-to-t from-black via-transparent to-black/10" />
-              <div className="absolute inset-x-0 bottom-0 p-3">
-                <p className="text-[7px] uppercase tracking-[0.18em] text-white/50">WR · 2027</p>
-                <p className="mt-1 text-lg font-semibold leading-none text-white">Jordan Bell</p>
-              </div>
+          {/* Recomposed device: the phone leads, scaled up so its UI stays readable */}
+          <div className="flex justify-center lg:justify-end xl:hidden">
+            <div className="hero-phone-scale relative">
+              <JordanPhone />
             </div>
           </div>
         </div>
       </Container>
     </section>
+  );
+}
+
+function StarGlyph() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+      <path d="M7 .8l1.86 3.9 4.24.6-3.07 3.03.73 4.28L7 10.58l-3.76 2.03.73-4.28L.9 5.3l4.24-.6z" />
+    </svg>
   );
 }
