@@ -4,9 +4,16 @@ import { cn } from "@/lib/cn";
 
 type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md";
+type Shape = "pill" | "rounded";
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50";
+
+const shapeClasses: Record<Shape, string> = {
+  pill: "rounded-full",
+  // Softly squared corners, as used across the marketing hero and navbar.
+  rounded: "rounded-[10px]",
+};
 
 const variantClasses: Record<Variant, string> = {
   primary: "bg-accent text-accent-foreground hover:bg-accent/90",
@@ -22,6 +29,7 @@ const sizeClasses: Record<Size, string> = {
 type ButtonProps = {
   variant?: Variant;
   size?: Size;
+  shape?: Shape;
   className?: string;
   children: ReactNode;
   href?: string;
@@ -33,6 +41,7 @@ type ButtonProps = {
 export function Button({
   variant = "primary",
   size = "md",
+  shape = "pill",
   className,
   children,
   href,
@@ -40,7 +49,13 @@ export function Button({
   disabled,
   onClick,
 }: ButtonProps) {
-  const classes = cn(baseClasses, variantClasses[variant], sizeClasses[size], className);
+  const classes = cn(
+    baseClasses,
+    shapeClasses[shape],
+    variantClasses[variant],
+    sizeClasses[size],
+    className
+  );
 
   if (href) {
     return (

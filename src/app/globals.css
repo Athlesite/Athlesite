@@ -1,29 +1,70 @@
 @import "tailwindcss";
 
+/*
+  Athlesite design tokens.
+
+  Two deliberately separate layers:
+
+  1. Brand tokens (:root) — the neutral, premium Athlesite identity. Near-black
+     grounds, warm off-white type, hairline borders, and a single restrained
+     indigo accent. Marketing pages and site chrome read these.
+
+  2. Athlete tokens (.athlete-theme, below) — the override surface for a future
+     per-athlete theme. Profile content reads those instead, so an athlete can
+     eventually carry their own colors without any component changing.
+
+  The accent is intentionally muted: colour is an emphasis tool here, not a
+  surface treatment. One accent moment per view, everything else earns its
+  contrast from photography and typography.
+*/
 :root {
-  --background: #0a0a0b;
-  --surface: #131316;
-  --foreground: #f5f6f7;
-  --muted-foreground: #9a9aa4;
-  --border: #232327;
-  --accent: #3b5eff;
+  /* Grounds */
+  --background: #090a0c;
+  --surface: #121419;
+  --surface-raised: #1a1d23;
+
+  /* Ink */
+  --foreground: #f4f3ef;
+  --muted-foreground: #9a9fa8;
+
+  /* Lines */
+  --border: #212429;
+  --border-strong: #2c3037;
+
+  /* Accent — muted indigo / slate blue */
+  --accent: #5968c4;
   --accent-foreground: #ffffff;
-  --accent-light: #7c93ff;
-  --accent-subtle: #131b3d;
+  --accent-light: #8b97dc;
+  --accent-subtle: #161a26;
+
+  /*
+    Electric cobalt. Reserved for the logo mark and rare, deliberate emphasis —
+    never for headings, borders, glows, or section fills.
+  */
+  --accent-electric: #4a63e8;
+
+  /* Warm signal colour (ratings, awards). */
+  --highlight: #d3ac68;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-light: var(--accent-light);
   --color-accent-subtle: var(--accent-subtle);
+  --color-accent-electric: var(--accent-electric);
+  --color-highlight: var(--highlight);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-anton);
+  --font-condensed: var(--font-oswald);
 }
 
 html {
@@ -49,12 +90,193 @@ body {
 
 /*
   Athlete-owned visual identity, scoped to profile pages.
+
   Athlesite chrome (Header, Footer, disclosure, global CTAs) keeps using the
-  site tokens above; profile content reads these instead, so a future
-  per-athlete theme can override them without touching component code.
+  brand tokens above; profile content reads these instead. Every value defaults
+  to the brand layer today, so a future per-athlete theme only has to override
+  this block — no component needs to change.
 */
 .athlete-theme {
+  --athlete-background: var(--background);
+  --athlete-surface: var(--surface);
+  --athlete-foreground: var(--foreground);
+  --athlete-muted: var(--muted-foreground);
+  --athlete-border: var(--border);
   --athlete-accent: var(--accent);
   --athlete-accent-light: var(--accent-light);
   --athlete-media-from: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/*
+  Marketing hero — first screen.
+
+  The cinematic right-hand composition (athlete, laptop, phone) is authored at
+  a fixed 1536px design size taken from design-reference/homepage-approved.png
+  and scaled as a single unit, so the athlete photographed behind the laptop
+  lines up pixel-for-pixel with the copy of himself rendered inside the laptop
+  screen at every viewport. Scaling the stage instead of each layer is what
+  keeps that seam invisible.
+*/
+.hero-stage {
+  --stage-w: 1010px;
+  --stage-h: 811px;
+  /*
+    Stepped rather than fluid: `scale()` needs a unitless number, and CSS has
+    no way to divide one length by another. The steps keep the laptop clear of
+    the headline column (its left edge lands at 100vw - 882px * scale) and keep
+    the bottom-anchored composition inside short viewports.
+  */
+  --stage-scale: 1;
+  width: calc(var(--stage-w) * var(--stage-scale));
+  height: calc(var(--stage-h) * var(--stage-scale));
+}
+
+@media (min-width: 1760px) {
+  .hero-stage {
+    --stage-scale: 1.08;
+  }
+}
+
+@media (max-width: 1535px) {
+  .hero-stage {
+    --stage-scale: 0.9;
+  }
+}
+
+@media (max-width: 1439px) {
+  .hero-stage {
+    --stage-scale: 0.84;
+  }
+}
+
+@media (max-width: 1359px) {
+  .hero-stage {
+    --stage-scale: 0.78;
+  }
+}
+
+@media (max-height: 880px) and (min-width: 1360px) {
+  .hero-stage {
+    --stage-scale: 0.9;
+  }
+}
+
+@media (max-height: 800px) and (min-width: 1360px) {
+  .hero-stage {
+    --stage-scale: 0.82;
+  }
+}
+
+@media (max-height: 720px) {
+  .hero-stage {
+    --stage-scale: 0.74;
+  }
+}
+
+/* Pinned to the stage box's bottom-right corner so scaling about that same
+   corner keeps the composition flush with the section edge at every size. */
+.hero-stage-inner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  transform: scale(var(--stage-scale));
+  transform-origin: bottom right;
+}
+
+/*
+  Section 01 showcase — same fixed-stage technique as the hero. Steps keep the
+  composition clear of the copy column (its left edge lands at
+  100vw - 900px * scale) and inside shorter viewports.
+*/
+.s01-stage {
+  --s01-w: 900px;
+  --s01-h: 700px;
+  --s01-scale: 1;
+  width: calc(var(--s01-w) * var(--s01-scale));
+  height: calc(var(--s01-h) * var(--s01-scale));
+}
+
+@media (min-width: 1760px) {
+  .s01-stage {
+    --s01-scale: 1.06;
+  }
+}
+
+@media (max-width: 1535px) {
+  .s01-stage {
+    --s01-scale: 0.92;
+  }
+}
+
+@media (max-width: 1439px) {
+  .s01-stage {
+    --s01-scale: 0.84;
+  }
+}
+
+@media (max-width: 1359px) {
+  .s01-stage {
+    --s01-scale: 0.76;
+  }
+}
+
+@media (max-height: 820px) {
+  .s01-stage {
+    --s01-scale: 0.86;
+  }
+}
+
+@media (max-height: 740px) {
+  .s01-stage {
+    --s01-scale: 0.78;
+  }
+}
+
+.s01-stage-inner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--s01-w);
+  height: var(--s01-h);
+  transform: scale(var(--s01-scale));
+  transform-origin: bottom right;
+}
+
+/* Below the cinematic breakpoint Section 01 recomposes around the device. */
+.s01-phone-scale {
+  --s01-phone-scale: 1.1;
+  width: calc(300px * var(--s01-phone-scale));
+  height: calc(648px * var(--s01-phone-scale));
+}
+
+.s01-phone-scale > * {
+  transform: scale(var(--s01-phone-scale));
+  transform-origin: top left;
+}
+
+@media (max-width: 420px) {
+  .s01-phone-scale {
+    --s01-phone-scale: 0.92;
+  }
+}
+
+/* Below the cinematic breakpoint the hero recomposes: the phone becomes the
+   hero device and is scaled up rather than down. */
+.hero-phone-scale {
+  --phone-scale: 1.3;
+  width: calc(196px * var(--phone-scale));
+  height: calc(424px * var(--phone-scale));
+}
+
+.hero-phone-scale > * {
+  transform: scale(var(--phone-scale));
+  transform-origin: top left;
+}
+
+@media (max-width: 420px) {
+  .hero-phone-scale {
+    --phone-scale: 1.05;
+  }
 }
