@@ -277,7 +277,10 @@ Re-litigating it in code wastes the decision.
 `#d3ac68`, with `--surface-raised` and `--border-strong` added. Display faces: Anton for
 headlines and name-plates, Oswald for stats and eyebrows, both via `next/font/google`
 (no added dependencies). `.athlete-theme` carries a full token set rather than three
-accents. These values are current, not provisional.
+accents.
+**Status.** These values are the current approved direction and should be built on
+as-is — but the direction is not permanently finalized. Further visual refinement is
+expected, and is a founder design decision rather than a re-litigation of this entry.
 **Rules out.** Independent homepage restyling, and changing these tokens or the
 marketing components without a founder design decision.
 
