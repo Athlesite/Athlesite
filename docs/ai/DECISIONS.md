@@ -245,16 +245,20 @@ adapters, or deploy scripts before the founders decide.
 ### `main` is the intended canonical trunk
 **Active** · 2026-09-06
 **Decision.** `main` will become Athlesite's canonical integrated trunk. It does not
-hold that role today — it currently contains no application code.
+hold that role yet — it still contains no application code.
 **Why.** One integrated trunk is what makes branch state, CI, and "what is Athlesite
-right now" answerable at all. The present arrangement, where every line of work sits on
-an unmerged branch, cannot support that.
-**Before that happens.** Both live lines must be deliberately integrated and
-**preserved**: `feature/pilot-persistence` (Phase A schema) and
-`willy/premium-athlete-design` (approved homepage direction). Neither may be dropped,
-flattened, or silently absorbed to make a merge easier.
-**Rules out.** Force-pushing or resetting `main`, and any integration that discards
-either line. The order and mechanics are not decided — do not assume one.
+right now" answerable at all. Every line of work sitting on its own unmerged branch
+cannot support that.
+**How it was done.** `founder/integration-v1` was built from the common base `12daa01`
+by four `--no-ff` merges, in order: `claude/ai-context`, `feature/pilot-persistence`,
+`willy/premium-athlete-design`, then `origin/main`. All four were conflict-free. Merging
+in `main` last makes the branch a strict superset of the repository, so the PR carries
+no surprises. Every original commit and author is preserved.
+**Rules out.** Squash, rebase, or cherry-pick when integrating founder work — all three
+rewrite authorship. Force-pushing or resetting `main`. Any integration that discards a
+line of work.
+**Remaining.** A reviewed PR from `founder/integration-v1` into `main`. Merging is a
+founder decision (see `GUARDRAILS.md § Authority`).
 
 ---
 
@@ -262,16 +266,20 @@ either line. The order and mechanics are not decided — do not assume one.
 
 ### The approved homepage direction is a constraint
 **Active** · 2026-09-06
-**Decision.** `willy/premium-athlete-design` (`e5cec40`) carries the selected homepage
-direction, including `design-reference/homepage-approved.png`. Preserve it. Homepage and
-marketing work builds on that direction rather than re-deriving one.
+**Decision.** The selected homepage direction — authored by Connor Williamson on
+`willy/premium-athlete-design` (`e5cec40`) and including
+`design-reference/homepage-approved.png` — is now **integrated** on
+`founder/integration-v1`, preserved byte-for-byte. Homepage and marketing work builds on
+that direction rather than re-deriving one.
 **Why.** It is a founder design decision that has already been made and approved.
-Re-litigating it in code wastes the decision and creates conflicts.
-**Rules out.** Independent homepage restyling, and any change to the marketing
-components or `globals.css` tokens that would collide with that branch, until it is
-integrated. Note that it revises the palette (accent `#5968c4`, electric `#4a63e8`,
-highlight `#d3ac68`) and adds display typefaces — do not treat the current token values
-on this line as final.
+Re-litigating it in code wastes the decision.
+**The direction, now current.** Palette: accent `#5968c4`, electric `#4a63e8`, highlight
+`#d3ac68`, with `--surface-raised` and `--border-strong` added. Display faces: Anton for
+headlines and name-plates, Oswald for stats and eyebrows, both via `next/font/google`
+(no added dependencies). `.athlete-theme` carries a full token set rather than three
+accents. These values are current, not provisional.
+**Rules out.** Independent homepage restyling, and changing these tokens or the
+marketing components without a founder design decision.
 
 ### Athlete visual identity is scoped, not global
 **Active** · 2026-09-06

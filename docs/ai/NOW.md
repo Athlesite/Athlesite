@@ -1,39 +1,42 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-06 · base commit `12daa01`
+Last updated: 2026-09-06 · integration branch `founder/integration-v1`
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
 
 ## Branch state (product repo)
 
-`main` = `996fc1d` and contains **no application code** — only a README stub and an
-empty `docs/README.md` from PR #1. The app line was branched before that merge, so
-`main` and the app have genuinely diverged (`main` is ahead 2 / behind 3 of `12daa01`).
-Merging the app into `main` will conflict on `README.md` and `.gitignore`.
+**`founder/integration-v1` is where the whole product now lives.** It was built from
+`12daa01` by four `--no-ff` merges — AI context, Phase A persistence, the approved
+design, then `main` — with **zero conflicts** in any of them. It is a strict superset
+of every commit currently in this repository, and all original commits and authorship
+are preserved.
 
 | Branch | Commit | State |
 | --- | --- | --- |
-| `feature/athlete-onboarding` | `12daa01` | Last shared app milestone. Base of everything below. |
-| `feature/pilot-persistence` | `e9c096f` | Supabase Phase A schema + `.env.example`. Pushed. |
-| `willy/premium-athlete-design` | `e5cec40` | **Approved homepage design direction.** Unmerged — preserve. |
-| `claude/ai-context` | this branch | The `docs/ai/` system. |
+| `founder/integration-v1` | integration | **All product work, integrated.** The PR candidate for `main`. |
+| `main` | `996fc1d` | Still contains **no application code** — a README stub plus an empty `docs/README.md` from PR #1. |
+| `willy/premium-athlete-design` | `e5cec40` | Approved homepage design. **Integrated**; kept as the authored source. |
+| `feature/pilot-persistence` | `e9c096f` | Phase A schema + `.env.example`. **Integrated.** |
+| `claude/ai-context` | `53402af` | The `docs/ai/` system. **Integrated.** |
+| `feature/athlete-onboarding` | `12daa01` | The common base all three branched from. |
 | `feature/core-ui` · `foundation/initial-setup` | `7f3f72c` · `8a2e64a` | Superseded ancestors. |
 
-Nothing has been merged to `main`. The two live lines — persistence and design — share
-base `12daa01` and touch disjoint files.
+**Merging into `main` is conflict-free.** `main` never modified `.gitignore` or
+`README.md` — its only change from the root commit is adding an empty `docs/README.md`,
+which the integration branch already contains. (An earlier version of this file claimed
+those two files would conflict. That was wrong: it compared the two branch tips instead
+of each side against their shared base `f79fcc4`.)
 
-`main` is intended to become Athlesite's canonical integrated trunk. Before it can be
-the current application, **both** live lines must be deliberately integrated and
-preserved. Neither may be dropped, flattened, or silently absorbed to make a merge
-easier. The order and mechanics are not decided — see
-`DECISIONS.md § Repository & Integration`.
+`main` is still intended to become Athlesite's canonical integrated trunk. Both live
+lines have now been integrated and preserved, so the remaining step is a reviewed PR —
+see `DECISIONS.md § Repository & Integration`.
 
 ## In flight
 
 - **Supabase Phase A.** Schema is applied and live; no application code reads it yet.
-- **Approved homepage design**, awaiting integration.
-- **This AI context system.**
+- **PR from `founder/integration-v1` into `main`** — not yet opened.
 
 ## Real external setup state
 
@@ -71,10 +74,10 @@ its own change, not bundled with feature work.
 
 ## Next
 
-1. Phase B — Supabase client, domain↔row mappers, authentication.
-2. Integrate the approved homepage design.
-3. Bring `main` up to being the real trunk, preserving both live lines.
-4. Register a domain, then finish Resend/SMTP and OTP email templates.
+1. Visually review the integrated site, then open the PR from
+   `founder/integration-v1` into `main`.
+2. Phase B — Supabase client, domain↔row mappers, authentication.
+3. Register a domain, then finish Resend/SMTP and OTP email templates.
 
 ## Blocked on founder
 
