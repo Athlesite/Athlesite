@@ -1,42 +1,28 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-06 · integration branch `founder/integration-v1`
+Last updated: 2026-09-07 · `main` @ `da61f8f`
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
 
 ## Branch state (product repo)
 
-**`founder/integration-v1` is where the whole product now lives.** It was built from
-`12daa01` by four `--no-ff` merges — AI context, Phase A persistence, the approved
-design, then `main` — with **zero conflicts** in any of them. It is a strict superset
-of every commit currently in this repository, and all original commits and authorship
-are preserved.
+**`main` is Athlesite's canonical integrated trunk.** PR #2 merged
+`founder/integration-v1` into `main` as merge commit `da61f8f`, bringing the app
+foundation, the approved homepage design, Supabase Phase A, and this context system
+together for the first time. All original commits and authorship are preserved.
 
 | Branch | Commit | State |
 | --- | --- | --- |
-| `founder/integration-v1` | integration | **All product work, integrated.** The PR candidate for `main`. |
-| `main` | `996fc1d` | Still contains **no application code** — a README stub plus an empty `docs/README.md` from PR #1. |
-| `willy/premium-athlete-design` | `e5cec40` | Approved homepage design. **Integrated**; kept as the authored source. |
-| `feature/pilot-persistence` | `e9c096f` | Phase A schema + `.env.example`. **Integrated.** |
-| `claude/ai-context` | `53402af` | The `docs/ai/` system. **Integrated.** |
-| `feature/athlete-onboarding` | `12daa01` | The common base all three branched from. |
-| `feature/core-ui` · `foundation/initial-setup` | `7f3f72c` · `8a2e64a` | Superseded ancestors. |
-
-**Merging into `main` is conflict-free.** `main` never modified `.gitignore` or
-`README.md` — its only change from the root commit is adding an empty `docs/README.md`,
-which the integration branch already contains. (An earlier version of this file claimed
-those two files would conflict. That was wrong: it compared the two branch tips instead
-of each side against their shared base `f79fcc4`.)
-
-`main` is still intended to become Athlesite's canonical integrated trunk. Both live
-lines have now been integrated and preserved, so the remaining step is a reviewed PR —
-see `DECISIONS.md § Repository & Integration`.
+| `main` | `da61f8f` | **Canonical trunk. All product work lives here.** |
+| `willy/premium-athlete-design` | `e5cec40` | Merged into `main`. Retained — design refinement expected. |
+| `founder/integration-v1` | `05a2b50` | Merged via PR #2. Safe to delete. |
+| `claude/ai-context` · `feature/pilot-persistence` | `53402af` · `e9c096f` | Merged. Safe to delete. |
+| `feature/athlete-onboarding` · `feature/core-ui` · `foundation/initial-setup` | `12daa01` · `7f3f72c` · `8a2e64a` | Superseded ancestors. Safe to delete. |
 
 ## In flight
 
 - **Supabase Phase A.** Schema is applied and live; no application code reads it yet.
-- **PR from `founder/integration-v1` into `main`** — not yet opened.
 
 ## Real external setup state
 
@@ -74,10 +60,8 @@ its own change, not bundled with feature work.
 
 ## Next
 
-1. Visually review the integrated site, then open the PR from
-   `founder/integration-v1` into `main`.
-2. Phase B — Supabase client, domain↔row mappers, authentication.
-3. Register a domain, then finish Resend/SMTP and OTP email templates.
+1. Phase B — Supabase client, domain↔row mappers, authentication.
+2. Register a domain, then finish Resend/SMTP and OTP email templates.
 
 ## Blocked on founder
 
