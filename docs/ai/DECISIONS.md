@@ -44,16 +44,21 @@ link athletes actually send and the record they actually trust.
 
 ## Identity & Slugs
 
-### The slug is the athlete's identity, and it locks at publish
-**Active** · 2026-09-06
-**Decision.** `slug` is globally unique and is the public URL segment. It is editable
-before publishing and locked afterward, enforced at the application layer. There is no
+### The slug is the athlete's identity; it stays changeable during the pilot
+**Active** · 2026-09-07 · supersedes the original "locks at publish" rule
+**Decision.** `slug` is globally unique and is the public URL segment. **During the
+pilot stage an athlete may change it, including after publishing.** Uniqueness is
+enforced by the database, so two athletes can never hold the same slug. There is no
 slug-history or redirect table.
-**Why.** The entire product promise is one shareable link. A link that changes breaks
-every place the athlete has already shared it. Locking at the application layer keeps
-pilot-scale complexity down.
-**Rules out.** Renaming a published slug without a deliberate, designed migration path
-— history table, redirects, or both.
+**Why.** The long-term promise is one durable shareable link, and a changing link breaks
+everywhere it has already been shared. But at pilot scale the likelier failure is an
+athlete permanently stuck with a typo in their identity handle, with no edit path built.
+Correctability matters more than permanence while the product is this young.
+**Rules out.** Relying on a slug being permanent — nothing may cache or hard-code one as
+a stable key. `owner_user_id`, not `slug`, is the durable identifier for a profile.
+**Revisit when.** Real athletes are sharing links at volume. Locking then will need a
+deliberate migration path — a history table, redirects, or both — plus founder sign-off,
+since it changes live public URLs (`GUARDRAILS.md § Authority`).
 
 ### Slug format and reserved names are enforced in the domain layer
 **Active** · 2026-09-06
@@ -91,6 +96,18 @@ migration. The domain is not yet owned — see `NOW.md`.
 schema-level fact rather than an application convention.
 **Rules out.** Multiple profiles per account, or team/agency-managed profiles, without
 a schema change.
+
+### Authentication is required at save, not at wizard entry
+**Active** · 2026-09-07
+**Decision.** An athlete completes the whole onboarding wizard and sees their profile
+preview without an account. Authentication is required only when they save/publish to
+Athlesite. The pre-auth draft stays in browser `localStorage`.
+**Why.** The wedge is proving the profile is worth having; a sign-in wall before anyone
+has seen their own page costs more than it protects. It also derisks email: OTP delivery
+is the least reliable part of the flow right now (`NOW.md`), so no one is stranded on a
+sign-in screen before they have seen any value.
+**Rules out.** Gating `/get-started` behind auth. Also means the wizard must handle a
+mid-flow sign-in without losing draft state.
 
 ### `auth.uid()` is the sole ownership authority
 **Active** · 2026-09-06
