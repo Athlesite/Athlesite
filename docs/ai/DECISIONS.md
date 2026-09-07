@@ -242,10 +242,10 @@ adapters, or deploy scripts before the founders decide.
 
 ## Repository & Integration
 
-### `main` is the intended canonical trunk
+### `main` is the canonical trunk
 **Active** · 2026-09-06
-**Decision.** `main` will become Athlesite's canonical integrated trunk. It does not
-hold that role yet — it still contains no application code.
+**Decision.** `main` is Athlesite's canonical integrated trunk. It took that role with
+PR #2 (`da61f8f`), which brought the whole product onto it for the first time.
 **Why.** One integrated trunk is what makes branch state, CI, and "what is Athlesite
 right now" answerable at all. Every line of work sitting on its own unmerged branch
 cannot support that.
@@ -257,8 +257,9 @@ no surprises. Every original commit and author is preserved.
 **Rules out.** Squash, rebase, or cherry-pick when integrating founder work — all three
 rewrite authorship. Force-pushing or resetting `main`. Any integration that discards a
 line of work.
-**Remaining.** A reviewed PR from `founder/integration-v1` into `main`. Merging is a
-founder decision (see `GUARDRAILS.md § Authority`).
+**Done.** PR #2 merged `founder/integration-v1` into `main` on 2026-09-07 with a true
+merge commit (`da61f8f`), preserving every commit and author. Merging to `main` remains
+a founder decision (see `GUARDRAILS.md § Authority`).
 
 ---
 
@@ -268,9 +269,9 @@ founder decision (see `GUARDRAILS.md § Authority`).
 **Active** · 2026-09-06
 **Decision.** The selected homepage direction — authored by Connor Williamson on
 `willy/premium-athlete-design` (`e5cec40`) and including
-`design-reference/homepage-approved.png` — is now **integrated** on
-`founder/integration-v1`, preserved byte-for-byte. Homepage and marketing work builds on
-that direction rather than re-deriving one.
+`design-reference/homepage-approved.png` — is now **integrated into `main`** (PR #2),
+preserved byte-for-byte. Homepage and marketing work builds on that direction rather
+than re-deriving one.
 **Why.** It is a founder design decision that has already been made and approved.
 Re-litigating it in code wastes the decision.
 **The direction, now current.** Palette: accent `#5968c4`, electric `#4a63e8`, highlight
