@@ -109,6 +109,19 @@ sign-in screen before they have seen any value.
 **Rules out.** Gating `/get-started` behind auth. Also means the wizard must handle a
 mid-flow sign-in without losing draft state.
 
+### Inline numeric email OTP, no callback route
+**Active** · 2026-09-07
+**Decision.** `signInWithOtp({ email })` → the athlete enters the emailed numeric code on
+the same onboarding screen → `verifyOtp({ email, token, type: "email" })` →
+authenticated session established → save/publish continues.
+**Why.** Hero and profile photo `File`/`blob` state lives in React memory during
+onboarding. Navigating away during authentication could destroy that state and cause the
+athlete to lose the photos they just selected.
+**Rules out.** `/auth/callback`, magic-link navigation, or any other auth flow that
+leaves or reloads onboarding mid-flow. Generic Supabase examples use a callback route —
+this project deliberately does not. If a concrete technical blocker makes inline OTP
+impossible, stop and obtain founder approval before changing this decision.
+
 ### `auth.uid()` is the sole ownership authority
 **Active** · 2026-09-06
 **Decision.** Every ownership check — table RLS and Storage policy alike — resolves
