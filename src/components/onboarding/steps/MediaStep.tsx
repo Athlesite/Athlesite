@@ -105,7 +105,7 @@ export function MediaStep({
                 <RangeField
                   label="Zoom"
                   // Secondary safeguard only — the real fix is normalizing data
-                  // at the storage boundary (see loadDraft/loadAthleteProfile),
+                  // at the storage boundary (see loadDraft and the db mappers),
                   // so this field should never actually be undefined here.
                   value={profile.heroPhotoZoom ?? MIN_HERO_ZOOM}
                   onChange={(v) => onChange({ ...profile, heroPhotoZoom: v })}

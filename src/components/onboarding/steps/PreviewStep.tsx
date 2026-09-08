@@ -13,6 +13,7 @@ import type { PhotoPreview } from "@/components/forms/FileField";
 import { InlineOtpForm } from "@/components/auth/InlineOtpForm";
 import { maskEmail } from "@/components/auth/otpMachine";
 import type { InlineOtp } from "@/components/auth/useInlineOtp";
+import type { SaveProfileResult } from "@/lib/profile-save";
 import {
   toAthleteProfileView,
   MIN_HERO_ZOOM,
@@ -28,11 +29,13 @@ type PreviewStepProps = {
    */
   otp: InlineOtp;
   onBack: () => void;
-  onSave: () => void;
+  /** Resolves with the outcome so a failed save can be shown in place. */
+  onSave: () => Promise<SaveProfileResult>;
 };
 
 export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: PreviewStepProps) {
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const athlete = toAthleteProfileView(profile);
 
   // Still resolving whether there is an existing session. Showing the sign-in
@@ -40,9 +43,22 @@ export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: Previ
   const checkingSession = otp.state.status === "checking";
   const canSave = otp.authenticated && !saving;
 
-  function handleSave() {
+  async function handleSave() {
     setSaving(true);
-    onSave();
+    setSaveError(null);
+    const result = await onSave();
+    if (result.ok) {
+      // Navigation is under way; stay disabled so the athlete cannot double-save.
+      return;
+    }
+    if (result.field === "slug") {
+      // The wizard has already sent the athlete back to the username field,
+      // which unmounts this step. Showing the message here too would be a
+      // second copy of an error they can no longer see.
+      return;
+    }
+    setSaveError(result.message);
+    setSaving(false);
   }
 
   return (
@@ -88,11 +104,22 @@ export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: Previ
               <InlineOtpForm otp={otp} />
             )}
 
+            {saveError ? (
+              <p role="alert" className="mt-4 text-sm text-red-400">
+                {saveError}
+              </p>
+            ) : null}
+
             <div className="mt-6 flex items-center justify-between gap-4">
-              <Button type="button" variant="secondary" onClick={onBack} disabled={otp.busy}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onBack}
+                disabled={otp.busy || saving}
+              >
                 Back
               </Button>
-              <Button type="button" onClick={handleSave} disabled={!canSave}>
+              <Button type="button" onClick={() => void handleSave()} disabled={!canSave}>
                 {saving ? "Saving…" : "Save & View My Profile"}
               </Button>
             </div>

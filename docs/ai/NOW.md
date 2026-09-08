@@ -20,10 +20,10 @@ refreshed these docs. Merged branches have since been deleted.
 
 ## In flight
 
-- **Phase B — connecting onboarding/profile to Supabase.** Five checkpoints: (1) client
-  and session plumbing ✅, (2) mappers + profile read path ✅, (3a) auth plumbing,
-  verified end to end ✅, (3b) the inline OTP UI in onboarding, (4) save/publish upsert,
-  (5) media upload and signed URLs.
+- **Phase B — connecting onboarding/profile to Supabase.** (1) client and session
+  plumbing ✅, (2) mappers + profile read path ✅, (3a) auth plumbing ✅, (3b) inline OTP
+  UI in onboarding ✅, **(4) save/publish upsert — in flight**, (5) media upload and
+  signed URLs.
 - **Supabase Phase A.** Schema is applied and live; the read path uses it.
 
 ## Known follow-ups
@@ -35,7 +35,36 @@ refreshed these docs. Merged branches have since been deleted.
   alive, but carrying `file: File` on `PhotoPreview` is the cleaner fix. Deliberately not
   fixed before checkpoint 5.
 - **Never hardcode an OTP length.** The live project issues 8-digit codes and the length
-  is a dashboard setting. The 3b code field must not set `maxLength={6}`.
+  is a dashboard setting. The OTP code field must not set `maxLength`.
+- **Save always republishes.** Every successful save writes `is_published = true`, which
+  matches today's product — the only save action is "Save & View My Profile" and there
+  is no way to unpublish. **This must be revisited when draft/unpublish controls
+  arrive**: editing an intentionally unpublished profile must not silently republish it.
+  See `DECISIONS.md § Publishing`.
+- **A stale draft can be republished in one click, without review.** `loadDraft()`
+  restores both the draft *and* the step the athlete last reached, so returning to
+  `/get-started` — or pressing browser Back after saving — can land straight on Preview
+  with older data and an enabled Save button. Combined with auto-publish on every save,
+  that means a half-finished profile from a previous session can go live without the
+  athlete passing back through any earlier step. Observed during checkpoint 4
+  verification, where a resumed draft saved under an unintended slug. **Product
+  follow-up, deliberately not fixed in Phase B** — it needs a design decision about
+  resume behavior, not a patch.
+- **Slug collision cannot be pre-checked.** RLS hides unpublished rows from other users,
+  so an availability lookup reports a taken-but-unpublished slug as free. The unique
+  constraint is the only truthful answer, so collisions surface as a caught `23505`.
+  A consequence worth knowing: the "username taken" message does reveal that an
+  unpublished slug exists — accepted, as it is inherent to any unique public namespace.
+- **Concurrent saves are last-write-wins.** The upsert carries no `updated_at` guard, so
+  two tabs saving at once silently overwrite each other with no conflict detection. Fine
+  at pilot scale; matters once profiles are edited from phone and laptop.
+- **Changing a slug breaks the old URL, with no redirect.** Observed in checkpoint 4
+  verification: the previous slug 404s immediately. This is the recorded pilot rule
+  working, not a defect — but it is the concrete cost, and a redirect or history table
+  is what would remove it.
+- **`hero_photo_zoom` validation is coupled to the DB check constraint.** The domain
+  layer clamps to 1–1.8 and the column enforces the same range. They agree today; if
+  either moves alone, saves start failing on a check violation. Change both together.
 
 ## Real external setup state
 

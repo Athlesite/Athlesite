@@ -238,13 +238,18 @@ exactly one answer and one place to audit.
 **Rules out.** Any second visibility mechanism — unlisted links, per-section privacy,
 preview tokens — without redesigning both policies together.
 
-### Auto-publish on first successful save
-**Active** · 2026-09-06
-**Decision.** The first save that creates the row also sets `is_published = true`.
+### Auto-publish on every successful save
+**Active** · 2026-09-07 · widened from "first save" once the real write landed
+**Decision.** Every successful save sets `is_published = true`, not just the first.
 **Why.** At pilot scale the athlete's goal is a shareable link, and a separate publish
-step is one more place to get stuck and end up with nothing to share.
-**Rules out.** Assuming a saved profile is private. Revisit before onboarding athletes
-who need a private draft period.
+step is one more place to get stuck and end up with nothing to share. The only save
+action today is "Save & View My Profile", and nothing can unpublish a profile, so an
+upsert that always publishes matches the product exactly.
+**Rules out.** Assuming a saved profile is private.
+**Revisit when.** Draft/unpublish controls arrive. At that point this becomes a bug:
+editing an intentionally unpublished profile would silently republish it, exposing an
+athlete who had chosen to hide. The write path must then stop forcing the column and
+respect the stored value.
 
 ---
 

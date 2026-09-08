@@ -28,6 +28,15 @@ type AthleteInfoStepProps = {
   onChange: (profile: AthleteProfileData) => void;
   onNext: () => void;
   onBack: () => void;
+  /**
+   * An error the database reported about the username — currently only
+   * "already taken", which cannot be known before attempting the save. Shown
+   * immediately, unlike local validation errors which wait for a Continue
+   * attempt, because the athlete has just been sent back here to fix it.
+   */
+  slugError?: string | null;
+  /** Called when the athlete edits the username, clearing the server error. */
+  onSlugErrorClear?: () => void;
 };
 
 function parseOptionalInt(value: string): number | null {
@@ -60,7 +69,14 @@ function validate(profile: AthleteProfileData): Record<string, string> {
   return errors;
 }
 
-export function AthleteInfoStep({ profile, onChange, onNext, onBack }: AthleteInfoStepProps) {
+export function AthleteInfoStep({
+  profile,
+  onChange,
+  onNext,
+  onBack,
+  slugError,
+  onSlugErrorClear,
+}: AthleteInfoStepProps) {
   const [attempted, setAttempted] = useState(false);
   const errors = validate(profile);
 
@@ -123,10 +139,18 @@ export function AthleteInfoStep({ profile, onChange, onNext, onBack }: AthleteIn
         <UsernameField
           className="mt-6"
           value={profile.slug}
-          onChange={(v) => onChange({ ...profile, slug: v.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
-          error={show("slug")}
+          onChange={(v) => {
+            onSlugErrorClear?.();
+            onChange({ ...profile, slug: v.toLowerCase().replace(/[^a-z0-9-]/g, "") });
+          }}
+          // A taken username takes precedence: the athlete was sent back here
+          // specifically to fix it, so it shows without waiting for Continue.
+          error={slugError ?? show("slug")}
+          focusOnMount={Boolean(slugError)}
           hint={
-            !show("slug") ? "Lowercase letters, numbers, and hyphens only." : undefined
+            !slugError && !show("slug")
+              ? "Lowercase letters, numbers, and hyphens only."
+              : undefined
           }
         />
 

@@ -1,4 +1,5 @@
 import {
+  clampHeroZoom,
   normalizeAthleteProfileData,
   type AthleteProfileData,
 } from "@/lib/athlete-profile";
@@ -63,8 +64,8 @@ export type AthleteProfileRow = {
  * A profile as it exists in the database: the domain data, plus the storage
  * metadata and media paths that deliberately do not live on the domain model.
  *
- * Mirrors how StoredAthleteProfile wraps AthleteProfileData for the local draft
- * cache — same separation, different backing store.
+ * Keeps storage concerns off AthleteProfileData, which stays free of ids,
+ * timestamps, and anything vendor-shaped.
  *
  * Media fields are object *paths*, never URLs. Signed URLs are generated at
  * render time (docs/ai/GUARDRAILS.md § Storage).
@@ -155,6 +156,107 @@ export function toAthleteProfileRecord(row: AthleteProfileRow): AthleteProfileRe
   };
 }
 
-// The domain → row direction lands with the save/publish path in checkpoint 4.
-// It is deliberately absent here: an untested write mapper with no caller is
-// worse than no write mapper.
+/**
+ * The columns the application writes. Deliberately narrower than
+ * AthleteProfileRow:
+ *
+ * - `id`, `created_at`, `updated_at` are the database's to manage.
+ * - `hero_photo_path` / `profile_photo_path` are **omitted, not null**. PostgREST
+ *   only writes columns present in the payload, so leaving them out means an
+ *   insert takes the null default while a later update preserves whatever the
+ *   media upload wrote. Sending them as null would silently wipe an athlete's
+ *   photos on their next save.
+ */
+export type AthleteProfileWriteRow = {
+  owner_user_id: string;
+  slug: string;
+  first_name: string;
+  last_name: string;
+  sport: string;
+  position: string;
+  class_year: string;
+  school_or_team: string;
+  city: string;
+  state: string;
+  height_in: number | null;
+  weight_lb: number | null;
+  bio: string;
+  hero_photo_position_x: number;
+  hero_photo_position_y: number;
+  hero_photo_zoom: number;
+  highlight_links: { label: string; url: string }[];
+  recruiting_status: string;
+  recruiting_contact: string;
+  recruiting_notes: string;
+  social_instagram: string;
+  social_twitter: string;
+  social_tiktok: string;
+  social_hudl: string;
+  social_youtube: string;
+  social_website: string;
+  nil_open: boolean;
+  nil_contact: string;
+  nil_interests: string;
+  is_published: boolean;
+};
+
+/**
+ * Domain model → the row we write.
+ *
+ * `ownerUserId` is a separate argument rather than a field on
+ * AthleteProfileData because ownership is not profile content — it comes from
+ * the authenticated session and must never be caller-supplied. The database
+ * rejects a mismatch regardless (RLS `with check (auth.uid() = owner_user_id)`),
+ * but keeping it out of the domain type means there is no field for a caller to
+ * set hopefully in the first place.
+ *
+ * `is_published` is true on every save. That matches today's product, where the
+ * only save action is "Save & View My Profile" and there is no way to unpublish.
+ * It must be revisited when draft/unpublish controls arrive: editing an
+ * intentionally unpublished profile must not silently republish it.
+ */
+export function toAthleteProfileRow(
+  profile: AthleteProfileData,
+  ownerUserId: string
+): AthleteProfileWriteRow {
+  return {
+    owner_user_id: ownerUserId,
+    slug: profile.slug,
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    sport: profile.sport,
+    position: profile.position,
+    class_year: profile.classYear,
+    school_or_team: profile.schoolOrTeam,
+    city: profile.city,
+    state: profile.state,
+    height_in: profile.heightIn,
+    weight_lb: profile.weightLb,
+    bio: profile.bio,
+
+    hero_photo_position_x: profile.heroPhotoPositionX,
+    hero_photo_position_y: profile.heroPhotoPositionY,
+    // Clamped in the domain layer to the same 1–1.8 range as the column's
+    // check constraint. If those ever drift apart, saves start failing here.
+    hero_photo_zoom: clampHeroZoom(profile.heroPhotoZoom),
+
+    highlight_links: profile.highlightLinks,
+
+    recruiting_status: profile.recruitingStatus,
+    recruiting_contact: profile.recruitingContact,
+    recruiting_notes: profile.recruitingNotes,
+
+    social_instagram: profile.social.instagram,
+    social_twitter: profile.social.twitter,
+    social_tiktok: profile.social.tiktok,
+    social_hudl: profile.social.hudl,
+    social_youtube: profile.social.youtube,
+    social_website: profile.social.website,
+
+    nil_open: profile.nilOpen,
+    nil_contact: profile.nilContact,
+    nil_interests: profile.nilInterests,
+
+    is_published: true,
+  };
+}

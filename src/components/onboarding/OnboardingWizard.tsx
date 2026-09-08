@@ -12,15 +12,13 @@ import { PreviewStep } from "@/components/onboarding/steps/PreviewStep";
 import type { PhotoPreview } from "@/components/forms/FileField";
 import { useInlineOtp } from "@/components/auth/useInlineOtp";
 import { createEmptyAthleteProfile, type AthleteProfileData } from "@/lib/athlete-profile";
-import {
-  loadDraft,
-  saveDraft,
-  loadDraftStep,
-  saveDraftStep,
-  saveAthleteProfile,
-} from "@/lib/onboarding-storage";
+import { loadDraft, saveDraft, loadDraftStep, saveDraftStep } from "@/lib/onboarding-storage";
+import { saveProfile, type SaveProfileResult } from "@/lib/profile-save";
 
 const STEP_LABELS = ["Welcome", "Athlete Info", "Media", "Recruiting", "Brand & Links", "Preview"];
+
+/** Where the username field lives, for sending an athlete back to fix a taken one. */
+const ATHLETE_INFO_STEP = STEP_LABELS.indexOf("Athlete Info");
 
 function clampStepIndex(value: unknown): number {
   const numeric = typeof value === "number" ? value : Number(value);
@@ -43,6 +41,10 @@ export function OnboardingWizard() {
   // spend a rate-limited email. Nothing in this hook navigates, which is what
   // keeps the object URLs above alive through sign-in.
   const otp = useInlineOtp();
+
+  // Set when the database rejects a username as taken. Lives here rather than
+  // in a step so it survives the jump from Preview back to Athlete Info.
+  const [slugError, setSlugError] = useState<string | null>(null);
 
   useEffect(() => {
     // One-time hydration from a browser-only store (localStorage) on mount, gated
@@ -97,9 +99,35 @@ export function OnboardingWizard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleSaveAndComplete() {
-    saveAthleteProfile(profile);
-    router.push(`/athletes/${profile.slug}`);
+  /**
+   * Writes the profile to Supabase and, only on success, sends the athlete to
+   * their live page. A failed save leaves them on Preview with everything
+   * intact — including the in-memory photo previews — so they can fix a taken
+   * username and try again.
+   *
+   * The local draft is deliberately left in place: it is the athlete's
+   * work-in-progress copy, and there is no edit flow yet that would reload
+   * their saved profile instead.
+   */
+  async function handleSaveAndComplete(): Promise<SaveProfileResult> {
+    const result = await saveProfile(profile);
+
+    if (result.ok) {
+      router.push(`/athletes/${result.slug}`);
+      return result;
+    }
+
+    // A taken username is the one save failure the athlete can actually fix,
+    // and the field is four steps back. Take them to it rather than leaving
+    // them on Preview to work out where to go. Everything else — profile data,
+    // photo previews, the authenticated session — is untouched, since this is
+    // a step change inside the same mounted wizard.
+    if (result.field === "slug") {
+      setSlugError(result.message);
+      setStepIndex(ATHLETE_INFO_STEP);
+    }
+
+    return result;
   }
 
   if (!hydrated) return null;
@@ -111,7 +139,14 @@ export function OnboardingWizard() {
       {stepIndex === 0 ? <WelcomeStep onNext={goNext} /> : null}
 
       {stepIndex === 1 ? (
-        <AthleteInfoStep profile={profile} onChange={setProfile} onNext={goNext} onBack={goBack} />
+        <AthleteInfoStep
+          profile={profile}
+          onChange={setProfile}
+          onNext={goNext}
+          onBack={goBack}
+          slugError={slugError}
+          onSlugErrorClear={() => setSlugError(null)}
+        />
       ) : null}
 
       {stepIndex === 2 ? (
