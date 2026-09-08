@@ -121,6 +121,13 @@ athlete to lose the photos they just selected.
 leaves or reloads onboarding mid-flow. Generic Supabase examples use a callback route —
 this project deliberately does not. If a concrete technical blocker makes inline OTP
 impossible, stop and obtain founder approval before changing this decision.
+**Verified.** 2026-09-07, against the live project: send → 8-digit code by email →
+`verifyOtp({ type: "email" })` → `getUser()` confirmed the athlete. Throughout, the URL
+and the component's mount timestamp were unchanged, proving no navigation and no
+remount — so in-memory photo state survives authentication.
+**Token length is not fixed.** The live project issues **8** digits, and the length is a
+dashboard setting that can change without a deploy. Never validate or assume a length,
+in this module or in any UI built on it — most Supabase examples show 6.
 
 ### `auth.uid()` is the sole ownership authority
 **Active** · 2026-09-06
