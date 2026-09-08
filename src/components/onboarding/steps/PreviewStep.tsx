@@ -10,6 +10,9 @@ import { ProfileBio } from "@/components/profile/ProfileBio";
 import { ProfileHighlights } from "@/components/profile/ProfileHighlights";
 import { ProfileRecruitingNil } from "@/components/profile/ProfileRecruitingNil";
 import type { PhotoPreview } from "@/components/forms/FileField";
+import { InlineOtpForm } from "@/components/auth/InlineOtpForm";
+import { maskEmail } from "@/components/auth/otpMachine";
+import type { InlineOtp } from "@/components/auth/useInlineOtp";
 import {
   toAthleteProfileView,
   MIN_HERO_ZOOM,
@@ -19,13 +22,23 @@ import {
 type PreviewStepProps = {
   profile: AthleteProfileData;
   actionPhoto: PhotoPreview;
+  /**
+   * Auth state, owned by the wizard so an outstanding code survives stepping
+   * back and forward. Saving is gated on it.
+   */
+  otp: InlineOtp;
   onBack: () => void;
   onSave: () => void;
 };
 
-export function PreviewStep({ profile, actionPhoto, onBack, onSave }: PreviewStepProps) {
+export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: PreviewStepProps) {
   const [saving, setSaving] = useState(false);
   const athlete = toAthleteProfileView(profile);
+
+  // Still resolving whether there is an existing session. Showing the sign-in
+  // block here would flash it at an athlete who is already signed in.
+  const checkingSession = otp.state.status === "checking";
+  const canSave = otp.authenticated && !saving;
 
   function handleSave() {
     setSaving(true);
@@ -63,13 +76,26 @@ export function PreviewStep({ profile, actionPhoto, onBack, onSave }: PreviewSte
 
       <Section className="pt-0">
         <Container className="max-w-2xl">
-          <div className="flex items-center justify-between gap-4 border-t border-border pt-6">
-            <Button type="button" variant="secondary" onClick={onBack}>
-              Back
-            </Button>
-            <Button type="button" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving…" : "Save & View My Profile"}
-            </Button>
+          <div className="border-t border-border pt-6">
+            {otp.authenticated ? (
+              <p className="text-sm text-muted-foreground">
+                <span className="text-accent-light">✓</span> Signed in as{" "}
+                <span className="text-foreground">
+                  {otp.state.signedInEmail ? maskEmail(otp.state.signedInEmail) : "your account"}
+                </span>
+              </p>
+            ) : checkingSession ? null : (
+              <InlineOtpForm otp={otp} />
+            )}
+
+            <div className="mt-6 flex items-center justify-between gap-4">
+              <Button type="button" variant="secondary" onClick={onBack} disabled={otp.busy}>
+                Back
+              </Button>
+              <Button type="button" onClick={handleSave} disabled={!canSave}>
+                {saving ? "Saving…" : "Save & View My Profile"}
+              </Button>
+            </div>
           </div>
         </Container>
       </Section>

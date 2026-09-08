@@ -10,6 +10,7 @@ import { RecruitingStep } from "@/components/onboarding/steps/RecruitingStep";
 import { BrandLinksStep } from "@/components/onboarding/steps/BrandLinksStep";
 import { PreviewStep } from "@/components/onboarding/steps/PreviewStep";
 import type { PhotoPreview } from "@/components/forms/FileField";
+import { useInlineOtp } from "@/components/auth/useInlineOtp";
 import { createEmptyAthleteProfile, type AthleteProfileData } from "@/lib/athlete-profile";
 import {
   loadDraft,
@@ -36,6 +37,12 @@ export function OnboardingWizard() {
   // Photo previews are session-only (blob: object URLs) and are never written to storage.
   const [profilePhoto, setProfilePhoto] = useState<PhotoPreview>(null);
   const [actionPhoto, setActionPhoto] = useState<PhotoPreview>(null);
+
+  // Auth lives here rather than in the Preview step so an outstanding code
+  // survives stepping back to fix a field and returning — re-sending would
+  // spend a rate-limited email. Nothing in this hook navigates, which is what
+  // keeps the object URLs above alive through sign-in.
+  const otp = useInlineOtp();
 
   useEffect(() => {
     // One-time hydration from a browser-only store (localStorage) on mount, gated
@@ -132,6 +139,7 @@ export function OnboardingWizard() {
         <PreviewStep
           profile={profile}
           actionPhoto={actionPhoto}
+          otp={otp}
           onBack={goBack}
           onSave={handleSaveAndComplete}
         />
