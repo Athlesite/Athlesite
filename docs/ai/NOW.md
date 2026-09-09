@@ -22,18 +22,36 @@ refreshed these docs. Merged branches have since been deleted.
 
 - **Phase B — connecting onboarding/profile to Supabase.** (1) client and session
   plumbing ✅, (2) mappers + profile read path ✅, (3a) auth plumbing ✅, (3b) inline OTP
-  UI in onboarding ✅, **(4) save/publish upsert — in flight**, (5) media upload and
-  signed URLs.
+  UI in onboarding ✅, (4) save/publish upsert ✅, (5) media upload and signed URLs ✅.
+  All five verified against the live project; test data has been removed.
 - **Supabase Phase A.** Schema is applied and live; the read path uses it.
 
 ## Known follow-ups
 
-- **Checkpoint 5 will need the photo bytes, and we currently throw them away.**
-  `PhotoPreview` in `src/components/forms/FileField.tsx` is `{ fileName, objectUrl }` —
-  `selectPhoto` in the onboarding wizard creates an object URL and discards the `File`.
-  Uploading needs the bytes, recoverable via `fetch(objectUrl)` while the blob URL is
-  alive, but carrying `file: File` on `PhotoPreview` is the cleaner fix. Deliberately not
-  fixed before checkpoint 5.
+- **Failed saves can leave orphaned media objects.** Uploads go to fresh versioned paths
+  before the database write, so a save that fails afterwards leaves an unreferenced
+  object in the athlete's own folder. Deliberate — it is the cost of never mutating a
+  published profile's photo before the write that authorises it. Invisible to everyone;
+  worth a cleanup pass eventually, not urgent.
+- **Athlete uploads keep their EXIF metadata, GPS included.** Nothing strips it: the
+  original `File` is uploaded byte-for-byte. Camera and phone JPEGs routinely carry
+  location, timestamp, and device data, and a Checkpoint 5 test upload was confirmed to
+  carry an EXIF `APP1` segment. These are largely minors' photos served from a public
+  page, so this compounds with the undecided indexing question below. **Strip metadata
+  before pilot or public launch.**
+- **There is no Edit Profile flow, and three problems trace back to that.** The wizard
+  never loads an existing profile, so a returning athlete cannot see what media they
+  already have, both photo fields read "Choose photo" rather than "Replace photo", and
+  an empty slot has to mean "leave what is stored alone" — it cannot be distinguished
+  from "remove this". The mapper supports `null` to clear; nothing can produce it. This
+  is also the root of the stale-draft republish issue below. It needs a design decision
+  about resume and edit behaviour, not a patch.
+- **PNG and WebP have never been uploaded through the product's own path.** Every
+  Checkpoint 5 upload through onboarding was a JPEG. PNGs were uploaded directly via the
+  Storage API during policy testing, so the bucket accepts them, but the app's
+  `EXTENSION_BY_TYPE` mapping for `png`/`webp` and the tightened `accept` filter remain
+  unexercised end to end. Low risk — extensions are cosmetic under versioned paths — but
+  recorded as untested rather than assumed working.
 - **Search-engine indexing of published profiles is undecided, and the current
   behaviour is indexable by omission.** `generateMetadata` sets `robots: noindex` only
   for *unpublished* profiles. A published one carries no directive, so once a domain is

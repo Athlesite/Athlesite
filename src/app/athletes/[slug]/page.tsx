@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AthleteProfileView } from "./AthleteProfileView";
-import { getProfileBySlug } from "@/lib/profile-repository";
+import { getProfileBySlug, signMediaUrl } from "@/lib/profile-repository";
 import { getUser } from "@/lib/supabase/server";
 import { toAthleteProfileView } from "@/lib/athlete-profile";
 
@@ -78,7 +78,14 @@ export default async function AthleteProfilePage({ params }: PageProps<"/athlete
     notFound();
   }
 
-  const isOwner = await viewerOwnsProfile(record.ownerUserId);
+  // The profile photo is persisted but not rendered anywhere yet, so only the
+  // hero is signed — an unused signed URL would be a wasted round trip.
+  const [isOwner, heroPhotoUrl] = await Promise.all([
+    viewerOwnsProfile(record.ownerUserId),
+    signMediaUrl(record.heroPhotoPath),
+  ]);
 
-  return <AthleteProfileView record={record} isOwner={isOwner} />;
+  return (
+    <AthleteProfileView record={record} isOwner={isOwner} heroPhotoUrl={heroPhotoUrl} />
+  );
 }

@@ -3,7 +3,14 @@
 import { useId, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 
-export type PhotoPreview = { fileName: string; objectUrl: string } | null;
+/**
+ * A photo the athlete has picked but not yet uploaded.
+ *
+ * The `File` is retained, not just its name: the bytes are needed at save time
+ * to upload to Storage. Keeping the original also preserves the true MIME type,
+ * which is what gets written as the object's contentType.
+ */
+export type PhotoPreview = { file: File; fileName: string; objectUrl: string } | null;
 
 type FileFieldProps = {
   label: string;
@@ -40,7 +47,9 @@ export function FileField({ label, hint, value, onSelect }: FileFieldProps) {
             ref={inputRef}
             id={id}
             type="file"
-            accept="image/*"
+            // Matches the bucket's allowed_mime_types, so the file picker does
+            // not offer formats the upload would reject.
+            accept="image/jpeg,image/png,image/webp"
             className="sr-only"
             onChange={(event) => onSelect(event.target.files?.[0] ?? null)}
           />

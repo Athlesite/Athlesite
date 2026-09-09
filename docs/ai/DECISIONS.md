@@ -208,15 +208,28 @@ are created at render time.
 — and a public URL would bypass the visibility policy above.
 **Rules out.** Writing a resolved URL into the database.
 
-### One current file per media slot, addressed by owner folder
-**Active** · 2026-09-06
-**Decision.** The path convention is `{owner_user_id}/<slot>.<ext>`, and a new upload
-overwrites the same path. Storage policies enforce that the first path segment equals
-the caller's `auth.uid()`.
-**Why.** The folder *is* the ownership check — simple, and impossible to get wrong per
-file. One file per slot means there are no orphans to clean up.
-**Rules out.** Media histories, multiple photos per slot, or paths not prefixed by the
-owner id — any of which breaks the policy.
+### Media paths are versioned per upload, never overwritten
+**Active** · 2026-09-09 · supersedes the original overwrite-in-place convention
+**Decision.** Every upload goes to a fresh path, `{owner_user_id}/{slot}/{uuid}.{ext}`,
+with `upsert: false`. Storage policies still enforce that the first path segment equals
+the caller's `auth.uid()`. After a save succeeds, the superseded object is deleted
+best-effort.
+**Why.** The original convention overwrote a fixed path per slot, which meant an upload
+mutated the object a published profile already pointed at — *before* the database write
+that was supposed to authorise the change. A save that then failed (a taken username,
+say) left the athlete's live photo silently replaced despite the failure. Versioned
+paths move the only visible change to the database upsert, which is the real commit
+point: uploads touch nothing anyone can see.
+**Consequences.** A failed save can leave an unreferenced object behind. That is
+accepted: it lives in the athlete's own folder, is invisible to everyone, and costs
+storage rather than correctness. Cleanup can be a later maintenance pass.
+**Rules out.** `upsert: true` on athlete media, and any fixed per-slot path. Also rules
+out treating the extension as meaningful — `contentType` set at upload time is
+authoritative; the extension exists so the bucket can be read by a human during the
+pilot.
+**Note.** The Phase A migration's comment still describes the old `{uid}/<slot>.<ext>`
+convention. That comment is not enforced by any policy, and applied migrations are not
+edited (`GUARDRAILS.md § Migrations`), so this entry is the current source of truth.
 
 ### Bucket-level MIME and size limits as a second layer
 **Active** · 2026-09-06
