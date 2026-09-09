@@ -12,10 +12,10 @@ export const navLinks = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/82 backdrop-blur-2xl">
       <Container
         size="wide"
-        className="grid h-16 grid-cols-[auto_1fr_auto] items-center gap-6 lg:h-[92px]"
+        className="grid h-16 grid-cols-[auto_1fr_auto] items-center gap-6 lg:h-[88px]"
       >
         <Logo className="relative z-50" />
 
@@ -27,7 +27,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="relative inline-flex min-h-11 items-center whitespace-nowrap rounded-sm text-[0.875rem] font-medium text-muted-foreground transition-colors after:absolute after:inset-x-0 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform hover:text-foreground hover:after:scale-x-100 focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+              className="relative inline-flex min-h-11 items-center whitespace-nowrap rounded-sm text-[0.8125rem] font-medium tracking-[0.01em] text-muted-foreground transition-colors after:absolute after:inset-x-0 after:bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform hover:text-foreground hover:after:scale-x-100 focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background"
             >
               {link.label}
             </Link>
@@ -35,8 +35,12 @@ export function Header() {
         </nav>
 
         <div className="hidden justify-self-end lg:block">
-          <Button href="/get-started" shape="rounded" className="h-10 whitespace-nowrap px-5 text-[0.875rem]">
-            Get Started
+          <Button
+            href="/get-started"
+            shape="rounded"
+            className="h-10 whitespace-nowrap px-5 text-[0.8125rem] font-semibold"
+          >
+            Create Your Athlesite
           </Button>
         </div>
 
