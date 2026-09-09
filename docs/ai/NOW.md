@@ -1,6 +1,6 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-07 · `main` @ `1d2337e`
+Last updated: 2026-09-09 · `main` @ `885a671`
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -55,8 +55,10 @@ refreshed these docs. Merged branches have since been deleted.
   happens is browser-dependent: Chrome was observed attaching a 456-byte sRGB ICC profile
   to the output, so a profile can be replaced rather than dropped, and another engine may
   drop it entirely. Either way a wide-gamut photo ends up as sRGB and may shift slightly.
-  Accepted for the pilot unless testing shows it is noticeable; worth re-checking on
-  Safari, which has not been tested.
+  Accepted for the pilot unless testing shows it is noticeable. Safari's *colour-profile*
+  behaviour specifically is the untested part — what it writes, and whether the shift is
+  visible. Safari itself is validated: orientation and metadata stripping both passed on a
+  real device, per the item above.
 - **Onboarding server-renders a blank `<main>` until hydration finishes.** The wizard is
   gated behind a `hydrated` flag so the server and first client render agree before
   `localStorage` is read, which means `/get-started` ships an essentially empty page —
@@ -87,16 +89,34 @@ refreshed these docs. Merged branches have since been deleted.
   substitutes another, and the substitute is accepted when it is still one the bucket
   allows. Which formats actually round-trip therefore needs a real product-path run
   rather than an assumption.
-- **Search-engine indexing of published profiles is undecided, and the current
-  behaviour is indexable by omission.** `generateMetadata` sets `robots: noindex` only
-  for *unpublished* profiles. A published one carries no directive, so once a domain is
-  live, a high-school athlete's name, school, city, class year and contact details would
-  be indexable by default. `GUARDRAILS.md § Athlete data` notes these are largely minors
-  and says to err toward collecting less — so the current default was arrived at by
-  omission rather than chosen. **This needs a founder decision before any deployment**
-  (see `GUARDRAILS.md § Authority`: publishing and visibility semantics). Nothing is
-  deployed, so nothing is exposed today, and no code has been changed in either
-  direction pending that decision.
+- **Search indexing is decided and implemented: athlete profiles are `noindex`.**
+  Staged indexing is now an active founder decision (`DECISIONS.md § Search indexing`).
+  `/` and `/athletes/jordan-bell` stay indexable; `/get-started` is `noindex, follow`;
+  **every real athlete profile is `noindex, nofollow`, published or not**, and no profile
+  may go into a sitemap. Shared links still unfurl — preview crawlers ignore meta robots —
+  so nothing an athlete uses is affected. Two things to carry forward: **`noindex` is a
+  search control, not an access control** (it does not touch the anonymous API surface —
+  see the column-exposure item below), and **the canonical/root-slug question is still
+  open and blocks ever allowing profiles to index**, because indexing the wrong URL shape
+  is harder to undo than not indexing at all.
+- **Anonymous API reads every column of a published profile, including fields the page
+  never shows.** Separate from indexing and *not* fixed by it. `grant select on
+  public.athlete_profiles to anon` is table-wide; RLS filters *rows* (`is_published =
+  true`) but not *columns*. So for any published profile an anonymous caller holding the
+  publishable key can read, straight from PostgREST: `recruiting_contact`,
+  `recruiting_notes`, `recruiting_status`, `nil_contact`, `nil_interests`, `nil_open`,
+  `school_or_team`, and all six `social_*` columns — **none of which are rendered
+  anywhere**. The public page shows only name, sport, position, class year, city/state,
+  height/weight, bio and highlight links; the social icons on the hero are placeholder
+  glyphs, not data. Published rows are also enumerable without knowing a slug, so the
+  whole pilot cohort is one query. `GUARDRAILS.md § Athlete data`: contact fields exist
+  "so an athlete can be reached deliberately, not so they can be scraped in bulk", and
+  these are minors. **Likely fix:** replace the table-wide anon grant with a column-level
+  grant covering only what the public page renders, keeping the full grant for
+  `authenticated` under the existing owner policy — and narrow the anonymous select list
+  in `profile-repository.ts` at the same time, since it currently names every column and
+  would start failing. **Requires founder approval** (`GUARDRAILS.md § Authority`: grants).
+  Proposed as its own hardening checkpoint, audit first.
 - **Never hardcode an OTP length.** The live project issues 8-digit codes and the length
   is a dashboard setting. The OTP code field must not set `maxLength`.
 - **Save always republishes.** Every successful save writes `is_published = true`, which

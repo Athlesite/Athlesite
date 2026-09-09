@@ -319,6 +319,46 @@ editing an intentionally unpublished profile would silently republish it, exposi
 athlete who had chosen to hide. The write path must then stop forcing the column and
 respect the stored value.
 
+### Search indexing is staged: marketing is indexable, athlete profiles are not
+**Active** · 2026-09-09 · founder decision
+**Decision.** Indexing is granted per route rather than inherited by default.
+`/` and the fictional `/athletes/jordan-bell` stay indexable. `/get-started` is
+`noindex, follow`. **Every real athlete profile is `noindex, nofollow` — published and
+unpublished alike** — and no athlete profile may be added to a sitemap. The directive on
+profiles is unconditional on purpose: a conditional one is a data-dependent path that can
+index a real athlete by accident.
+**Why.** Reversibility is asymmetric, and that asymmetry decides it. `noindex → index` is
+a one-line change with nothing to undo. `index → noindex` cannot be undone: removal from
+Google takes weeks, snippets and caches persist, and Bing, archive.org, AI crawlers and
+people-search aggregators copy content and honour no retroactive removal. The subjects are
+high-school athletes — largely minors — and the indexable snippet is their real name, class
+year, and city (`GUARDRAILS.md § Athlete data`). When one direction is free and the other
+is permanent, take the free one until there is a reason not to.
+**What is not lost.** Nothing an athlete actually uses. Recruiting traffic at pilot scale
+comes from the athlete sending their link, and link-preview crawlers — iMessage, Slack,
+WhatsApp, `facebookexternalhit`, Twitterbot — ignore meta robots, so shared links still
+unfurl with a title and description. At a handful of profiles there is no meaningful SEO
+to forgo, and thin near-duplicate pages on a cold domain can cost more than they earn.
+**Not an access-control mechanism.** `noindex` is a request to well-behaved search
+crawlers and nothing more. It does not restrict access, does not bind scrapers, and does
+not narrow the anonymous API surface. RLS remains the only enforcement layer. Do not cite
+this decision as evidence that anything is protected — see the anonymous column-exposure
+follow-up in `NOW.md`.
+**Mechanism: meta robots, never `robots.txt` `Disallow`.** The two defeat each other.
+`Disallow` blocks *crawling*, so the crawler never fetches the page and never sees the
+`noindex` tag, while the URL can still surface bare from an external link. If a
+`robots.txt` is ever added it must be allow-all.
+**Still open, and blocking.** The canonical URL shape is undecided: `DECISIONS.md § The
+canonical public athlete URL is athlesite.com/{slug}` records the intent, the app serves
+`/athletes/{slug}`, and no `metadataBase` or canonical tag is emitted. **Settle that before
+any profile is ever allowed to index** — indexing the wrong URL shape is more expensive to
+undo than not indexing at all. This checkpoint deliberately changes no canonical behaviour.
+**Rules out.** Indexing by omission. A route that should be indexable says so by carrying
+no directive, and that is now a recorded choice rather than an oversight.
+**Revisit when.** The pilot ends, or an athlete asks to be findable. The flip should
+become a deliberate per-athlete opt-in, consent-shaped for minors, not a global switch —
+and only after the canonical decision lands.
+
 ---
 
 ## Vendors & Infrastructure

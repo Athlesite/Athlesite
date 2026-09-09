@@ -61,9 +61,13 @@ export async function generateMetadata({
         .filter(Boolean)
         .join(" · ") ||
       `${name}'s Athlesite profile.`,
-    // Unpublished drafts are owner-only; keep them out of indexes even though
-    // RLS already prevents anyone else from loading them.
-    robots: record.isPublished ? undefined : { index: false, follow: false },
+    // No athlete profile is indexed during the private pilot — published or
+    // not. Publishing makes a profile shareable, not searchable: an athlete can
+    // still send the link to a coach, and link-preview crawlers ignore this tag,
+    // so nothing about sharing changes. Unconditional on purpose, so there is no
+    // data-dependent path that could index a real athlete by accident.
+    // See docs/ai/DECISIONS.md § Search indexing.
+    robots: { index: false, follow: false },
   };
 }
 
