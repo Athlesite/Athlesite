@@ -12,13 +12,13 @@ type LogoMarkProps = {
 };
 
 const STANDARD_MARKS: Record<LogoSurface, string> = {
-  dark: "/brand/v1/vector/athlesite-mark-primary-on-dark.svg",
-  light: "/brand/v1/vector/athlesite-mark-primary-on-light.svg",
+  dark: "/brand/athlesite-mark-reference-on-dark.png",
+  light: "/brand/athlesite-mark-on-light.svg",
 };
 
 const WORDMARKS: Record<LogoSurface, string> = {
-  dark: "/brand/v1/vector/athlesite-wordmark-metallic.svg",
-  light: "/brand/v1/vector/athlesite-wordmark-black.svg",
+  dark: "/brand/athlesite-wordmark-on-dark.png",
+  light: "/brand/athlesite-wordmark-on-light.png",
 };
 
 /**
@@ -33,15 +33,15 @@ export function LogoMark({
 }: LogoMarkProps) {
   const src =
     variant === "micro" && surface === "dark"
-      ? "/brand/v1/vector/athlesite-mark-digital-on-dark.svg"
+      ? "/brand/athlesite-mark-reference-on-dark.png"
       : STANDARD_MARKS[surface];
 
   return (
     <Image
       src={src}
       alt=""
-      width={270}
-      height={196}
+      width={264}
+      height={190}
       aria-hidden="true"
       className={cn("h-10 w-auto shrink-0", className)}
       unoptimized
@@ -69,8 +69,8 @@ export function Logo({ className, markClassName, surface = "dark" }: LogoProps) 
       <Image
         src={WORDMARKS[surface]}
         alt=""
-        width={375}
-        height={34}
+        width={369}
+        height={28}
         aria-hidden="true"
         className="h-[9px] w-auto shrink-0 lg:h-[10px]"
         unoptimized
