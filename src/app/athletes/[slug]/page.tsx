@@ -2,7 +2,29 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AthleteProfileView } from "./AthleteProfileView";
 import { getProfileBySlug } from "@/lib/profile-repository";
+import { getUser } from "@/lib/supabase/server";
 import { toAthleteProfileView } from "@/lib/athlete-profile";
+
+/**
+ * Whether the current viewer owns this profile.
+ *
+ * Purely a UI question — whether to offer an edit link. It is not access
+ * control: RLS decides what may actually be read or written, and the link only
+ * points at the onboarding wizard.
+ *
+ * Fails closed. A profile page is public and must keep rendering even if the
+ * auth service is unreachable, so any error means "not the owner" and the link
+ * is simply hidden. An anonymous visitor costs nothing here: with no session
+ * cookie, getUser() resolves locally without a network call.
+ */
+async function viewerOwnsProfile(ownerUserId: string): Promise<boolean> {
+  try {
+    const user = await getUser();
+    return user?.id === ownerUserId;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Real metadata for a real profile. This is the whole point of fetching on the
@@ -56,5 +78,7 @@ export default async function AthleteProfilePage({ params }: PageProps<"/athlete
     notFound();
   }
 
-  return <AthleteProfileView record={record} />;
+  const isOwner = await viewerOwnsProfile(record.ownerUserId);
+
+  return <AthleteProfileView record={record} isOwner={isOwner} />;
 }

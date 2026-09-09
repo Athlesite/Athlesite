@@ -9,6 +9,16 @@ import { ProfileRecruitingNil } from "@/components/profile/ProfileRecruitingNil"
 import { toAthleteProfileView, MIN_HERO_ZOOM } from "@/lib/athlete-profile";
 import type { AthleteProfileRecord } from "@/lib/db-mappers";
 
+type AthleteProfileViewProps = {
+  record: AthleteProfileRecord;
+  /**
+   * Whether the viewer owns this profile. Controls only whether the edit link
+   * is offered — a coach or an anonymous visitor has no use for it. Access
+   * control remains RLS's job, not this flag's.
+   */
+  isOwner: boolean;
+};
+
 /**
  * Renders a real, Supabase-backed athlete profile.
  *
@@ -21,7 +31,7 @@ import type { AthleteProfileRecord } from "@/lib/db-mappers";
  * private bucket and needs a signed URL generated at render time, which lands
  * in checkpoint 5.
  */
-export function AthleteProfileView({ record }: { record: AthleteProfileRecord }) {
+export function AthleteProfileView({ record, isOwner }: AthleteProfileViewProps) {
   const athlete = toAthleteProfileView(record.profile);
 
   return (
@@ -40,16 +50,18 @@ export function AthleteProfileView({ record }: { record: AthleteProfileRecord })
       <ProfileBio bio={athlete.bio} />
       <ProfileHighlights highlights={athlete.highlights} />
       <ProfileRecruitingNil athlete={athlete} />
-      <Section className="text-center">
-        <Container>
-          <Link
-            href="/get-started"
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            Edit your profile →
-          </Link>
-        </Container>
-      </Section>
+      {isOwner ? (
+        <Section className="text-center">
+          <Container>
+            <Link
+              href="/get-started"
+              className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Edit your profile →
+            </Link>
+          </Container>
+        </Section>
+      ) : null}
     </div>
   );
 }

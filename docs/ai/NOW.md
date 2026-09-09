@@ -34,6 +34,16 @@ refreshed these docs. Merged branches have since been deleted.
   Uploading needs the bytes, recoverable via `fetch(objectUrl)` while the blob URL is
   alive, but carrying `file: File` on `PhotoPreview` is the cleaner fix. Deliberately not
   fixed before checkpoint 5.
+- **Search-engine indexing of published profiles is undecided, and the current
+  behaviour is indexable by omission.** `generateMetadata` sets `robots: noindex` only
+  for *unpublished* profiles. A published one carries no directive, so once a domain is
+  live, a high-school athlete's name, school, city, class year and contact details would
+  be indexable by default. `GUARDRAILS.md § Athlete data` notes these are largely minors
+  and says to err toward collecting less — so the current default was arrived at by
+  omission rather than chosen. **This needs a founder decision before any deployment**
+  (see `GUARDRAILS.md § Authority`: publishing and visibility semantics). Nothing is
+  deployed, so nothing is exposed today, and no code has been changed in either
+  direction pending that decision.
 - **Never hardcode an OTP length.** The live project issues 8-digit codes and the length
   is a dashboard setting. The OTP code field must not set `maxLength`.
 - **Save always republishes.** Every successful save writes `is_published = true`, which
@@ -55,6 +65,12 @@ refreshed these docs. Merged branches have since been deleted.
   constraint is the only truthful answer, so collisions surface as a caught `23505`.
   A consequence worth knowing: the "username taken" message does reveal that an
   unpublished slug exists — accepted, as it is inherent to any unique public namespace.
+- **The session proxy fails open, deliberately.** `updateSession` catches any error from
+  the Supabase client and serves the request anyway. It runs on every page, so an
+  unhandled fault there would 500 the whole site including the marketing pages. Failing
+  open is safe only because the proxy makes no authorization decision — the cost is an
+  unrotated token for that request, and RLS still governs every read and write. Do not
+  add authorization logic to the proxy without revisiting this.
 - **Concurrent saves are last-write-wins.** The upsert carries no `updated_at` guard, so
   two tabs saving at once silently overwrite each other with no conflict detection. Fine
   at pilot scale; matters once profiles are edited from phone and laptop.

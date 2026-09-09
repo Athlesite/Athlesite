@@ -16,7 +16,8 @@ import {
  * its owner — there is no filter here to forget, and no way for a caller to opt
  * out of the check (docs/ai/GUARDRAILS.md § Ownership).
  *
- * Writes land in checkpoint 4.
+ * Writes live in profile-save.ts, which is client-side because the session is
+ * established in the browser by the inline OTP flow.
  */
 
 /** Every column, named explicitly so a schema drift surfaces here rather than silently. */

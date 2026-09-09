@@ -43,7 +43,8 @@ export async function createClient() {
  * decisions on the server.
  *
  * Note that this is a convenience for rendering, not an access control layer:
- * ownership is enforced by RLS in the database (docs/ai/GUARDRAILS.md).
+ * ownership is enforced by RLS in the database (docs/ai/GUARDRAILS.md). Its
+ * caller is the profile page, deciding whether to offer the owner an edit link.
  */
 export async function getUser() {
   const supabase = await createClient();
