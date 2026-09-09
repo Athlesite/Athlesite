@@ -44,16 +44,21 @@ link athletes actually send and the record they actually trust.
 
 ## Identity & Slugs
 
-### The slug is the athlete's identity, and it locks at publish
-**Active** · 2026-09-06
-**Decision.** `slug` is globally unique and is the public URL segment. It is editable
-before publishing and locked afterward, enforced at the application layer. There is no
+### The slug is the athlete's identity; it stays changeable during the pilot
+**Active** · 2026-09-07 · supersedes the original "locks at publish" rule
+**Decision.** `slug` is globally unique and is the public URL segment. **During the
+pilot stage an athlete may change it, including after publishing.** Uniqueness is
+enforced by the database, so two athletes can never hold the same slug. There is no
 slug-history or redirect table.
-**Why.** The entire product promise is one shareable link. A link that changes breaks
-every place the athlete has already shared it. Locking at the application layer keeps
-pilot-scale complexity down.
-**Rules out.** Renaming a published slug without a deliberate, designed migration path
-— history table, redirects, or both.
+**Why.** The long-term promise is one durable shareable link, and a changing link breaks
+everywhere it has already been shared. But at pilot scale the likelier failure is an
+athlete permanently stuck with a typo in their identity handle, with no edit path built.
+Correctability matters more than permanence while the product is this young.
+**Rules out.** Relying on a slug being permanent — nothing may cache or hard-code one as
+a stable key. `owner_user_id`, not `slug`, is the durable identifier for a profile.
+**Revisit when.** Real athletes are sharing links at volume. Locking then will need a
+deliberate migration path — a history table, redirects, or both — plus founder sign-off,
+since it changes live public URLs (`GUARDRAILS.md § Authority`).
 
 ### Slug format and reserved names are enforced in the domain layer
 **Active** · 2026-09-06
@@ -91,6 +96,38 @@ migration. The domain is not yet owned — see `NOW.md`.
 schema-level fact rather than an application convention.
 **Rules out.** Multiple profiles per account, or team/agency-managed profiles, without
 a schema change.
+
+### Authentication is required at save, not at wizard entry
+**Active** · 2026-09-07
+**Decision.** An athlete completes the whole onboarding wizard and sees their profile
+preview without an account. Authentication is required only when they save/publish to
+Athlesite. The pre-auth draft stays in browser `localStorage`.
+**Why.** The wedge is proving the profile is worth having; a sign-in wall before anyone
+has seen their own page costs more than it protects. It also derisks email: OTP delivery
+is the least reliable part of the flow right now (`NOW.md`), so no one is stranded on a
+sign-in screen before they have seen any value.
+**Rules out.** Gating `/get-started` behind auth. Also means the wizard must handle a
+mid-flow sign-in without losing draft state.
+
+### Inline numeric email OTP, no callback route
+**Active** · 2026-09-07
+**Decision.** `signInWithOtp({ email })` → the athlete enters the emailed numeric code on
+the same onboarding screen → `verifyOtp({ email, token, type: "email" })` →
+authenticated session established → save/publish continues.
+**Why.** Hero and profile photo `File`/`blob` state lives in React memory during
+onboarding. Navigating away during authentication could destroy that state and cause the
+athlete to lose the photos they just selected.
+**Rules out.** `/auth/callback`, magic-link navigation, or any other auth flow that
+leaves or reloads onboarding mid-flow. Generic Supabase examples use a callback route —
+this project deliberately does not. If a concrete technical blocker makes inline OTP
+impossible, stop and obtain founder approval before changing this decision.
+**Verified.** 2026-09-07, against the live project: send → 8-digit code by email →
+`verifyOtp({ type: "email" })` → `getUser()` confirmed the athlete. Throughout, the URL
+and the component's mount timestamp were unchanged, proving no navigation and no
+remount — so in-memory photo state survives authentication.
+**Token length is not fixed.** The live project issues **8** digits, and the length is a
+dashboard setting that can change without a deploy. Never validate or assume a length,
+in this module or in any UI built on it — most Supabase examples show 6.
 
 ### `auth.uid()` is the sole ownership authority
 **Active** · 2026-09-06
@@ -201,13 +238,18 @@ exactly one answer and one place to audit.
 **Rules out.** Any second visibility mechanism — unlisted links, per-section privacy,
 preview tokens — without redesigning both policies together.
 
-### Auto-publish on first successful save
-**Active** · 2026-09-06
-**Decision.** The first save that creates the row also sets `is_published = true`.
+### Auto-publish on every successful save
+**Active** · 2026-09-07 · widened from "first save" once the real write landed
+**Decision.** Every successful save sets `is_published = true`, not just the first.
 **Why.** At pilot scale the athlete's goal is a shareable link, and a separate publish
-step is one more place to get stuck and end up with nothing to share.
-**Rules out.** Assuming a saved profile is private. Revisit before onboarding athletes
-who need a private draft period.
+step is one more place to get stuck and end up with nothing to share. The only save
+action today is "Save & View My Profile", and nothing can unpublish a profile, so an
+upsert that always publishes matches the product exactly.
+**Rules out.** Assuming a saved profile is private.
+**Revisit when.** Draft/unpublish controls arrive. At that point this becomes a bug:
+editing an intentionally unpublished profile would silently republish it, exposing an
+athlete who had chosen to hide. The write path must then stop forcing the column and
+respect the stored value.
 
 ---
 

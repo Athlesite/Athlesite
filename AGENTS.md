@@ -51,8 +51,10 @@ npx tsc --noEmit  # typecheck (no npm script for this yet)
 - `src/app/` — App Router routes: `/`, `/get-started`, `/athletes/[slug]`
 - `src/components/` — `ui/` `layout/` `marketing/` `onboarding/` `forms/` `profile/`
 - `src/lib/athlete-profile.ts` — **the canonical domain model; start here**
-- `src/lib/onboarding-storage.ts` — current persistence (browser `localStorage`)
-- `supabase/migrations/` — schema, RLS, and Storage policy (on `feature/pilot-persistence`)
+- `src/lib/onboarding-storage.ts` — pre-auth draft cache (browser `localStorage`)
+- `src/lib/supabase/` — Supabase client, server client, and session refresh
+- `proxy.ts` — refreshes the auth session (Next.js 16 renamed `middleware.ts` → `proxy.ts`)
+- `supabase/migrations/` — schema, RLS, and Storage policy
 - `docs/ai/` — durable project context
 
 ## Workflow
