@@ -52,13 +52,13 @@ export function Hero() {
             </p>
 
             <h1 className="mt-[22px] font-display text-[clamp(2.9rem,10vw,4.6rem)] uppercase leading-[1.05] tracking-[-0.005em] xl:text-[88px]">
-              <span className="block bg-linear-to-b from-[#f7f6f2] via-[#f4f3ef] to-[#b9bcc2] bg-clip-text text-transparent">
+              <span className="block bg-linear-to-b from-brand-off-white via-brand-off-white to-brand-silver bg-clip-text text-transparent">
                 Your Name.
               </span>
-              <span className="block bg-linear-to-b from-[#f7f6f2] via-[#f4f3ef] to-[#b9bcc2] bg-clip-text text-transparent">
+              <span className="block bg-linear-to-b from-brand-off-white via-brand-off-white to-brand-silver bg-clip-text text-transparent">
                 Your Game.
               </span>
-              <span className="block bg-linear-to-b from-[#8b97dc] via-[#5968c4] to-[#3c4785] bg-clip-text text-transparent">
+              <span className="block bg-linear-to-b from-accent-light via-accent to-accent-deep bg-clip-text text-transparent">
                 Your Brand.
               </span>
             </h1>
@@ -72,7 +72,7 @@ export function Hero() {
               <Button
                 href="/get-started"
                 shape="rounded"
-                className="h-[46px] px-7 text-[15px] font-semibold shadow-[0_14px_34px_-18px_rgba(89,104,196,0.85)]"
+                className="h-[46px] px-7 text-[15px] font-semibold shadow-[0_14px_34px_-18px_rgba(37,99,235,0.8)]"
               >
                 Create Your Athlesite
               </Button>
@@ -108,7 +108,7 @@ export function Hero() {
                 ))}
               </div>
               <div>
-                <span className="flex gap-[3px] text-highlight" aria-hidden="true">
+                <span className="flex gap-[3px] text-brand-silver" aria-hidden="true">
                   {STARS.map((n) => (
                     <StarGlyph key={n} />
                   ))}

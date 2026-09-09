@@ -40,7 +40,8 @@
   /* Interaction and forward-motion signal */
   --accent: var(--brand-blue);
   --accent-foreground: var(--brand-off-white);
-  --accent-light: #7ca7ff;
+  --accent-light: #69a1ff;
+  --accent-deep: #0b3fbf;
   --accent-subtle: #101c35;
   --accent-electric: var(--brand-blue);
 
@@ -64,6 +65,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-light: var(--accent-light);
+  --color-accent-deep: var(--accent-deep);
   --color-accent-subtle: var(--accent-subtle);
   --color-accent-electric: var(--accent-electric);
   --color-highlight: var(--highlight);

@@ -70,7 +70,7 @@ export function HeroAtmosphere() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(90deg, #090a0c 0%, #090a0c 22%, rgba(9,10,12,0.9) 33%, rgba(9,10,12,0.5) 45%, rgba(9,10,12,0.1) 62%, transparent 76%)",
+            "linear-gradient(90deg, #0b0b0f 0%, #0b0b0f 22%, rgba(11,11,15,0.9) 33%, rgba(11,11,15,0.5) 45%, rgba(11,11,15,0.1) 62%, transparent 76%)",
         }}
       />
       {/* Floodlight bank flaring in from the far side of the stadium */}
@@ -78,13 +78,13 @@ export function HeroAtmosphere() {
         className="absolute right-[1%] top-[10%] h-[360px] w-[520px]"
         style={{
           background:
-            "radial-gradient(closest-side, rgba(236,238,236,0.34), rgba(176,184,206,0.15) 34%, rgba(89,104,196,0.07) 60%, transparent 80%)",
+            "radial-gradient(closest-side, rgba(248,250,252,0.34), rgba(212,215,220,0.15) 34%, rgba(37,99,235,0.08) 60%, transparent 80%)",
         }}
       />
 
       {/* Cobalt bloom from the stadium lights */}
-      <div className="absolute right-[6%] top-[6%] h-[420px] w-[560px] rounded-full bg-[#5968c4]/10 blur-[130px]" />
-      <div className="absolute -bottom-24 left-[38%] h-[380px] w-[620px] rounded-full bg-[#3c4785]/10 blur-[140px]" />
+      <div className="absolute right-[6%] top-[6%] h-[420px] w-[560px] rounded-full bg-brand-blue/10 blur-[130px]" />
+      <div className="absolute -bottom-24 left-[38%] h-[380px] w-[620px] rounded-full bg-accent-deep/10 blur-[140px]" />
     </div>
   );
 }

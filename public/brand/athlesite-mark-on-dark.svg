@@ -1,7 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 105" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 110" role="img" aria-labelledby="title desc">
   <title id="title">Athlesite mark</title>
   <desc id="desc">Angular Athlesite A mark with a cobalt forward-motion stroke.</desc>
-  <path d="M8 94 52 10h16l17 46-18 5-8-23-26 45Z" fill="#F8FAFC"/>
-  <path d="m78 68 18-5 9 31H85Z" fill="#D4D7DC"/>
-  <path d="M9 92c30-14 62-30 106-42-34 14-64 28-92 39Z" fill="#2563EB"/>
+  <path d="M3 106 91 3 80 26 47 70 31 91Z" fill="#D4D7DC"/>
+  <path d="M3 106 91 3 84 19 20 96Z" fill="#F8FAFC"/>
+  <path d="m91 3 12 44-16 6-7-27Z" fill="#F8FAFC"/>
+  <path d="m47 70 33-44 4 15-22 27Z" fill="#AEB6C2"/>
+  <path d="m89 62 20-7 9 47-21-10Z" fill="#D4D7DC"/>
+  <path d="M2 107c54-24 110-52 144-67-40 26-88 52-136 66Z" fill="#0B3FBF"/>
+  <path d="M2 104c55-26 105-51 148-69-41 22-83 44-136 66Z" fill="#2563EB"/>
+  <path d="M23 95c47-21 87-41 118-53-30 18-65 36-101 50Z" fill="#69A1FF"/>
 </svg>

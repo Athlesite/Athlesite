@@ -53,7 +53,7 @@ export function JordanMobileSite() {
         {/* App bar — the one link, stated plainly */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-[16px] py-[8px]">
           <span className="flex items-center gap-[6px]">
-            <LogoMark variant="micro" className="h-[13px]" />
+            <LogoMark variant="micro" className="h-[16px]" />
             <span className="text-[8px] leading-none tracking-[0.06em] text-white/55">
               {exampleAthlete.displayUrl}
             </span>

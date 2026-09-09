@@ -37,10 +37,10 @@ export function LogoMark({
     <Image
       src={src}
       alt=""
-      width={120}
-      height={105}
+      width={150}
+      height={110}
       aria-hidden="true"
-      className={cn("h-8 w-auto shrink-0", className)}
+      className={cn("h-10 w-auto shrink-0", className)}
       unoptimized
     />
   );
@@ -58,14 +58,14 @@ export function Logo({ className, markClassName, surface = "dark" }: LogoProps) 
       href="/"
       aria-label="Athlesite home"
       className={cn(
-        "inline-flex items-center gap-3 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+        "inline-flex items-center gap-3.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background",
         className
       )}
     >
-      <LogoMark surface={surface} className={cn("h-9", markClassName)} />
+      <LogoMark surface={surface} className={markClassName ?? "h-10 lg:h-12"} />
       <span
         className={cn(
-          "text-[1rem] font-medium uppercase leading-none tracking-[0.28em]",
+          "text-[0.98rem] font-semibold uppercase leading-none tracking-[0.34em]",
           surface === "dark" ? "text-brand-off-white" : "text-brand-deep-black"
         )}
       >
