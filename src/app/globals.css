@@ -1,53 +1,59 @@
 @import "tailwindcss";
 
 /*
-  Athlesite design tokens.
+  Athlesite Brand V1 design tokens.
 
   Two deliberately separate layers:
 
-  1. Brand tokens (:root) — the neutral, premium Athlesite identity. Near-black
-     grounds, warm off-white type, hairline borders, and a single restrained
-     indigo accent. Marketing pages and site chrome read these.
+  1. Brand primitives (:root) — the approved identity palette. Components use
+     semantic tokens derived from these primitives rather than raw hex values.
 
   2. Athlete tokens (.athlete-theme, below) — the override surface for a future
      per-athlete theme. Profile content reads those instead, so an athlete can
      eventually carry their own colors without any component changing.
 
-  The accent is intentionally muted: colour is an emphasis tool here, not a
-  surface treatment. One accent moment per view, everything else earns its
-  contrast from photography and typography.
+  Blue is an interaction and forward-motion signal, not a decorative surface
+  treatment. Metallic effects belong to campaigns and brand moments, never
+  routine UI.
 */
 :root {
+  /* Brand V1 primitives */
+  --brand-blue: #2563eb;
+  --brand-deep-black: #0b0b0f;
+  --brand-graphite: #1f2937;
+  --brand-silver: #d4d7dc;
+  --brand-off-white: #f8fafc;
+
   /* Grounds */
-  --background: #090a0c;
-  --surface: #121419;
-  --surface-raised: #1a1d23;
+  --background: var(--brand-deep-black);
+  --surface: #12161d;
+  --surface-raised: #181e28;
 
   /* Ink */
-  --foreground: #f4f3ef;
-  --muted-foreground: #9a9fa8;
+  --foreground: var(--brand-off-white);
+  --muted-foreground: #9ea7b4;
 
   /* Lines */
-  --border: #212429;
-  --border-strong: #2c3037;
+  --border: #252c36;
+  --border-strong: #394352;
 
-  /* Accent — muted indigo / slate blue */
-  --accent: #5968c4;
-  --accent-foreground: #ffffff;
-  --accent-light: #8b97dc;
-  --accent-subtle: #161a26;
-
-  /*
-    Electric cobalt. Reserved for the logo mark and rare, deliberate emphasis —
-    never for headings, borders, glows, or section fills.
-  */
-  --accent-electric: #4a63e8;
+  /* Interaction and forward-motion signal */
+  --accent: var(--brand-blue);
+  --accent-foreground: var(--brand-off-white);
+  --accent-light: #7ca7ff;
+  --accent-subtle: #101c35;
+  --accent-electric: var(--brand-blue);
 
   /* Warm signal colour (ratings, awards). */
   --highlight: #d3ac68;
 }
 
 @theme inline {
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-deep-black: var(--brand-deep-black);
+  --color-brand-graphite: var(--brand-graphite);
+  --color-brand-silver: var(--brand-silver);
+  --color-brand-off-white: var(--brand-off-white);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);

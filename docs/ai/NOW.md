@@ -1,6 +1,6 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-07 · `main` @ `1d2337e`
+Last updated: 2026-09-09 · `main` @ `94994df`
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -13,18 +13,18 @@ refreshed these docs. Merged branches have since been deleted.
 
 | Branch | Commit | State |
 | --- | --- | --- |
-| `main` | `1d2337e` | **Canonical trunk. All product work lives here.** |
-| `claude/phase-b-supabase` | in progress | Phase B — connecting the product to Supabase. |
+| `main` | `94994df` | **Canonical trunk. Phase B profile persistence is merged.** |
+| `willy/brand-v1-foundation` | in progress | Brand V1 assets, tokens, icons, logo component, and header. |
 | `willy/premium-athlete-design` | `e5cec40` | Merged into `main`. Retained — design refinement expected. |
-| `founder/integration-v1` | `05a2b50` | Merged via PR #2. Retained briefly as a PR-head anchor. |
 
 ## In flight
 
-- **Phase B — connecting onboarding/profile to Supabase.** (1) client and session
-  plumbing ✅, (2) mappers + profile read path ✅, (3a) auth plumbing ✅, (3b) inline OTP
-  UI in onboarding ✅, **(4) save/publish upsert — in flight**, (5) media upload and
-  signed URLs.
-- **Supabase Phase A.** Schema is applied and live; the read path uses it.
+- **Brand V1 foundation.** Flat digital marks are on
+  `willy/brand-v1-foundation`; token, icon, logo component, and header integration are
+  being completed there.
+- **Phase B profile persistence is complete on `main`.** Supabase session plumbing,
+  profile reads, inline OTP authentication, save/publish upsert, and collision handling
+  are merged. Media upload and signed URLs remain the next persistence checkpoint.
 
 ## Known follow-ups
 
@@ -122,16 +122,14 @@ host-specific configuration until the founders decide.
 No CI, no PR template, no test framework, no `typecheck` npm script. All four exist in
 `athlesite-ops` and are portable — each as its own change, not bundled with feature work.
 
-Authentication is not wired up yet either; the Supabase client and session plumbing
-landed in Phase B checkpoint 1, but nothing signs in or reads data through it so far.
-
 ## Next
 
-1. Phase B checkpoints 2–5 — mappers and profile reads, email OTP, save/publish, media.
-2. Register a domain, then finish Resend/SMTP and OTP email templates.
+1. Finish Brand V1 foundation and continue homepage refinement from Section 02.
+2. Build media upload and signed/public media delivery on the existing Storage policy.
+3. Resolve the pre-deployment founder decisions below.
 
 ## Blocked on founder
 
 - Pilot definition: how many athletes, by when, and what counts as success.
-- Domain registration — which in turn unblocks Resend/SMTP and OTP templates.
+- Search-engine indexing default for published high-school athlete profiles.
 - Deployment provider.

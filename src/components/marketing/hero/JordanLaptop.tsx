@@ -64,7 +64,7 @@ export function JordanLaptop() {
           {/* Screen content */}
           <div className="absolute left-10 top-[22px] w-[340px]">
             <div className="flex items-center gap-1.5">
-              <LogoMark className="h-[13px]" />
+              <LogoMark variant="micro" className="h-[13px]" />
               <span className="text-[7.5px] font-semibold uppercase leading-none tracking-[0.24em] text-white/80">
                 Athlesite
               </span>

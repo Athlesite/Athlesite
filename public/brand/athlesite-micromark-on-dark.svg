@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 32" role="img" aria-labelledby="title desc">
   <title id="title">Athlesite small-size mark</title>
   <desc id="desc">Simplified Athlesite A mark optimized for favicon and small UI sizes.</desc>
-  <path d="M5 29 16.5 4h5L28 18l-5.2 1.8-3.4-8.8-7.2 16Z" fill="#F6F7F9"/>
-  <path d="m24.2 21 5-1.7L32 29h-5.5Z" fill="#C9CED6"/>
-  <path d="M4.5 28.8c9-4.2 18.5-8.7 31-12.2-9.7 4.2-18.9 8.4-27.2 11.4Z" fill="#2367FF"/>
+  <path d="M5 29 16.5 4h5L28 18l-5.2 1.8-3.4-8.8-7.2 16Z" fill="#F8FAFC"/>
+  <path d="m24.2 21 5-1.7L32 29h-5.5Z" fill="#D4D7DC"/>
+  <path d="M4.5 28.8c9-4.2 18.5-8.7 31-12.2-9.7 4.2-18.9 8.4-27.2 11.4Z" fill="#2563EB"/>
 </svg>

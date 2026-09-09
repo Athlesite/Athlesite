@@ -65,7 +65,7 @@ export function JordanPhone() {
         {/* App bar */}
         <div className="relative flex items-center justify-between px-[13px] pt-[8px]">
           <span className="flex items-center gap-[4px]">
-            <LogoMark className="h-[11px]" />
+            <LogoMark variant="micro" className="h-[11px]" />
             <span className="text-[6px] font-semibold uppercase leading-none tracking-[0.24em] text-white/80">
               Athlesite
             </span>

@@ -316,16 +316,30 @@ preserved byte-for-byte. Homepage and marketing work builds on that direction ra
 than re-deriving one.
 **Why.** It is a founder design decision that has already been made and approved.
 Re-litigating it in code wastes the decision.
-**The direction, now current.** Palette: accent `#5968c4`, electric `#4a63e8`, highlight
-`#d3ac68`, with `--surface-raised` and `--border-strong` added. Display faces: Anton for
-headlines and name-plates, Oswald for stats and eyebrows, both via `next/font/google`
-(no added dependencies). `.athlete-theme` carries a full token set rather than three
-accents.
+**The direction, now current.** The cinematic hero, editorial section hierarchy,
+athlete/device composition, Anton display face, and Oswald condensed face remain the
+approved foundation. The original indigo palette has been superseded for Athlesite
+chrome by Brand V1 below. `.athlete-theme` still carries its own complete token set.
 **Status.** These values are the current approved direction and should be built on
 as-is — but the direction is not permanently finalized. Further visual refinement is
 expected, and is a founder design decision rather than a re-litigation of this entry.
 **Rules out.** Independent homepage restyling, and changing these tokens or the
 marketing components without a founder design decision.
+
+### Brand V1 is the product identity
+**Active** · 2026-09-09
+**Decision.** Athlesite Brand V1 uses the angular silver/off-white A mark with a cobalt
+motion stroke. The product palette primitives are blue `#2563EB`, deep black `#0B0B0F`,
+graphite `#1F2937`, silver `#D4D7DC`, and off-white `#F8FAFC`. Product UI uses the flat
+digital SVG masters in `public/brand/`; metallic texture is reserved for campaigns,
+signage, and other premium brand moments.
+**Implementation.** `src/components/ui/Logo.tsx` is the single component entry point.
+The simplified micromark is used below 24px and for app/browser icons. Semantic UI
+tokens derive from the five primitives in `src/app/globals.css`.
+**Why.** One flat, production-safe master keeps product chrome legible and consistent,
+while reserving the richer metallic treatment for contexts where detail can survive.
+**Rules out.** Recreating the mark ad hoc in components, using metallic texture in
+routine navigation, or introducing a second competing blue/indigo brand system.
 
 ### Athlete visual identity is scoped, not global
 **Active** · 2026-09-06
