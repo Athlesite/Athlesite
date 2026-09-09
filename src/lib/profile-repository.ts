@@ -5,6 +5,7 @@ import {
   type AthleteProfileRecord,
   type AthleteProfileRow,
 } from "@/lib/db-mappers";
+import { ATHLETE_MEDIA_BUCKET } from "@/lib/media-paths";
 
 /**
  * Read access to athlete profiles.
@@ -70,3 +71,38 @@ export const getProfileBySlug = cache(async function getProfileBySlug(
 
   return toAthleteProfileRecord(data as unknown as AthleteProfileRow);
 });
+
+/**
+ * Turns a stored object path into a temporary URL an `<img>` can load.
+ *
+ * The bucket is private, so media is never served directly — a signed URL is
+ * minted per render (docs/ai/GUARDRAILS.md § Storage). Signing is itself
+ * authorised by the Storage read policy, which joins back to
+ * `athlete_profiles.is_published`: an anonymous visitor can only obtain a URL
+ * for a published profile's media, and the athlete can obtain one for their own
+ * either way.
+ *
+ * Returns undefined rather than throwing. A profile page is public and must
+ * keep rendering if Storage is unreachable — the hero simply falls back to its
+ * placeholder, exactly as it does for an athlete who never uploaded a photo.
+ *
+ * Note that a signed URL, once issued, is bearer access for its lifetime: it
+ * bypasses RLS until it expires. The window is deliberately short.
+ */
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+export async function signMediaUrl(path: string | null): Promise<string | undefined> {
+  if (!path) return undefined;
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.storage
+      .from(ATHLETE_MEDIA_BUCKET)
+      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+
+    if (error || !data?.signedUrl) return undefined;
+    return data.signedUrl;
+  } catch {
+    return undefined;
+  }
+}

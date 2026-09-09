@@ -17,6 +17,12 @@ type AthleteProfileViewProps = {
    * control remains RLS's job, not this flag's.
    */
   isOwner: boolean;
+  /**
+   * Signed, short-lived URL for the hero photo. Undefined when the athlete has
+   * no photo, or when signing failed — both fall back to the placeholder rather
+   * than breaking a public page.
+   */
+  heroPhotoUrl?: string;
 };
 
 /**
@@ -27,11 +33,14 @@ type AthleteProfileViewProps = {
  * lookup — the data arrives already fetched. The visual composition is
  * unchanged from the previous localStorage-backed version.
  *
- * Hero photo rendering stays on the placeholder path for now: media lives in a
- * private bucket and needs a signed URL generated at render time, which lands
- * in checkpoint 5.
+ * The hero photo arrives as a signed URL minted by the page: the bucket is
+ * private, so media is never served directly.
  */
-export function AthleteProfileView({ record, isOwner }: AthleteProfileViewProps) {
+export function AthleteProfileView({
+  record,
+  isOwner,
+  heroPhotoUrl,
+}: AthleteProfileViewProps) {
   const athlete = toAthleteProfileView(record.profile);
 
   return (
@@ -41,6 +50,7 @@ export function AthleteProfileView({ record, isOwner }: AthleteProfileViewProps)
       )}
       <ProfileHero
         athlete={athlete}
+        photoUrl={heroPhotoUrl}
         photoPosition={{
           x: record.profile.heroPhotoPositionX,
           y: record.profile.heroPhotoPositionY,

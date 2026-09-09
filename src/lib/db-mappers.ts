@@ -161,11 +161,10 @@ export function toAthleteProfileRecord(row: AthleteProfileRow): AthleteProfileRe
  * AthleteProfileRow:
  *
  * - `id`, `created_at`, `updated_at` are the database's to manage.
- * - `hero_photo_path` / `profile_photo_path` are **omitted, not null**. PostgREST
- *   only writes columns present in the payload, so leaving them out means an
- *   insert takes the null default while a later update preserves whatever the
- *   media upload wrote. Sending them as null would silently wipe an athlete's
- *   photos on their next save.
+ * - `hero_photo_path` / `profile_photo_path` are present only when the media
+ *   actually changed. PostgREST writes only the columns in the payload, so
+ *   omitting them preserves whatever the athlete already had. Sending null
+ *   unconditionally would wipe their photos on the next save.
  */
 export type AthleteProfileWriteRow = {
   owner_user_id: string;
@@ -198,6 +197,27 @@ export type AthleteProfileWriteRow = {
   nil_contact: string;
   nil_interests: string;
   is_published: boolean;
+  hero_photo_path?: string | null;
+  profile_photo_path?: string | null;
+};
+
+/**
+ * Three-state media instruction, one entry per slot:
+ *
+ * - **absent / undefined** — preserve whatever is stored. The column is left out
+ *   of the payload entirely.
+ * - **a path string** — the athlete uploaded a replacement; point at it.
+ * - **null** — deliberately clear the photo.
+ *
+ * Onboarding never produces `null` today. It cannot distinguish "removed this
+ * photo" from "never picked one", because the wizard does not load an existing
+ * profile's media — so treating an empty slot as a clear would delete a
+ * returning athlete's photo. `null` is reserved for a future edit flow that
+ * knows what was there to begin with.
+ */
+export type MediaPathUpdate = {
+  heroPhotoPath?: string | null;
+  profilePhotoPath?: string | null;
 };
 
 /**
@@ -217,9 +237,10 @@ export type AthleteProfileWriteRow = {
  */
 export function toAthleteProfileRow(
   profile: AthleteProfileData,
-  ownerUserId: string
+  ownerUserId: string,
+  media: MediaPathUpdate = {}
 ): AthleteProfileWriteRow {
-  return {
+  const row: AthleteProfileWriteRow = {
     owner_user_id: ownerUserId,
     slug: profile.slug,
     first_name: profile.firstName,
@@ -259,4 +280,16 @@ export function toAthleteProfileRow(
 
     is_published: true,
   };
+
+  // Only touch a media column when the caller actually has an instruction for
+  // it. `undefined` means "leave whatever is stored alone", which is different
+  // from `null` meaning "clear it".
+  if (media.heroPhotoPath !== undefined) {
+    row.hero_photo_path = media.heroPhotoPath;
+  }
+  if (media.profilePhotoPath !== undefined) {
+    row.profile_photo_path = media.profilePhotoPath;
+  }
+
+  return row;
 }

@@ -86,7 +86,9 @@ export function OnboardingWizard() {
   }, [actionPhoto]);
 
   function selectPhoto(file: File | null, setter: (value: PhotoPreview) => void) {
-    setter(file ? { fileName: file.name, objectUrl: URL.createObjectURL(file) } : null);
+    // The File itself is kept, not just its name — the bytes are what gets
+    // uploaded to Storage at save time.
+    setter(file ? { file, fileName: file.name, objectUrl: URL.createObjectURL(file) } : null);
   }
 
   function goNext() {
@@ -108,9 +110,17 @@ export function OnboardingWizard() {
    * The local draft is deliberately left in place: it is the athlete's
    * work-in-progress copy, and there is no edit flow yet that would reload
    * their saved profile instead.
+   *
+   * Photos are passed only when the athlete picked one this session. An empty
+   * slot means "leave whatever is stored alone", not "remove it" — the wizard
+   * cannot tell a removal from a fresh start, because it never loads an
+   * existing profile's media.
    */
   async function handleSaveAndComplete(): Promise<SaveProfileResult> {
-    const result = await saveProfile(profile);
+    const result = await saveProfile(profile, {
+      hero: actionPhoto?.file ?? null,
+      profile: profilePhoto?.file ?? null,
+    });
 
     if (result.ok) {
       router.push(`/athletes/${result.slug}`);
