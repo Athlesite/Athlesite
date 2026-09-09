@@ -12,7 +12,7 @@ export const navLinks = [
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/82 backdrop-blur-2xl">
+    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-2xl">
       <Container
         size="wide"
         className="grid h-16 grid-cols-[auto_1fr_auto] items-center gap-6 lg:h-[88px]"
