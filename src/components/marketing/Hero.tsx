@@ -60,9 +60,9 @@ export function Hero() {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-[500px] text-[15px] leading-[1.72] text-white/72 sm:text-[17px]">
+            <p className="mt-7 max-w-[510px] text-[15px] leading-[1.72] text-white/82 sm:text-[17px]">
               Your story, highlights, recruiting profile, and personal brand — together in one
-              professional home built around you.
+              professional athlete website built around you.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-4">
@@ -79,8 +79,8 @@ export function Hero() {
                 className="group inline-flex items-center gap-3.5 rounded-full text-[15px] font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <span className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border border-border-strong text-foreground/80 transition-colors group-hover:border-accent group-hover:text-accent-light">
-                  <svg width="10" height="12" viewBox="0 0 10 12" fill="none" aria-hidden="true">
-                    <path d="M1 1.1 9 6l-8 4.9z" fill="currentColor" />
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <path d="M2.25 6.5h8.5M7.5 3.25 10.75 6.5 7.5 9.75" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 Explore a Profile
