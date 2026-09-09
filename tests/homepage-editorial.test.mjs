@@ -32,10 +32,10 @@ test("media is local and motion has explicit reduced-motion and visibility fallb
   for (const file of ["football-night.jpg", "football-team.jpg", "football-detail.jpg"]) assert.ok(existsSync(`public/marketing/editorial/${file}`));
   assert.ok(css.includes("prefers-reduced-motion: reduce"));
   assert.ok(!css.includes("opacity: 0;"));
-  const reveal = readFileSync("src/components/marketing/editorial/Reveal.tsx", "utf8");
+  const reveal = readFileSync("src/components/marketing/editorial/motion.ts", "utf8");
   assert.ok(reveal.includes("reduced.matches"));
   assert.ok(reveal.includes("observer.disconnect()"));
-  assert.ok(reveal.includes("animation?.cancel()"));
+  assert.ok(reveal.includes("animation.cancel()"));
 });
 
 test("brand, global styling, shared chrome, product routes and backend are unchanged", () => {

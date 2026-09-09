@@ -1,0 +1,82 @@
+/* Dimensions are relative to each device, not the viewport. Both share one profile. */
+.phone { width: 252px; max-width: 100%; aspect-ratio: 252 / 534; container-type: inline-size; }
+.phoneHardware { height: 100%; padding: 5px; position: relative; border: 1px solid #a3a8b0; border-radius: 40px; background: linear-gradient(115deg, #92979e, #34383e 12%, #0c0e12 55%, #69717d); box-shadow: 0 28px 58px #0009, 0 0 0 1px #20252c; }
+.screen { position: relative; overflow: hidden; color: #f8fafc; background: #0a101c; }
+.phone .screen { height: 100%; display: grid; grid-template-rows: 34px minmax(0, 1fr) 47px; border-radius: 34px; border: 2px solid #040608; }
+.volume, .power { position: absolute; width: 3px; background: linear-gradient(#737982, #2f343b); border-radius: 2px; }
+.volume { left: -4px; top: 102px; height: 54px; }
+.power { right: -4px; top: 133px; height: 55px; }
+.status { display: flex; align-items: center; justify-content: space-between; position: relative; padding: 6px 18px 0; background: #080c13; font-size: 9px; font-weight: 600; }
+.island { position: absolute; left: calc(50% - 34px); top: 6px; width: 68px; height: 20px; border-radius: 12px; background: #000; }
+.island::after { content: ""; position: absolute; top: 7px; right: 8px; width: 5px; height: 5px; border-radius: 50%; background: #11203a; box-shadow: inset 0 0 1px #849ec5; }
+.profile { min-height: 0; overflow: hidden; font-family: var(--font-geist-sans), Arial, sans-serif; font-size: 10px; line-height: 1.4; }
+.profileNav { height: 30px; padding: 5px 14px; display: flex; align-items: center; justify-content: space-between; background: #0c1320; }
+.miniMark { height: 19px; width: auto; }
+.profileNav > span { color: #c4d0e4; font-size: 6px; letter-spacing: .12em; }
+.cover { position: relative; height: 172px; overflow: hidden; background: #173b29; }
+.cover > img { object-fit: cover; object-position: 28% 62%; filter: saturate(1.08) contrast(1.04); }
+.cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, #08101a 0%, #08101abd 30%, transparent 75%); }
+.sampleTag { position: absolute; z-index: 1; top: 10px; right: 10px; padding: 3px 5px; background: #07101ed9; color: #e7edf7; font: 6px var(--font-geist-mono), monospace; letter-spacing: .06em; border: 1px solid #b7d7ff3d; border-radius: 3px; }
+.identity { position: absolute; z-index: 1; inset: auto 14px 13px; }
+.sport { display: block; color: #a9ceff; font-size: 7px; letter-spacing: .08em; text-transform: uppercase; }
+.name { font-family: var(--font-anton), Impact, sans-serif; font-size: 37px; font-weight: 400; line-height: 1.16; text-transform: uppercase; margin-top: 5px; }
+.location { color: #e0e8f5; font-size: 7px; margin-top: 4px; }
+.facts { display: flex; justify-content: space-between; align-items: center; gap: 5px; min-height: 31px; padding: 8px 14px; border-bottom: 1px solid #314363; background: #132443; font-size: 6.5px; color: #e0ebff; }
+.facts > span:last-child { display: flex; align-items: center; gap: 4px; }
+.facts i { display: block; width: 3px; height: 3px; background: #9ac8ff; border-radius: 50%; }
+.content { padding: 13px 14px; }
+.label { display: block; color: #a9ceff; font-family: var(--font-geist-mono), monospace; font-size: 6px; letter-spacing: .09em; }
+.about p { margin-top: 5px; color: #c3cfe0; font-size: 7px; line-height: 1.65; }
+.media { margin-top: 12px; }
+.mediaCard { display: flex; align-items: center; gap: 8px; margin-top: 7px; overflow: hidden; background: #172740; border: 1px solid #385174; border-radius: 6px; }
+.thumbnail { position: relative; width: 44px; height: 38px; flex: none; }
+.thumbnail > img { object-fit: cover; object-position: 38% 70%; }
+.mediaCard b { display: block; font-size: 8px; font-weight: 600; }
+.mediaCard small { display: block; margin-top: 3px; color: #b0c3dd; font-size: 5.5px; }
+.mediaArrow { margin-left: auto; padding-right: 8px; font-size: 14px; color: #94beff; }
+.mediaLink { display: flex; justify-content: space-between; padding-top: 8px; color: #bdcde2; font-size: 7px; }
+.safari { display: flex; flex-direction: column; justify-content: space-between; padding: 5px 14px 4px; background: #182332; border-top: 1px solid #354051; }
+.safariAddress { display: flex; justify-content: space-between; align-items: center; height: 23px; border-radius: 7px; background: #293647; color: #e1e8f3; padding: 5px 9px; font-size: 8px; }
+.safari > i { height: 3px; width: 78px; border-radius: 5px; background: #e2e8ef; align-self: center; }
+
+/* A real 16:10 screen, a distinct browser bar, camera bezel and aluminium deck. */
+.laptop { width: 100%; container-type: inline-size; filter: drop-shadow(0 25px 24px #0006); }
+.laptopPanel { position: relative; width: 94%; margin-inline: auto; padding: 2.4cqw 1.2cqw 1.3cqw; background: linear-gradient(120deg, #747c87, #212630 6%, #11151c 88%, #79818b); border: 1px solid #7c8695; border-radius: 2.2cqw 2.2cqw .6cqw .6cqw; }
+.webcam { position: absolute; width: .65cqw; height: .65cqw; min-width: 3px; min-height: 3px; border-radius: 50%; background: #182b46; left: calc(50% - .325cqw); top: .7cqw; box-shadow: 0 0 0 1px #06090e; }
+.laptop .screen { aspect-ratio: 16 / 10; display: grid; grid-template-rows: 4.3cqw minmax(0, 1fr); border: 1px solid #090d14; border-radius: .6cqw; }
+.browser { display: flex; justify-content: space-between; align-items: center; gap: 4cqw; background: #1e2838; border-bottom: 1px solid #3c4e66; padding: .6cqw 1.6cqw; font-size: 1.2cqw; }
+.windowDots { display: flex; gap: .6cqw; }
+.windowDots i { width: .75cqw; height: .75cqw; border-radius: 50%; background: #8d9caf; }
+.windowDots i:first-child { background: #eb796f; }.windowDots i:nth-child(2) { background: #d9b263; }.windowDots i:last-child { background: #74b88c; }
+.address { text-align: center; padding: .4cqw 3cqw; border-radius: .6cqw; background: #101b2b; color: #cedaeb; font-size: 1.05cqw; }
+.laptop .profile { font-size: 1.3cqw; }
+.laptop .profileNav { height: 4.5cqw; padding: .6cqw 3.5cqw; }
+.laptop .miniMark { height: 2.7cqw; }.laptop .profileNav > span { font-size: .85cqw; }
+.laptop .cover { height: 24.5cqw; }
+.laptop .cover > img { object-position: 40% 58%; }
+.laptop .identity { inset: auto 3.5cqw 2cqw; }
+.laptop .sport { font-size: 1cqw; }
+.laptop .name { font-size: 6.4cqw; margin-top: .7cqw; }
+.laptop .location { font-size: 1.1cqw; margin-top: .7cqw; }
+.laptop .sampleTag { top: 1.4cqw; right: 1.8cqw; font-size: .8cqw; padding: .4cqw .7cqw; }
+.laptop .facts { min-height: 0; padding: 1.5cqw 3.5cqw; font-size: 1.05cqw; justify-content: start; gap: 4cqw; }
+.laptop .facts i { width: .45cqw; height: .45cqw; }
+.laptop .content { display: grid; grid-template-columns: 1fr 1fr; gap: 4cqw; padding: 2cqw 3.5cqw; }
+.laptop .label { font-size: .9cqw; }
+.laptop .about p { font-size: 1.13cqw; margin-top: 1cqw; line-height: 1.7; }
+.laptop .media { margin-top: 0; }
+.laptop .mediaCard { margin-top: 1cqw; gap: 1.3cqw; border-radius: .8cqw; }
+.laptop .thumbnail { width: 8cqw; height: 7cqw; }
+.laptop .mediaCard b { font-size: 1.25cqw; }.laptop .mediaCard small { font-size: .85cqw; margin-top: .6cqw; }
+.laptop .mediaArrow { padding-right: 1cqw; font-size: 2cqw; }
+.laptop .mediaLink { font-size: 1.05cqw; padding-top: 1cqw; }
+.deck { position: relative; height: 2.1cqw; background: linear-gradient(#bcc3cc, #727d8b 46%, #303946); border: 1px solid #838e9d; border-radius: .3cqw .3cqw 3cqw 3cqw; }
+.deck > span { position: absolute; width: 15%; height: .65cqw; top: 0; left: 42.5%; border-radius: 0 0 1cqw 1cqw; background: #5a6575; box-shadow: inset 0 -1px 1px #cbd2dd55; }
+@media (min-width: 601px) and (max-width: 800px) {
+  .phone { width: 224px; }
+  .phoneHardware { border-radius: 36px; }.phone .screen { border-radius: 30px; grid-template-rows: 31px minmax(0, 1fr) 43px; }
+  .phone .cover { height: 144px; }.phone .profileNav { height: 27px; }
+  .phone .name { font-size: 32px; }.phone .identity { inset-inline: 12px; }
+  .phone .content { padding: 10px 12px; }.phone .about p { font-size: 6.5px; }
+  .phone .media { margin-top: 8px; }.phone .mediaLink { display: none; }
+}

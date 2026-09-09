@@ -2,7 +2,8 @@
 
 Downloaded 2026-09-09 for CW's isolated homepage design review. These are real
 sports photographs, not AI-generated athlete likenesses. CSS presentation uses
-grayscale and controlled brightness; source image bytes are otherwise unchanged.
+natural color with modest contrast/saturation and localized text scrims; source
+image bytes are unchanged. Profile photography and media tiles share this treatment.
 
 | File | Photographer | Source |
 | --- | --- | --- |

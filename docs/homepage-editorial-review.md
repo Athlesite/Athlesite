@@ -27,6 +27,23 @@ the founder-approved reference artwork used by `Logo.tsx`. No brand file changes
 - New homepage loaded from `src/app/page.tsx`. Old marketing components remain for
   comparison and rollback; they are not rendered by this homepage.
 
+## CW refinement — 2026-09-09
+
+- Main and closing CTAs now use the shared header button's exact 10 px radius.
+- Full-color photography replaces grayscale across the hero, profile previews and
+  editorial examples. Modest contrast/saturation retains natural skin/field colors;
+  localized gradients protect text. Original photos and brand artwork are unchanged.
+- Section 01 uses a cobalt-lit stage and a consistent 16:10 laptop screen. Browser,
+  camera, bezel and deck proportions scale with the device container instead of
+  switching between unrelated fixed screen heights at breakpoints.
+- The phone has a 252:534 shell, dedicated status and browser rows, a larger photo
+  and name, and consistent profile content shared with the laptop. Media placements
+  remain explicitly illustrative; the live profile route has not been redesigned.
+- Section imagery enters over 800 ms; text over 680 ms. Desktop cards stagger by
+  90 ms, capped at 180 ms. Mobile uses vertical movement with no stagger delay.
+- `motion.ts` drives both the Next homepage and downloadable HTML. Native scrolling,
+  stable initial viewport, no-JS visibility and reduced-motion cancellation remain.
+
 ## Important limits
 
 - Device content is a *design illustration*, not a screenshot of a shipped profile.
@@ -36,16 +53,18 @@ the founder-approved reference artwork used by `Logo.tsx`. No brand file changes
 - The shared browser blocked both localhost and local-file navigation. No browser
   workaround was attempted after that explicit policy rejection. Visual browser QA
   is **pending**; a successful build is not visual approval.
-- The offline HTML handoff is a static layout preview with native disclosures. It
-  does not contain Next.js hydration, the mobile menu, or scroll entrance animations.
+- The offline HTML handoff includes section entrance motion and native disclosures.
+  It does not contain Next.js hydration or the mobile menu. App-only links are disabled.
+  Open the running app to review signup, actual athlete pages and shared navigation.
 - Main has subsequent product/security work. Integrate through review, not by
   replacing main or merging old product state wholesale.
 
 ## Motion and responsiveness
 
 - Existing Anton / Geist / Oswald font setup unchanged.
-- Entrance enhancement: 480 ms, 16 px, once, using Web Animations + IntersectionObserver.
-  Content is visible without JS. Reduced motion skips/cancels animations.
+- Entrances use Web Animations + one IntersectionObserver, once per element. Text
+  travels 26–28 px; images travel 36 px and settle from .975 scale. Content is visible
+  without JS. Reduced motion skips/cancels animations, including preference changes.
 - Button transitions: 180 ms; photo hover: 500 ms, 1.035 scale, pointer devices only.
 - No new animation dependency, custom cursor, video autoplay, or scroll hijacking.
 - Desktop bounded hero; at <=600 px text and phone stack without horizontal scaling.
@@ -55,13 +74,16 @@ the founder-approved reference artwork used by `Logo.tsx`. No brand file changes
 ## Validation and acceptance
 
 Run `npm run lint`, `npm run build`, and `npx tsc --noEmit` before committing.
-Also run `node --test tests/homepage-editorial.test.mjs` after a production build.
+Also run `node --test tests/homepage*.test.mjs` after a production build.
+Export with `node scripts/export-homepage-preview.mjs /absolute/path/preview.html`.
 
 Completed in this review: ESLint PASS, production build PASS, TypeScript PASS,
-all 6 structural tests PASS, and `git diff --check` PASS. The standalone layout
-preview embeds its photographs, CSS, and fonts and contains no app scripts or
-unresolved `/_next/` resource paths. This is byte/structure verification, not a
-browser rendering test.
+6 structural tests and 4 motion lifecycle tests PASS, and `git diff --check` PASS.
+The standalone preview embeds photographs, CSS, fonts and the shared motion
+controller; it contains no Next app scripts or unresolved `/_next/` resource paths.
+Motion tests cover once-only entry, stable initial content, mobile behavior, delay
+limits, reduced-motion changes, cleanup and unsupported-browser fallback. These
+are unit/structure checks, not browser rendering or timing verification.
 
 Before design approval, inspect at 390×844, 768×1024, 1366×768, and 1440×900:
 
