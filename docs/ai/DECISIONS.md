@@ -231,6 +231,61 @@ pilot.
 convention. That comment is not enforced by any policy, and applied migrations are not
 edited (`GUARDRAILS.md § Migrations`), so this entry is the current source of truth.
 
+### Athlete photos are re-encoded in the browser to strip identifying metadata
+**Active** · 2026-09-09
+**Decision.** Every photo is decoded and re-encoded before upload. Done in the browser
+with `createImageBitmap` and a canvas — no image library. Format preservation is
+**best-effort** (see below), transparency survives, the long edge is capped at 2400px
+without ever upscaling, and JPEG/WebP encode at quality 0.92.
+**What is guaranteed.** No identifying metadata from the source file reaches Storage:
+GPS and location, device make and model, capturing software, original orientation
+metadata, timestamps, and XMP/IPTC-style source blocks. Re-encoding achieves this by
+construction — pixels are the only thing carried across — so there is no format edge
+case where a field survives.
+**What is not claimed.** Not that every browser emits a file with literally zero
+metadata segments. The *encoder* may write its own. Chrome produces none on PNG and
+WebP and attaches an sRGB ICC profile to JPEG; Safari emits a 76-byte EXIF APP1 holding
+a single structural `ExifOffset` pointer to an empty sub-IFD, plus a 56-byte Photoshop
+`8BIM` document-ID placeholder. Both were inspected byte by byte and contain **no
+identifying, location, device, or timestamp data** — they are empty shells the encoder
+creates, not source data that survived. The guarantee is about what is *removed*, not
+about the absence of segments.
+**Why.** Camera and phone images routinely embed GPS coordinates. Athlete profiles are
+public and largely belong to minors, so a photo must not carry where it was taken.
+**Why in the browser.** The original bytes never leave the athlete's device. Stripping
+server-side would mean transmitting and storing the coordinates first, which is the
+opposite of the goal.
+**Orientation is baked in first.** `imageOrientation: "from-image"` is passed
+explicitly. Browsers rotate photos at render time using the EXIF Orientation tag, so
+removing EXIF without first applying it would leave portrait phone photos displaying
+sideways. **Verified on both engines**, which is the check that mattered most: an
+`Orientation=6` source stored as 1800×1200 pixels comes out 1200×1800 in Chrome and in
+real iOS Safari, with GPS, device, and timestamp fields gone in both.
+**The size cap is not only about payload.** Canvas has hard pixel-area limits — Safari's
+is the tightest — and an ordinary 48-megapixel phone photo would otherwise fail to
+decode at all. 2400px keeps every input inside them.
+**Format preservation is best-effort, not guaranteed.** The same MIME type is always
+requested, but a browser that cannot encode it silently substitutes another — most often
+PNG in place of WebP. A substitute is accepted only when it is itself one of
+`image/jpeg`, `image/png`, or `image/webp`, and the *actual* output type then drives both
+the path extension and the stored `contentType`, so those always describe the real bytes.
+The substituted file is revalidated for size like any other. Anything outside those three
+types is a failure.
+**Rules out.** Uploading the original as a fallback when processing fails, or when a
+format cannot be preserved. That would defeat the purpose exactly when it matters, so a
+failure abandons the upload with a readable error instead.
+**Limits, accepted.** This is a product guarantee, not an enforced invariant: an
+athlete's session may write to their own Storage folder, so a determined user could
+bypass the app entirely. The threat model is accidental self-disclosure, not deliberate
+self-exposure. Real enforcement would need an Edge Function or storage trigger.
+Re-encoding also normalises colour-profile metadata rather than simply preserving it:
+the browser decides. Chrome was observed emitting a 456-byte sRGB ICC profile on the
+output, so a profile may be replaced rather than dropped, and other engines may drop it
+outright. Either way the practical implication is the same — a wide-gamut photo is
+converted to sRGB and may shift slightly. An accepted pilot trade-off unless testing
+shows it matters. And one generation of JPEG loss is unavoidable when metadata is
+removed this way.
+
 ### Bucket-level MIME and size limits as a second layer
 **Active** · 2026-09-06
 **Decision.** 5 MB and `image/jpeg|png|webp` are enforced on the bucket, in addition to

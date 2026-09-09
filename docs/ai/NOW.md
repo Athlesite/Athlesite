@@ -33,12 +33,44 @@ refreshed these docs. Merged branches have since been deleted.
   object in the athlete's own folder. Deliberate — it is the cost of never mutating a
   published profile's photo before the write that authorises it. Invisible to everyone;
   worth a cleanup pass eventually, not urgent.
-- **Athlete uploads keep their EXIF metadata, GPS included.** Nothing strips it: the
-  original `File` is uploaded byte-for-byte. Camera and phone JPEGs routinely carry
-  location, timestamp, and device data, and a Checkpoint 5 test upload was confirmed to
-  carry an EXIF `APP1` segment. These are largely minors' photos served from a public
-  page, so this compounds with the undecided indexing question below. **Strip metadata
-  before pilot or public launch.**
+- **Metadata stripping is client-side only, so it is a product guarantee rather than an
+  enforced one.** Photos are re-encoded in the browser before upload, which removes every
+  identifying field from the source — GPS/location, device make and model, capturing
+  software, original orientation metadata, timestamps, and XMP/IPTC-style blocks (see
+  `DECISIONS.md § Media & Storage`). Note this is not a claim that the output contains no
+  metadata segments at all: Safari writes back a minimal structural EXIF/Photoshop shell,
+  verified byte by byte to hold no identifying, location, or device data. But an athlete's
+  session may write
+  to their own Storage folder, so a determined user could bypass the app and upload an
+  untouched file. Acceptable for the pilot — the threat model is a teenager who does not
+  know their camera records coordinates, not one deliberately publishing them. Enforcing
+  it would need an Edge Function or storage trigger.
+- **iOS Safari orientation is validated on a real device — this is no longer an open
+  risk.** A source of 1800×1200 stored pixels tagged `Orientation=6` came back **1200×1800**
+  from real iPhone Safari, matching Chrome. GPS gone, XMP gone, no device/timestamp/
+  location data, versioned path and Storage lifecycle intact (new UUID object, superseded
+  object deleted, 2 objects, 0 orphans). Both engines honour
+  `imageOrientation: "from-image"`, so no EXIF-parsing fallback is needed.
+- **Re-encoding normalises colour-profile metadata; it does not preserve it.** What
+  happens is browser-dependent: Chrome was observed attaching a 456-byte sRGB ICC profile
+  to the output, so a profile can be replaced rather than dropped, and another engine may
+  drop it entirely. Either way a wide-gamut photo ends up as sRGB and may shift slightly.
+  Accepted for the pilot unless testing shows it is noticeable; worth re-checking on
+  Safari, which has not been tested.
+- **Onboarding server-renders a blank `<main>` until hydration finishes.** The wizard is
+  gated behind a `hydrated` flag so the server and first client render agree before
+  `localStorage` is read, which means `/get-started` ships an essentially empty page —
+  header and footer only — until JavaScript loads and runs. Anything that delays or
+  prevents that (a slow phone connection, a failed chunk, a JS error) leaves an athlete
+  staring at a blank screen with no message. Observed for real when `next dev` 403'd its
+  own chunks over a LAN IP. **Replace with a useful static or welcome state before
+  pilot** — the Welcome step's copy is static and could be server-rendered, with the
+  hydration gate kept only for the draft-restored case.
+- **The Welcome-step copy is stale and now untrue.** It still tells athletes their data
+  is "stored only on this device and browser" with "no account or backend behind it".
+  Both stopped being true at checkpoint 4: profiles are saved to Supabase under a real
+  authenticated account and are publicly readable once published. **Must be corrected
+  before any athlete sees it** — it currently misstates where their data goes.
 - **There is no Edit Profile flow, and three problems trace back to that.** The wizard
   never loads an existing profile, so a returning athlete cannot see what media they
   already have, both photo fields read "Choose photo" rather than "Replace photo", and
@@ -50,8 +82,11 @@ refreshed these docs. Merged branches have since been deleted.
   Checkpoint 5 upload through onboarding was a JPEG. PNGs were uploaded directly via the
   Storage API during policy testing, so the bucket accepts them, but the app's
   `EXTENSION_BY_TYPE` mapping for `png`/`webp` and the tightened `accept` filter remain
-  unexercised end to end. Low risk — extensions are cosmetic under versioned paths — but
-  recorded as untested rather than assumed working.
+  unexercised end to end. **Now higher stakes than before:** format preservation through
+  re-encoding is *best-effort* — a browser that cannot encode the requested type
+  substitutes another, and the substitute is accepted when it is still one the bucket
+  allows. Which formats actually round-trip therefore needs a real product-path run
+  rather than an assumption.
 - **Search-engine indexing of published profiles is undecided, and the current
   behaviour is indexable by omission.** `generateMetadata` sets `robots: noindex` only
   for *unpublished* profiles. A published one carries no directive, so once a domain is

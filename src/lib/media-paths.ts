@@ -47,6 +47,35 @@ export function validatePhoto(file: File): PhotoValidation {
 }
 
 /**
+ * A random v4 UUID, without requiring a secure context.
+ *
+ * `crypto.randomUUID()` is specified `[SecureContext]`, so it exists only over
+ * HTTPS or on localhost. Serving the app over plain HTTP — a LAN IP for device
+ * testing, or an internal preview host — leaves it `undefined`, and calling it
+ * threw a TypeError from the middle of the upload path.
+ *
+ * The fallback draws the same 122 bits of entropy from
+ * `crypto.getRandomValues()`, which carries no secure-context requirement, and
+ * formats them per RFC 4122: version nibble 4, variant bits 10xx. Collision
+ * resistance is identical — only the convenience wrapper differs. There is
+ * deliberately no `Math.random()` path; if neither CSPRNG is available the
+ * caller should fail rather than mint a guessable object path.
+ */
+export function randomId(): string {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10xx
+
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/**
  * Builds a fresh object path for an upload: `{uid}/{slot}/{uuid}.{ext}`.
  *
  * Every upload gets a new UUID, so an upload can never overwrite the object a
@@ -62,5 +91,5 @@ export function validatePhoto(file: File): PhotoValidation {
  */
 export function buildMediaPath(ownerUserId: string, slot: MediaSlot, mimeType: string): string {
   const extension = EXTENSION_BY_TYPE[mimeType] ?? "bin";
-  return `${ownerUserId}/${slot}/${crypto.randomUUID()}.${extension}`;
+  return `${ownerUserId}/${slot}/${randomId()}.${extension}`;
 }
