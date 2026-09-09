@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { cn } from "@/lib/cn";
 
 type UsernameFieldProps = {
@@ -9,11 +9,35 @@ type UsernameFieldProps = {
   error?: string;
   hint?: string;
   className?: string;
+  /**
+   * Pull the athlete's attention here. Used when a save is rejected because the
+   * username is taken and they have been sent back to fix it — landing on the
+   * step is not enough if the field is below the fold.
+   */
+  focusOnMount?: boolean;
 };
 
-export function UsernameField({ value, onChange, error, hint, className }: UsernameFieldProps) {
+export function UsernameField({
+  value,
+  onChange,
+  error,
+  hint,
+  className,
+  focusOnMount,
+}: UsernameFieldProps) {
   const id = useId();
   const noteId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!focusOnMount) return;
+    const input = inputRef.current;
+    if (!input) return;
+    // Focus without the browser's own abrupt jump, then bring the field into
+    // view deliberately.
+    input.focus({ preventScroll: true });
+    input.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusOnMount]);
 
   return (
     <div className={className}>
@@ -32,6 +56,7 @@ export function UsernameField({ value, onChange, error, hint, className }: Usern
         <span className="pl-4 font-mono text-sm text-muted-foreground">athlesite.com/</span>
         <input
           id={id}
+          ref={inputRef}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="yourname"
