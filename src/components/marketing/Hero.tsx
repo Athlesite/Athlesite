@@ -6,9 +6,6 @@ import { HeroAtmosphere, HeroStage } from "@/components/marketing/hero/HeroStage
 import { JordanPhone } from "@/components/marketing/hero/JordanPhone";
 import { ATHLETE_PLATE } from "@/components/marketing/hero/composition";
 
-const TRUST_AVATARS = [1, 2, 3, 4];
-const STARS = [1, 2, 3, 4, 5];
-
 export function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-background">
@@ -43,12 +40,12 @@ export function Hero() {
 
       <Container
         size="wide"
-        className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center py-16 lg:min-h-[calc(100svh-92px)] lg:py-16 xl:justify-start xl:py-0 xl:pt-[66px]"
+        className="relative flex min-h-[calc(100svh-4rem)] flex-col justify-center py-16 lg:min-h-[calc(100svh-88px)] lg:py-16 xl:justify-start xl:py-0 xl:pt-[64px]"
       >
         <div className="flex flex-col gap-16 lg:flex-row lg:items-center lg:gap-10 xl:block">
           <div className="max-w-[560px] lg:max-w-[520px] xl:max-w-[600px]">
             <p className="font-condensed text-[11px] font-semibold uppercase leading-none tracking-[0.34em] text-accent-light sm:text-[12.5px]">
-              Athlete Identity Platform
+              Built for the Modern Athlete
             </p>
 
             <h1 className="mt-[22px] font-display text-[clamp(2.9rem,10vw,4.6rem)] uppercase leading-[1.05] tracking-[-0.005em] xl:text-[88px]">
@@ -63,12 +60,12 @@ export function Hero() {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-[470px] text-[15px] leading-[1.8] text-white/72 sm:text-[17px]">
-              Athlesite gives athletes one professional digital home to share their story,
-              connect with opportunities, and build their brand — all in one link.
+            <p className="mt-7 max-w-[500px] text-[15px] leading-[1.72] text-white/72 sm:text-[17px]">
+              Your story, highlights, recruiting profile, and personal brand — together in one
+              professional home built around you.
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-4">
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-4">
               <Button
                 href="/get-started"
                 shape="rounded"
@@ -86,35 +83,8 @@ export function Hero() {
                     <path d="M1 1.1 9 6l-8 4.9z" fill="currentColor" />
                   </svg>
                 </span>
-                See It In Action
+                Explore a Profile
               </Link>
-            </div>
-
-            <div className="mt-11 flex items-center gap-4">
-              <div className="flex -space-x-2.5">
-                {TRUST_AVATARS.map((n) => (
-                  <span
-                    key={n}
-                    className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-background"
-                  >
-                    <Image
-                      src={`/marketing/athlete-avatar-${n}.webp`}
-                      alt=""
-                      fill
-                      sizes="36px"
-                      className="object-cover"
-                    />
-                  </span>
-                ))}
-              </div>
-              <div>
-                <span className="flex gap-[3px] text-brand-silver" aria-hidden="true">
-                  {STARS.map((n) => (
-                    <StarGlyph key={n} />
-                  ))}
-                </span>
-                <p className="mt-1 text-[13px] text-white/62">Trusted by athletes nationwide</p>
-              </div>
             </div>
           </div>
 
@@ -127,13 +97,5 @@ export function Hero() {
         </div>
       </Container>
     </section>
-  );
-}
-
-function StarGlyph() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
-      <path d="M7 .8l1.86 3.9 4.24.6-3.07 3.03.73 4.28L7 10.58l-3.76 2.03.73-4.28L.9 5.3l4.24-.6z" />
-    </svg>
   );
 }
