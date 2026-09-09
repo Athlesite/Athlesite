@@ -1,86 +1,76 @@
 import Image from "next/image";
 import { JordanMobileSite } from "./JordanMobileSite";
-import { S01_FRAME, S01_PLATE, S01_PHONE, S01_STAT, S01_STATUS } from "./composition";
 
 /**
- * The layered showcase: a cropped action photograph bleeding off the right
- * edge, a highlight frame emerging from behind the device, the athlete's own
- * mobile Athlesite in front, and two fragments — a season stat set in type on
- * open ground, and a recruiting status sitting directly on the photograph.
- *
- * Deliberately few pieces at deliberately different scales, so the section
- * reads as one composed image rather than a grid of cards. Decorative only;
- * it never intercepts pointer events from the copy beside it.
+ * Section 01 is one cinematic scene, not a pile of UI fragments. The athlete
+ * photograph fills the entire right-hand field and the phone is the single
+ * product object layered over it. This makes the composition feel like sports
+ * editorial art direction while keeping the product itself unmistakable.
  */
 export function AthlesiteShowcase() {
   return (
-    <div className="s01-stage pointer-events-none absolute bottom-[72px] right-0 select-none">
-      <div className="s01-stage-inner">
-        {/* Cropped action photo */}
-        <div className="absolute" style={S01_PLATE}>
-          <Image
-            src="/marketing/s01-athlete.webp"
-            alt=""
-            fill
-            sizes="620px"
-            className="object-cover object-[48%_32%]"
+    <div className="relative h-full w-full overflow-hidden bg-[#090a0d]">
+      <Image
+        src="/marketing/s01-athlete.webp"
+        alt=""
+        fill
+        sizes="(min-width: 1280px) 56vw, 100vw"
+        className="object-cover object-[58%_42%]"
+      />
+
+      {/* Grade the existing photograph into one coherent scene rather than
+          cutting the player out onto empty black. */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,0.82)_0%,rgba(5,6,8,0.36)_24%,rgba(5,6,8,0.02)_56%,rgba(5,6,8,0.18)_100%)]"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(0deg,rgba(4,5,7,0.72)_0%,transparent_36%,rgba(2,3,5,0.12)_72%,rgba(2,3,5,0.3)_100%)]"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute -left-[12%] top-[12%] h-[58%] w-[48%] rounded-full bg-brand-blue/14 blur-[110px]"
+      />
+
+      {/* Oversized chapter typography gives the sports-editorial scale that the
+          previous floating stat fragments were missing. */}
+      <div className="pointer-events-none absolute bottom-5 right-6 text-right sm:bottom-8 sm:right-8">
+        <p className="font-display text-[82px] uppercase leading-[0.78] tracking-[-0.02em] text-white/[0.09] sm:text-[110px] xl:text-[132px]">
+          Identity
+        </p>
+        <p className="mt-4 font-condensed text-[10px] font-semibold uppercase tracking-[0.34em] text-white/42">
+          Built around the athlete
+        </p>
+      </div>
+
+      {/* One believable device. Its perspective and shadow are deliberately
+          physical; the website UI remains flat inside the glass. */}
+      <div
+        className="absolute left-[7%] top-1/2 origin-center -translate-y-1/2 sm:left-[12%] xl:left-[8%]"
+        style={{
+          transform:
+            "translateY(-50%) perspective(1400px) rotateY(-7deg) rotateZ(1.25deg)",
+        }}
+      >
+        <div className="relative">
+          <span
+            aria-hidden="true"
+            className="absolute -inset-10 rounded-[70px] bg-black/50 blur-3xl"
           />
+          <div className="relative scale-[0.88] sm:scale-[1.02] xl:scale-[1.08] 2xl:scale-[1.15]">
+            <JordanMobileSite />
+          </div>
         </div>
+      </div>
 
-        {/* Highlight frame, emerging from behind the device */}
-        <figure
-          className="absolute overflow-hidden rounded-[12px] border border-border-strong bg-surface shadow-[0_40px_70px_-34px_rgba(0,0,0,0.95)]"
-          style={S01_FRAME}
-        >
-          <Image
-            src="/marketing/s01-highlight.webp"
-            alt=""
-            fill
-            sizes="360px"
-            className="object-cover"
-          />
-          <span aria-hidden="true" className="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent" />
-          <span className="absolute left-[16px] top-[16px] flex h-[30px] w-[30px] items-center justify-center rounded-full border border-white/55 bg-black/30">
-            <svg width="9" height="11" viewBox="0 0 9 11" fill="none" aria-hidden="true">
-              <path d="M1 .9 8 5.5 1 10.1z" fill="#fff" />
-            </svg>
-          </span>
-          <figcaption className="absolute inset-x-[16px] bottom-[13px] flex items-baseline justify-between">
-            <span className="font-condensed text-[9px] font-medium uppercase tracking-[0.22em] text-white/85">
-              Highlight reel
-            </span>
-            <span className="text-[9px] text-white/55">2:14</span>
-          </figcaption>
-        </figure>
-
-        {/* Device */}
-        <div className="absolute" style={{ left: S01_PHONE.left, top: S01_PHONE.top }}>
-          <JordanMobileSite />
-        </div>
-
-        {/* Season fragment — type on open ground, not another card */}
-        <div className="absolute" style={S01_STAT}>
-          <span className="block h-px w-full bg-border-strong" />
-          <p className="mt-[16px] font-display text-[62px] leading-[0.86] text-foreground">842</p>
-          <p className="mt-[12px] font-condensed text-[10px] font-medium uppercase leading-none tracking-[0.28em] text-muted-foreground">
-            Receiving yards
-          </p>
-          <p className="mt-[8px] text-[12px] leading-none text-muted-foreground/70">
-            2024 season · 24 games
-          </p>
-        </div>
-
-        {/* Recruiting status, on the photograph */}
-        <div
-          className="absolute flex items-center gap-[9px] rounded-full border border-white/15 bg-black/45 px-[14px] py-[7px] backdrop-blur-[2px]"
-          style={S01_STATUS}
-        >
-          <span aria-hidden="true" className="h-[6px] w-[6px] rounded-full bg-accent" />
-          <span className="font-condensed text-[9px] font-semibold uppercase leading-none tracking-[0.22em] text-foreground/90">
-            Open to offers
-          </span>
-          <span className="text-[9px] leading-none text-white/45">Class of 2027</span>
-        </div>
+      {/* A single annotation ties the product object to the story without
+          reintroducing card clutter. */}
+      <div className="absolute left-[8%] top-[7%] hidden items-center gap-3 xl:flex">
+        <span className="h-px w-12 bg-white/35" />
+        <span className="font-condensed text-[9px] font-semibold uppercase tracking-[0.3em] text-white/55">
+          Your site · one link
+        </span>
       </div>
     </div>
   );
