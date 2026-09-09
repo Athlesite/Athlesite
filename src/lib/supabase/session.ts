@@ -30,29 +30,42 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(getSupabaseUrl(), getSupabasePublishableKey(), {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  try {
+    const supabase = createServerClient(getSupabaseUrl(), getSupabasePublishableKey(), {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Write to the request first so anything downstream in this same pass
+          // sees the refreshed cookie, then rebuild the response around it and
+          // mirror the cookies onto the outgoing response.
+          for (const { name, value } of cookiesToSet) {
+            request.cookies.set(name, value);
+          }
+          response = NextResponse.next({ request });
+          for (const { name, value, options } of cookiesToSet) {
+            response.cookies.set(name, value, options);
+          }
+        },
       },
-      setAll(cookiesToSet) {
-        // Write to the request first so anything downstream in this same pass
-        // sees the refreshed cookie, then rebuild the response around it and
-        // mirror the cookies onto the outgoing response.
-        for (const { name, value } of cookiesToSet) {
-          request.cookies.set(name, value);
-        }
-        response = NextResponse.next({ request });
-        for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
-        }
-      },
-    },
-  });
+    });
 
-  // Touching getUser() is what triggers the refresh-and-rotate. The result is
-  // deliberately unused here.
-  await supabase.auth.getUser();
+    // Touching getUser() is what triggers the refresh-and-rotate. The result is
+    // deliberately unused here.
+    await supabase.auth.getUser();
+  } catch {
+    // This proxy runs on every page request, so a Supabase or network fault
+    // here would otherwise 500 the entire site — including the marketing pages,
+    // which need no session at all.
+    //
+    // Failing open is safe precisely because this function makes no
+    // authorization decision. The worst outcome is that a token is not rotated
+    // on this request: a signed-in athlete may be treated as signed out until
+    // the next one, and RLS still decides what any request may read or write.
+    // Availability is the only thing at stake, so keep serving the page.
+    return NextResponse.next({ request });
+  }
 
   return response;
 }
