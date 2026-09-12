@@ -1,9 +1,9 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
-  toAthleteProfileRecord,
-  type AthleteProfileRecord,
-  type AthleteProfileRow,
+  toPublicAthleteProfileRecord,
+  type PublicAthleteProfileRecord,
+  type PublicAthleteProfileRow,
 } from "@/lib/db-mappers";
 import { ATHLETE_MEDIA_BUCKET } from "@/lib/media-paths";
 
@@ -21,18 +21,25 @@ import { ATHLETE_MEDIA_BUCKET } from "@/lib/media-paths";
  * established in the browser by the inline OTP flow.
  */
 
-/** Every column, named explicitly so a schema drift surfaces here rather than silently. */
-const PROFILE_COLUMNS = `
-  id, owner_user_id, slug,
-  first_name, last_name, sport, position, class_year, school_or_team, city, state,
+/**
+ * Exactly the columns `anon` is granted in
+ * supabase/migrations/20260911000001_restrict_anon_profile_columns.sql, named
+ * explicitly so a schema drift surfaces here rather than silently.
+ *
+ * **These two lists must stay identical.** Asking for a column `anon` cannot
+ * read fails the entire query with 42501, which would turn every public profile
+ * page into a 500 — not a missing field. `npm run check:columns` asserts the
+ * parity; run it after touching either list.
+ *
+ * Everything omitted here — school, recruiting, NIL, socials, timestamps — is
+ * unreadable to an anonymous caller by design, and is rendered nowhere.
+ */
+const PUBLIC_PROFILE_COLUMNS = `
+  owner_user_id, slug,
+  first_name, last_name, sport, position, class_year, city, state,
   height_in, weight_lb, bio,
   hero_photo_position_x, hero_photo_position_y, hero_photo_zoom,
-  hero_photo_path, profile_photo_path,
-  highlight_links,
-  recruiting_status, recruiting_contact, recruiting_notes,
-  social_instagram, social_twitter, social_tiktok, social_hudl, social_youtube, social_website,
-  nil_open, nil_contact, nil_interests,
-  is_published, created_at, updated_at
+  hero_photo_path, highlight_links, is_published
 `;
 
 /**
@@ -51,12 +58,12 @@ const PROFILE_COLUMNS = `
  */
 export const getProfileBySlug = cache(async function getProfileBySlug(
   slug: string
-): Promise<AthleteProfileRecord | null> {
+): Promise<PublicAthleteProfileRecord | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("athlete_profiles")
-    .select(PROFILE_COLUMNS)
+    .select(PUBLIC_PROFILE_COLUMNS)
     .eq("slug", slug)
     .maybeSingle();
 
@@ -69,7 +76,7 @@ export const getProfileBySlug = cache(async function getProfileBySlug(
 
   if (!data) return null;
 
-  return toAthleteProfileRecord(data as unknown as AthleteProfileRow);
+  return toPublicAthleteProfileRecord(data as unknown as PublicAthleteProfileRow);
 });
 
 /**

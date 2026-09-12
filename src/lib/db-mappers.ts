@@ -61,23 +61,55 @@ export type AthleteProfileRow = {
 };
 
 /**
- * A profile as it exists in the database: the domain data, plus the storage
- * metadata and media paths that deliberately do not live on the domain model.
+ * The subset of the row an anonymous caller is allowed to read.
  *
- * Keeps storage concerns off AthleteProfileData, which stays free of ids,
- * timestamps, and anything vendor-shaped.
+ * Mirrors the column grant in
+ * supabase/migrations/20260911000001_restrict_anon_profile_columns.sql. RLS
+ * restricts rows; that grant restricts columns. Selecting anything outside this
+ * set as `anon` fails the whole query with 42501, so the two lists must agree —
+ * `npm run check:columns` asserts that they do.
+ */
+export type PublicAthleteProfileRow = Pick<
+  AthleteProfileRow,
+  | "owner_user_id"
+  | "slug"
+  | "first_name"
+  | "last_name"
+  | "sport"
+  | "position"
+  | "class_year"
+  | "city"
+  | "state"
+  | "height_in"
+  | "weight_lb"
+  | "bio"
+  | "hero_photo_position_x"
+  | "hero_photo_position_y"
+  | "hero_photo_zoom"
+  | "hero_photo_path"
+  | "highlight_links"
+  | "is_published"
+>;
+
+/**
+ * What a public profile page needs, and nothing more.
+ *
+ * Deliberately carries no `id`, timestamps, or `profile_photo_path`: an
+ * anonymous caller cannot read those columns, so a type promising them would be
+ * lying, and the lie would surface as `undefined` at runtime rather than as a
+ * compile error.
+ *
+ * An Edit Profile flow needs the athlete's *whole* row and runs as the
+ * authenticated owner. That belongs in its own query and its own type — do not
+ * widen this one to serve it.
  *
  * Media fields are object *paths*, never URLs. Signed URLs are generated at
  * render time (docs/ai/GUARDRAILS.md § Storage).
  */
-export type AthleteProfileRecord = {
-  id: string;
+export type PublicAthleteProfileRecord = {
   ownerUserId: string;
   isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
   heroPhotoPath: string | null;
-  profilePhotoPath: string | null;
   profile: AthleteProfileData;
 };
 
@@ -101,8 +133,14 @@ function numeric(value: number | string | null | undefined): number | undefined 
  * social and highlightLinks) instead of duplicating it here, so a row written
  * by an older client — or hand-edited in the SQL editor — cannot produce an
  * invalid domain object.
+ *
+ * Takes a `Partial` row because the anonymous read path selects only the
+ * columns `anon` may see. The fields it omits — school, recruiting, NIL and
+ * social — arrive as `undefined` and normalize to their empty defaults, which
+ * is correct: no public page renders them. Anything that genuinely needs those
+ * values must read the full row as the authenticated owner.
  */
-export function toAthleteProfileData(row: AthleteProfileRow): AthleteProfileData {
+export function toAthleteProfileData(row: Partial<AthleteProfileRow>): AthleteProfileData {
   return normalizeAthleteProfileData({
     slug: row.slug,
     firstName: row.first_name,
@@ -142,16 +180,14 @@ export function toAthleteProfileData(row: AthleteProfileRow): AthleteProfileData
   });
 }
 
-/** Database row → the full record, including storage metadata and media paths. */
-export function toAthleteProfileRecord(row: AthleteProfileRow): AthleteProfileRecord {
+/** Public-readable row → the record a profile page renders. */
+export function toPublicAthleteProfileRecord(
+  row: PublicAthleteProfileRow
+): PublicAthleteProfileRecord {
   return {
-    id: row.id,
     ownerUserId: row.owner_user_id,
     isPublished: row.is_published,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
     heroPhotoPath: row.hero_photo_path,
-    profilePhotoPath: row.profile_photo_path,
     profile: toAthleteProfileData(row),
   };
 }

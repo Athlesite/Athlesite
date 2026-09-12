@@ -7,10 +7,10 @@ import { ProfileBio } from "@/components/profile/ProfileBio";
 import { ProfileHighlights } from "@/components/profile/ProfileHighlights";
 import { ProfileRecruitingNil } from "@/components/profile/ProfileRecruitingNil";
 import { toAthleteProfileView, MIN_HERO_ZOOM } from "@/lib/athlete-profile";
-import type { AthleteProfileRecord } from "@/lib/db-mappers";
+import type { PublicAthleteProfileRecord } from "@/lib/db-mappers";
 
 type AthleteProfileViewProps = {
-  record: AthleteProfileRecord;
+  record: PublicAthleteProfileRecord;
   /**
    * Whether the viewer owns this profile. Controls only whether the edit link
    * is offered — a coach or an anonymous visitor has no use for it. Access
