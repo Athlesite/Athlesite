@@ -10,6 +10,7 @@ type RangeFieldProps = {
   max?: number;
   step?: number;
   formatValue?: (value: number) => string;
+  disabled?: boolean;
 };
 
 export function RangeField({
@@ -20,6 +21,7 @@ export function RangeField({
   max = 1,
   step = 0.01,
   formatValue = (v) => `${Math.round(v * 100)}%`,
+  disabled = false,
 }: RangeFieldProps) {
   const id = useId();
 
@@ -39,7 +41,8 @@ export function RangeField({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-full bg-surface accent-accent"
+        disabled={disabled}
+        className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-full bg-surface accent-accent disabled:cursor-not-allowed disabled:opacity-50"
       />
     </div>
   );
