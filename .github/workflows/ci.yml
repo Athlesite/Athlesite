@@ -1,0 +1,49 @@
+name: CI
+
+# PR-triggered only. main is protected by a ruleset requiring a pull request
+# with no bypass, so nothing reaches main except through this check — a
+# push-triggered run on main itself would be redundant.
+on:
+  pull_request:
+    branches:
+      - main
+
+# Read-only: this workflow never needs to write to the repo, and the build
+# needs no secrets or environment variables — /athletes/[slug] is fully
+# dynamic, never statically generated, so nothing at build time touches
+# Supabase (verified: `npm run build` succeeds identically with no .env.local
+# present at all).
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Anonymous column grant parity
+        run: npm run check:columns
