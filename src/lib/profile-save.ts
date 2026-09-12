@@ -2,7 +2,12 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/supabase/auth";
-import { toAthleteProfileRow, type MediaPathUpdate } from "@/lib/db-mappers";
+import {
+  toAthleteProfileRow,
+  toAthleteProfileUpdateRow,
+  type MediaPathUpdate,
+  type AthleteProfileUpdateRow,
+} from "@/lib/db-mappers";
 import { uploadPhoto, deleteObjects } from "@/lib/media-storage";
 import type { AthleteProfileData } from "@/lib/athlete-profile";
 import {
@@ -17,9 +22,18 @@ import {
   type OwnershipStatus,
   type ReconciliationOutcome,
 } from "@/lib/profile-save-decisions";
+import {
+  describeUpdateError,
+  isDefiniteUpdateFailure,
+  zeroRowUpdateResult,
+  decideAfterAmbiguousUpdate,
+  type UpdateProfileResult,
+  type UpdateReconciliationOutcome,
+} from "@/lib/profile-update-decisions";
 
 export type { SaveProfileResult } from "@/lib/profile-save-decisions";
 import type { SaveProfileResult } from "@/lib/profile-save-decisions";
+export type { UpdateProfileResult } from "@/lib/profile-update-decisions";
 
 /**
  * Create an athlete's profile in Supabase, including media. First-time
@@ -352,4 +366,146 @@ export async function createProfile(
   const reconciliation = await reconcileAfterAmbiguousInsert(userId);
   const { deletePaths, result } = decideAfterAmbiguousInsert(reconciliation, uploadedPaths, media);
   return cleanupAndReport(deletePaths, result);
+}
+
+/**
+ * Exactly the columns updateProfile writes (AthleteProfileUpdateRow),
+ * selected back for reconciliation after an ambiguous update — never `*`,
+ * so this can never accidentally read (or compare against) media or
+ * ownership/identity columns. See profile-update-decisions.ts's
+ * updateRowsMatch for how this is compared.
+ */
+const UPDATE_RECONCILIATION_COLUMNS = `
+  slug,
+  first_name, last_name, sport, position, class_year, school_or_team, city, state,
+  height_in, weight_lb, bio,
+  highlight_links,
+  recruiting_status, recruiting_contact, recruiting_notes,
+  social_instagram, social_twitter, social_tiktok, social_hudl, social_youtube, social_website,
+  nil_open, nil_contact, nil_interests,
+  is_published
+`;
+
+/**
+ * Queries the owner's current row after an ambiguous update outcome, so
+ * updateProfile can weigh a genuinely uncommitted update against one that
+ * actually landed despite an apparent failure. Mirrors
+ * reconcileAfterAmbiguousInsert's own reasoning: "not-visible" is an
+ * observation, not proof nothing was written.
+ */
+async function reconcileAfterAmbiguousUpdate(userId: string): Promise<UpdateReconciliationOutcome> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("athlete_profiles")
+      .select(UPDATE_RECONCILIATION_COLUMNS)
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+
+    if (error) return { status: "query-failed" };
+    if (!data) return { status: "not-visible" };
+
+    return { status: "found", row: data as unknown as AthleteProfileUpdateRow };
+  } catch {
+    return { status: "query-failed" };
+  }
+}
+
+/**
+ * Updates the athlete's existing profile row. Cannot create one — that is
+ * the whole point of this function's existence separate from createProfile.
+ *
+ * The write is a plain `.update()`, filtered on `owner_user_id`, never an
+ * upsert and never an insert: PostgREST's UPDATE cannot create a row by
+ * construction, regardless of what the payload contains or how many rows
+ * happen to match. `userId` comes from getCurrentUser(), never from the
+ * `profile` argument, so a caller cannot aim this at somebody else's row —
+ * and even if it were wrong, the database's own "Owner can update own
+ * profile" RLS policy (using/with check both `auth.uid() = owner_user_id`)
+ * independently refuses any row that is not the caller's, exactly mirroring
+ * the defense-in-depth relationship createProfile's preflight has with the
+ * `owner_user_id` unique constraint.
+ *
+ * `.select("slug").maybeSingle()` is what lets a zero-row match be told
+ * apart from a real update: PostgREST returns no error and `data: null` when
+ * the filter matched nothing, which must never be read as success (see
+ * zeroRowUpdateResult). Because this is a single UPDATE statement — no
+ * upload step, no separate insert — there is no partial-write window: a
+ * rejected write (a slug collision, a check constraint) is refused
+ * atomically by Postgres, and nothing about the row changes.
+ *
+ * Never touches media. `toAthleteProfileUpdateRow`'s own type has no media
+ * columns to set, and this function does not import media-storage.ts —
+ * hero/profile photo replacement is out of scope for this checkpoint (see
+ * db-mappers.ts's AthleteProfileUpdateRow docblock).
+ *
+ * An ambiguous outcome (a thrown exception, or a response this client
+ * cannot trust) is never treated as a failure outright: it is reconciled by
+ * rereading the owner's row and comparing it, field by field, against the
+ * entire state this update intended to write, including `slug` and
+ * `is_published` — see decideAfterAmbiguousUpdate.
+ */
+export async function updateProfile(
+  profile: AthleteProfileData,
+  isPublished: boolean
+): Promise<UpdateProfileResult> {
+  let userId: string;
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { ok: false, message: "You need to be signed in to save your changes." };
+    }
+    userId = user.id;
+  } catch {
+    return { ok: false, message: "Couldn't confirm your account. Try again in a moment." };
+  }
+
+  const row = toAthleteProfileUpdateRow(profile, isPublished);
+
+  let outcome:
+    | { kind: "success"; slug: string }
+    | { kind: "definite-failure"; code: string | undefined }
+    | { kind: "zero-rows" }
+    | { kind: "ambiguous" };
+
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("athlete_profiles")
+      .update(row)
+      .eq("owner_user_id", userId)
+      .select("slug")
+      .maybeSingle();
+
+    if (error) {
+      outcome = isDefiniteUpdateFailure(error.code)
+        ? { kind: "definite-failure", code: error.code }
+        : { kind: "ambiguous" };
+    } else if (!data?.slug) {
+      // No error and no row: the update matched nothing. Never success.
+      outcome = { kind: "zero-rows" };
+    } else {
+      outcome = { kind: "success", slug: data.slug };
+    }
+  } catch {
+    // A thrown exception (network failure, timeout) does not prove the
+    // request never reached the database — reconcile, do not assume.
+    outcome = { kind: "ambiguous" };
+  }
+
+  if (outcome.kind === "success") {
+    return { ok: true, slug: outcome.slug };
+  }
+
+  if (outcome.kind === "zero-rows") {
+    return zeroRowUpdateResult();
+  }
+
+  if (outcome.kind === "definite-failure") {
+    return describeUpdateError(outcome.code);
+  }
+
+  // Ambiguous: find out what actually happened before reporting anything.
+  const reconciliation = await reconcileAfterAmbiguousUpdate(userId);
+  return decideAfterAmbiguousUpdate(reconciliation, row);
 }

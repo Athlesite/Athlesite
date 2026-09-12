@@ -250,6 +250,115 @@ export function toOwnerAthleteProfileRecord(row: AthleteProfileRow): OwnerAthlet
 }
 
 /**
+ * The columns Checkpoint 5B's Edit Profile flow may write.
+ *
+ * Deliberately its own type, not `AthleteProfileWriteRow` reused or
+ * parameterized: this shape must be structurally incapable of touching
+ * ownership, identity, timestamps, or media, so an update built from it
+ * cannot leak into any of those regardless of what `profile` contains.
+ *
+ * Structurally excluded, on purpose:
+ * - `id`, `owner_user_id`, `created_at`, `updated_at` — the database's /
+ *   the session's to manage. `owner_user_id` in particular is never a
+ *   settable column here; the caller's own row is reached by filtering the
+ *   `.update()` on it, never by writing it.
+ * - `hero_photo_path`, `profile_photo_path` — media replace/remove is out of
+ *   scope for 5B. Omitting these columns from the payload entirely (not
+ *   sending them as unchanged/null) is what makes PostgREST leave them
+ *   untouched, exactly like the create path's own "absent means preserve"
+ *   convention — except here there is no code path that could ever set them.
+ * - `hero_photo_position_x/y`, `hero_photo_zoom` — media framing, deferred
+ *   from 5B alongside photo replacement (see docs/ai for the checkpoint
+ *   scope). Editing framing without a way to replace the photo it frames
+ *   belongs with the media work, not this one.
+ *
+ * `is_published` is always present and always exactly what the caller
+ * intends — never a hardcoded value the way `toAthleteProfileRow` forces
+ * `true` for onboarding. That is the whole point of this being a separate
+ * type/function rather than a parameterized version of the create path.
+ */
+export type AthleteProfileUpdateRow = {
+  slug: string;
+  first_name: string;
+  last_name: string;
+  sport: string;
+  position: string;
+  class_year: string;
+  school_or_team: string;
+  city: string;
+  state: string;
+  height_in: number | null;
+  weight_lb: number | null;
+  bio: string;
+  highlight_links: { label: string; url: string }[];
+  recruiting_status: string;
+  recruiting_contact: string;
+  recruiting_notes: string;
+  social_instagram: string;
+  social_twitter: string;
+  social_tiktok: string;
+  social_hudl: string;
+  social_youtube: string;
+  social_website: string;
+  nil_open: boolean;
+  nil_contact: string;
+  nil_interests: string;
+  is_published: boolean;
+};
+
+/**
+ * Domain model → the row Edit Profile writes.
+ *
+ * `isPublished` is a separate argument, not read off `profile`, for the same
+ * reason `ownerUserId` is separate on `toAthleteProfileRow`: it is not
+ * profile content an athlete edits field-by-field, it is a toggle the save
+ * action itself decides, and keeping it out of `AthleteProfileData` means
+ * there is no field on the domain type that could silently drift from what
+ * the Publish switch actually shows.
+ *
+ * Never reuse or parameterize `toAthleteProfileRow` for this — see this
+ * function's own type, `AthleteProfileUpdateRow`, for exactly why.
+ */
+export function toAthleteProfileUpdateRow(
+  profile: AthleteProfileData,
+  isPublished: boolean
+): AthleteProfileUpdateRow {
+  return {
+    slug: profile.slug,
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    sport: profile.sport,
+    position: profile.position,
+    class_year: profile.classYear,
+    school_or_team: profile.schoolOrTeam,
+    city: profile.city,
+    state: profile.state,
+    height_in: profile.heightIn,
+    weight_lb: profile.weightLb,
+    bio: profile.bio,
+
+    highlight_links: profile.highlightLinks,
+
+    recruiting_status: profile.recruitingStatus,
+    recruiting_contact: profile.recruitingContact,
+    recruiting_notes: profile.recruitingNotes,
+
+    social_instagram: profile.social.instagram,
+    social_twitter: profile.social.twitter,
+    social_tiktok: profile.social.tiktok,
+    social_hudl: profile.social.hudl,
+    social_youtube: profile.social.youtube,
+    social_website: profile.social.website,
+
+    nil_open: profile.nilOpen,
+    nil_contact: profile.nilContact,
+    nil_interests: profile.nilInterests,
+
+    is_published: isPublished,
+  };
+}
+
+/**
  * Compile-time proof that the two record shapes cannot be confused for one
  * another. If the `scope` discriminant above were ever removed,
  * OwnerAthleteProfileRecord would once again be structurally assignable to
