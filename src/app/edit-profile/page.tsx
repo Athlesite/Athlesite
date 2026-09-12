@@ -45,7 +45,13 @@ export default async function EditProfilePage() {
     redirect("/get-started");
   }
 
-  const heroPhotoUrl = await signMediaUrl(record.heroPhotoPath);
+  // The profile photo is signed here (the owner's own edit surface) but
+  // still never signed on the public route — it has no public rendering
+  // surface, in or out of this checkpoint (Checkpoint 5C).
+  const [heroPhotoUrl, profilePhotoUrl] = await Promise.all([
+    signMediaUrl(record.heroPhotoPath),
+    signMediaUrl(record.profilePhotoPath),
+  ]);
 
-  return <EditProfileForm record={record} heroPhotoUrl={heroPhotoUrl} />;
+  return <EditProfileForm record={record} heroPhotoUrl={heroPhotoUrl} profilePhotoUrl={profilePhotoUrl} />;
 }

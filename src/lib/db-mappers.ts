@@ -250,32 +250,34 @@ export function toOwnerAthleteProfileRecord(row: AthleteProfileRow): OwnerAthlet
 }
 
 /**
- * The columns Checkpoint 5B's Edit Profile flow may write.
+ * The columns the Edit Profile flow may write.
  *
  * Deliberately its own type, not `AthleteProfileWriteRow` reused or
  * parameterized: this shape must be structurally incapable of touching
- * ownership, identity, timestamps, or media, so an update built from it
- * cannot leak into any of those regardless of what `profile` contains.
+ * ownership, identity, or timestamps, so an update built from it cannot leak
+ * into any of those regardless of what `profile` contains.
  *
  * Structurally excluded, on purpose:
  * - `id`, `owner_user_id`, `created_at`, `updated_at` — the database's /
  *   the session's to manage. `owner_user_id` in particular is never a
  *   settable column here; the caller's own row is reached by filtering the
  *   `.update()` on it, never by writing it.
- * - `hero_photo_path`, `profile_photo_path` — media replace/remove is out of
- *   scope for 5B. Omitting these columns from the payload entirely (not
- *   sending them as unchanged/null) is what makes PostgREST leave them
- *   untouched, exactly like the create path's own "absent means preserve"
- *   convention — except here there is no code path that could ever set them.
- * - `hero_photo_position_x/y`, `hero_photo_zoom` — media framing, deferred
- *   from 5B alongside photo replacement (see docs/ai for the checkpoint
- *   scope). Editing framing without a way to replace the photo it frames
- *   belongs with the media work, not this one.
+ *
+ * `hero_photo_path` / `profile_photo_path` are conditional — present only
+ * when this save's media intent for that slot is "replace" or "remove" (see
+ * `MediaPathUpdate`). Omitted entirely means "preserve", exactly like the
+ * create path's own convention.
+ *
+ * `hero_photo_position_x/y` and `hero_photo_zoom` (Checkpoint 5C) are
+ * unconditional, like every other profile field — framing is ordinary
+ * profile data an athlete may adjust any time a hero exists, not something
+ * gated behind whether this particular save also replaces the photo.
  *
  * `is_published` is always present and always exactly what the caller
  * intends — never a hardcoded value the way `toAthleteProfileRow` forces
- * `true` for onboarding. That is the whole point of this being a separate
- * type/function rather than a parameterized version of the create path.
+ * `true` for onboarding. That, together with the above, is why this stays a
+ * separate type/function rather than a parameterized version of the create
+ * path.
  */
 export type AthleteProfileUpdateRow = {
   slug: string;
@@ -290,6 +292,9 @@ export type AthleteProfileUpdateRow = {
   height_in: number | null;
   weight_lb: number | null;
   bio: string;
+  hero_photo_position_x: number;
+  hero_photo_position_y: number;
+  hero_photo_zoom: number;
   highlight_links: { label: string; url: string }[];
   recruiting_status: string;
   recruiting_contact: string;
@@ -304,6 +309,8 @@ export type AthleteProfileUpdateRow = {
   nil_contact: string;
   nil_interests: string;
   is_published: boolean;
+  hero_photo_path?: string | null;
+  profile_photo_path?: string | null;
 };
 
 /**
@@ -316,14 +323,20 @@ export type AthleteProfileUpdateRow = {
  * there is no field on the domain type that could silently drift from what
  * the Publish switch actually shows.
  *
+ * `media` reuses the exact same `MediaPathUpdate` type and "absent means
+ * preserve, string means set, null means clear" convention the create path
+ * already established — see MediaPathUpdate's own docblock, which named this
+ * exact edit flow as the reason `null` exists at all.
+ *
  * Never reuse or parameterize `toAthleteProfileRow` for this — see this
  * function's own type, `AthleteProfileUpdateRow`, for exactly why.
  */
 export function toAthleteProfileUpdateRow(
   profile: AthleteProfileData,
-  isPublished: boolean
+  isPublished: boolean,
+  media: MediaPathUpdate = {}
 ): AthleteProfileUpdateRow {
-  return {
+  const row: AthleteProfileUpdateRow = {
     slug: profile.slug,
     first_name: profile.firstName,
     last_name: profile.lastName,
@@ -336,6 +349,12 @@ export function toAthleteProfileUpdateRow(
     height_in: profile.heightIn,
     weight_lb: profile.weightLb,
     bio: profile.bio,
+
+    hero_photo_position_x: profile.heroPhotoPositionX,
+    hero_photo_position_y: profile.heroPhotoPositionY,
+    // Clamped in the domain layer to the same 1–1.8 range as the column's
+    // check constraint, mirroring toAthleteProfileRow's own defensive clamp.
+    hero_photo_zoom: clampHeroZoom(profile.heroPhotoZoom),
 
     highlight_links: profile.highlightLinks,
 
@@ -356,6 +375,17 @@ export function toAthleteProfileUpdateRow(
 
     is_published: isPublished,
   };
+
+  // Only touch a media column when this save actually has an instruction for
+  // it — see MediaPathUpdate.
+  if (media.heroPhotoPath !== undefined) {
+    row.hero_photo_path = media.heroPhotoPath;
+  }
+  if (media.profilePhotoPath !== undefined) {
+    row.profile_photo_path = media.profilePhotoPath;
+  }
+
+  return row;
 }
 
 /**

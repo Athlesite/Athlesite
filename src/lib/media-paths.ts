@@ -93,3 +93,69 @@ export function buildMediaPath(ownerUserId: string, slot: MediaSlot, mimeType: s
   const extension = EXTENSION_BY_TYPE[mimeType] ?? "bin";
   return `${ownerUserId}/${slot}/${randomId()}.${extension}`;
 }
+
+/**
+ * Parses a stored object path into its owner and slot, or `null` if it does
+ * not structurally match this project's own convention — exactly the three
+ * segments buildMediaPath produces: `{ownerUserId}/{slot}/{filename}`.
+ *
+ * Deliberately exact, not fuzzy: exactly three non-empty segments, and the
+ * middle one must be a real MediaSlot. A path with an extra segment, a
+ * missing one, or a slot value that merely looks plausible is rejected
+ * outright — this is the structural check
+ * isMediaPathForOwnerSlot/updateProfile rely on to tell a genuine one of
+ * this owner's own paths apart from anything else, rather than trusting a
+ * prefix match that a crafted string could satisfy without actually being
+ * shaped like a real object path.
+ */
+export function parseMediaPath(path: string): { ownerUserId: string; slot: MediaSlot; filename: string } | null {
+  const segments = path.split("/");
+  if (segments.length !== 3) return null;
+
+  const [ownerUserId, slot, filename] = segments;
+  if (!ownerUserId || !filename) return null;
+  if (slot !== "hero" && slot !== "profile") return null;
+
+  return { ownerUserId, slot, filename };
+}
+
+/**
+ * Whether `path` structurally belongs to `ownerUserId` in exactly `slot` —
+ * both the owner folder and the slot segment must match exactly, never as a
+ * prefix (see parseMediaPath).
+ *
+ * Used to validate a caller-supplied media baseline before it can ever
+ * become a Storage cleanup candidate (see updateProfile in profile-save.ts).
+ * This is a defense-in-depth check at the application layer — Storage's own
+ * RLS policy (the folder prefix must equal `auth.uid()`) independently
+ * refuses a deletion built from a mismatched path regardless, and this does
+ * not replace that; it is what makes the same guarantee true here too.
+ */
+export function isMediaPathForOwnerSlot(path: string, ownerUserId: string, slot: MediaSlot): boolean {
+  const parsed = parseMediaPath(path);
+  return parsed !== null && parsed.ownerUserId === ownerUserId && parsed.slot === slot;
+}
+
+/**
+ * Whether a caller-supplied hero/profile media baseline both structurally
+ * belong to `ownerUserId` — each non-null path must resolve, exactly, to
+ * that owner's own folder in its expected slot. `null` (nothing currently
+ * stored for that slot) is trivially valid: there is nothing to check, and
+ * the three-state media convention already treats it as "no existing
+ * object" everywhere else.
+ *
+ * updateProfile calls this immediately after authenticating the caller,
+ * before any upload or DB update is attempted, and fails the whole save
+ * closed if it returns false — see profile-save.ts.
+ */
+export function currentMediaBelongsToOwner(
+  currentMedia: { heroPhotoPath: string | null; profilePhotoPath: string | null },
+  ownerUserId: string
+): boolean {
+  return (
+    (currentMedia.heroPhotoPath === null ||
+      isMediaPathForOwnerSlot(currentMedia.heroPhotoPath, ownerUserId, "hero")) &&
+    (currentMedia.profilePhotoPath === null ||
+      isMediaPathForOwnerSlot(currentMedia.profilePhotoPath, ownerUserId, "profile"))
+  );
+}
