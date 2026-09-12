@@ -28,12 +28,39 @@ type PreviewStepProps = {
    * back and forward. Saving is gated on it.
    */
   otp: InlineOtp;
+  /**
+   * Whether the wizard has confirmed this authenticated athlete owns no
+   * profile yet. False before that check resolves, if it finds an existing
+   * one (the wizard is already navigating away), and if the check itself
+   * failed — a signed-in athlete never reaches an enabled Save button before
+   * ownership is confirmed absent. This is a UX gate, not the safety
+   * guarantee: createProfile itself cannot overwrite an existing row even if
+   * this were somehow true when it should not be.
+   */
+  canCreate: boolean;
+  /**
+   * True when the ownership check itself failed (a lookup error, not "still
+   * checking" and not "found an existing profile"). Fail-closed: Save stays
+   * disabled, and this is surfaced as a retryable error rather than silently
+   * leaving the athlete on an inert button with no explanation.
+   */
+  ownershipCheckFailed: boolean;
+  onRetryOwnershipCheck: () => void;
   onBack: () => void;
   /** Resolves with the outcome so a failed save can be shown in place. */
   onSave: () => Promise<SaveProfileResult>;
 };
 
-export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: PreviewStepProps) {
+export function PreviewStep({
+  profile,
+  actionPhoto,
+  otp,
+  canCreate,
+  ownershipCheckFailed,
+  onRetryOwnershipCheck,
+  onBack,
+  onSave,
+}: PreviewStepProps) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const athlete = toAthleteProfileView(profile);
@@ -41,7 +68,7 @@ export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: Previ
   // Still resolving whether there is an existing session. Showing the sign-in
   // block here would flash it at an athlete who is already signed in.
   const checkingSession = otp.state.status === "checking";
-  const canSave = otp.authenticated && !saving;
+  const canSave = otp.authenticated && canCreate && !saving;
 
   async function handleSave() {
     setSaving(true);
@@ -103,6 +130,23 @@ export function PreviewStep({ profile, actionPhoto, otp, onBack, onSave }: Previ
             ) : checkingSession ? null : (
               <InlineOtpForm otp={otp} />
             )}
+
+            {ownershipCheckFailed ? (
+              <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+                <p role="alert" className="text-sm text-red-400">
+                  Couldn&apos;t confirm your account status. Try again before saving.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={onRetryOwnershipCheck}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : null}
 
             {saveError ? (
               <p role="alert" className="mt-4 text-sm text-red-400">

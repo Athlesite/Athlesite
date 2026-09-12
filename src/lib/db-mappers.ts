@@ -107,6 +107,15 @@ export type PublicAthleteProfileRow = Pick<
  * render time (docs/ai/GUARDRAILS.md § Storage).
  */
 export type PublicAthleteProfileRecord = {
+  /**
+   * Discriminant, not application data. Structurally, OwnerAthleteProfileRecord
+   * contains every field this type does plus more, so without a field that
+   * differs between them TypeScript's structural typing would let the owner
+   * shape satisfy this one anywhere it's expected — exactly the silent-widening
+   * risk this guards against. See the compile-time check right after
+   * toOwnerAthleteProfileRecord below.
+   */
+  scope: "public";
   ownerUserId: string;
   isPublished: boolean;
   heroPhotoPath: string | null;
@@ -185,12 +194,73 @@ export function toPublicAthleteProfileRecord(
   row: PublicAthleteProfileRow
 ): PublicAthleteProfileRecord {
   return {
+    scope: "public",
     ownerUserId: row.owner_user_id,
     isPublished: row.is_published,
     heroPhotoPath: row.hero_photo_path,
     profile: toAthleteProfileData(row),
   };
 }
+
+/**
+ * The full record an authenticated owner may read of their own row.
+ *
+ * Deliberately a separate, unrelated type from PublicAthleteProfileRecord —
+ * not a superset via extension — so a component that expects one can never
+ * accept the other by accident. This is what an athlete's own /edit-profile
+ * reads; a public /athletes/[slug] view must never receive this shape.
+ *
+ * Media fields are object *paths*, never URLs. Signed URLs are generated at
+ * render time (docs/ai/GUARDRAILS.md § Storage).
+ */
+export type OwnerAthleteProfileRecord = {
+  /** Discriminant — see the matching field on PublicAthleteProfileRecord. */
+  scope: "owner";
+  id: string;
+  ownerUserId: string;
+  slug: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  heroPhotoPath: string | null;
+  profilePhotoPath: string | null;
+  profile: AthleteProfileData;
+};
+
+/**
+ * Full row → the record the athlete's own edit surface reads.
+ *
+ * Callers must only ever pass a row already scoped to the current
+ * authenticated user (see getOwnProfile in profile-repository.ts) — this
+ * function performs no ownership check itself. RLS is the actual backstop.
+ */
+export function toOwnerAthleteProfileRecord(row: AthleteProfileRow): OwnerAthleteProfileRecord {
+  return {
+    scope: "owner",
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    slug: row.slug,
+    isPublished: row.is_published,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    heroPhotoPath: row.hero_photo_path,
+    profilePhotoPath: row.profile_photo_path,
+    profile: toAthleteProfileData(row),
+  };
+}
+
+/**
+ * Compile-time proof that the two record shapes cannot be confused for one
+ * another. If the `scope` discriminant above were ever removed,
+ * OwnerAthleteProfileRecord would once again be structurally assignable to
+ * PublicAthleteProfileRecord (it contains every field the public shape does,
+ * plus more), and `@ts-expect-error` below would itself start failing —
+ * "Unused '@ts-expect-error' directive" — turning that regression into a
+ * build failure instead of a silent gap. This line produces no runtime code.
+ */
+// @ts-expect-error — OwnerAthleteProfileRecord must not satisfy PublicAthleteProfileRecord.
+const _ownerIsNotPublic: PublicAthleteProfileRecord = null as unknown as OwnerAthleteProfileRecord;
+void _ownerIsNotPublic;
 
 /**
  * The columns the application writes. Deliberately narrower than

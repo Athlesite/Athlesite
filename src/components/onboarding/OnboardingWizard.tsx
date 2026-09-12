@@ -11,9 +11,10 @@ import { BrandLinksStep } from "@/components/onboarding/steps/BrandLinksStep";
 import { PreviewStep } from "@/components/onboarding/steps/PreviewStep";
 import type { PhotoPreview } from "@/components/forms/FileField";
 import { useInlineOtp } from "@/components/auth/useInlineOtp";
+import { getCurrentUser } from "@/lib/supabase/auth";
 import { createEmptyAthleteProfile, type AthleteProfileData } from "@/lib/athlete-profile";
 import { loadDraft, saveDraft, loadDraftStep, saveDraftStep } from "@/lib/onboarding-storage";
-import { saveProfile, type SaveProfileResult } from "@/lib/profile-save";
+import { createProfile, checkOwnershipStatus, type SaveProfileResult } from "@/lib/profile-save";
 
 const STEP_LABELS = ["Welcome", "Athlete Info", "Media", "Recruiting", "Brand & Links", "Preview"];
 
@@ -45,6 +46,66 @@ export function OnboardingWizard() {
   // Set when the database rejects a username as taken. Lives here rather than
   // in a step so it survives the jump from Preview back to Athlete Info.
   const [slugError, setSlugError] = useState<string | null>(null);
+
+  // Gates the Save button, separately from otp.authenticated. Onboarding
+  // creates a profile; it must never be allowed to save into one that already
+  // exists — see createProfile in profile-save.ts for the write-side
+  // guarantee (a plain insert, rejected by the database if a row already
+  // exists) that holds even if this check below is skipped, races, or is
+  // bypassed entirely. This state only ever improves on that by redirecting
+  // an existing owner, or blocking Save on a failed lookup, before they reach
+  // a button that createProfile would otherwise have to refuse.
+  //
+  // "unknown" is a real, fail-closed state, not just "checking" — a lookup
+  // error must never be read as "no profile exists". It stays retryable: an
+  // athlete should not be stuck on a transient network blip with no way
+  // forward but abandoning the flow.
+  const [ownershipStatus, setOwnershipStatus] = useState<
+    "checking" | "creatable" | "unknown"
+  >("checking");
+  const [ownershipAttempt, setOwnershipAttempt] = useState(0);
+
+  // Runs once authentication succeeds, and again each time the athlete asks
+  // to retry a failed check. Nothing in this wizard's OTP flow can flip
+  // otp.authenticated back to false once true (there is no sign-out here),
+  // so absent a retry this fires at most once per session.
+  useEffect(() => {
+    if (!otp.authenticated) return;
+    let cancelled = false;
+    // Reset synchronously so a retry immediately clears the prior "unknown"
+    // error rather than leaving it visible until the new check resolves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOwnershipStatus("checking");
+
+    (async () => {
+      const user = await getCurrentUser();
+      if (cancelled) return;
+      if (!user) {
+        // Should not happen immediately after otp.authenticated flips true,
+        // but fail closed rather than guess if it somehow does.
+        setOwnershipStatus("unknown");
+        return;
+      }
+
+      const status = await checkOwnershipStatus(user.id);
+      if (cancelled) return;
+
+      if (status.status === "exists") {
+        // This athlete already has a profile. Onboarding is creation-only, so
+        // send them to the route that can actually show and manage it, rather
+        // than leaving them on a Save button that createProfile would refuse.
+        router.push("/edit-profile");
+      } else if (status.status === "none") {
+        setOwnershipStatus("creatable");
+      } else {
+        setOwnershipStatus("unknown");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [otp.authenticated, router, ownershipAttempt]);
 
   useEffect(() => {
     // One-time hydration from a browser-only store (localStorage) on mount, gated
@@ -102,22 +163,22 @@ export function OnboardingWizard() {
   }
 
   /**
-   * Writes the profile to Supabase and, only on success, sends the athlete to
+   * Creates the profile in Supabase and, only on success, sends the athlete to
    * their live page. A failed save leaves them on Preview with everything
    * intact — including the in-memory photo previews — so they can fix a taken
    * username and try again.
    *
    * The local draft is deliberately left in place: it is the athlete's
-   * work-in-progress copy, and there is no edit flow yet that would reload
-   * their saved profile instead.
+   * work-in-progress copy. By the time this can run, readyToCreate has
+   * already confirmed this athlete owns no profile yet — an existing owner is
+   * redirected to /edit-profile before ever reaching this button.
    *
    * Photos are passed only when the athlete picked one this session. An empty
-   * slot means "leave whatever is stored alone", not "remove it" — the wizard
-   * cannot tell a removal from a fresh start, because it never loads an
-   * existing profile's media.
+   * slot means no photo for that slot yet — there is nothing to preserve or
+   * remove on a row that does not exist until this call creates it.
    */
   async function handleSaveAndComplete(): Promise<SaveProfileResult> {
-    const result = await saveProfile(profile, {
+    const result = await createProfile(profile, {
       hero: actionPhoto?.file ?? null,
       profile: profilePhoto?.file ?? null,
     });
@@ -185,6 +246,9 @@ export function OnboardingWizard() {
           profile={profile}
           actionPhoto={actionPhoto}
           otp={otp}
+          canCreate={ownershipStatus === "creatable"}
+          ownershipCheckFailed={otp.authenticated && ownershipStatus === "unknown"}
+          onRetryOwnershipCheck={() => setOwnershipAttempt((n) => n + 1)}
           onBack={goBack}
           onSave={handleSaveAndComplete}
         />

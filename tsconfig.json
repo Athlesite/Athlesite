@@ -6,6 +6,12 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // Lets a Node-native test file (run via `node --test`, no bundler, no
+    // ts-node) import its subject with an explicit .ts extension the way
+    // Node's own ESM resolution requires. Safe only alongside noEmit above,
+    // which this project already has — nothing is ever emitted with a
+    // rewritten extension. See src/lib/profile-save-decisions.test.ts.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
