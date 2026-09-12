@@ -146,6 +146,50 @@ are the real access control, and there is no privileged path to accidentally exp
 **Rules out.** Server-side privileged data access without an explicit, reviewed
 decision to introduce a separate non-browser runtime for it.
 
+### Anonymous reads are column-scoped, not only row-scoped
+**Active** · 2026-09-11 · founder decision
+**Decision.** `anon` holds a column-level `SELECT` on exactly the 18 columns a published
+public profile renders, not a table-wide grant (migration
+`20260911000001_restrict_anon_profile_columns.sql`). `authenticated` keeps the full table
+grant under the unchanged owner policies.
+**Why.** RLS restricts *rows*; it cannot restrict *columns*. Every field of a published
+profile was therefore readable by anyone holding the publishable key — contact, recruiting,
+NIL, all six socials, and `school_or_team` — none of which any page renders. Measured, not
+assumed: all 35 columns returned HTTP 200 to an anonymous caller before this change.
+`GUARDRAILS.md § Athlete data` says contact fields exist "so an athlete can be reached
+deliberately, not so they can be scraped in bulk", and these are minors.
+**The 18.** `owner_user_id`, `slug`, `first_name`, `last_name`, `sport`, `position`,
+`class_year`, `city`, `state`, `height_in`, `weight_lb`, `bio`, `hero_photo_position_x`,
+`hero_photo_position_y`, `hero_photo_zoom`, `hero_photo_path`, `highlight_links`,
+`is_published`.
+**Why `owner_user_id` and `is_published` are in it.** Both are load-bearing, not
+convenience. The Storage read policy joins this table on both, and a policy subquery is
+subject to the caller's own column privileges — revoke either and anonymous visitors stop
+being able to sign a published athlete's hero photo. `owner_user_id` is also already
+public in every signed media URL (`{uid}/hero/{uuid}.ext`), so hiding the column would
+conceal nothing while breaking photos.
+**`school_or_team` is deliberately out.** It is rendered nowhere today, and name + school +
+city + class year is a precise real-world locator for a minor. Revisit if and when
+something renders it.
+**Two lists, one truth.** The grant and `PUBLIC_PROFILE_COLUMNS` in
+`profile-repository.ts` must name the same columns. Selecting an ungranted column fails the
+*whole* query with 42501, so the symptom is a 500 on every public profile page, not a
+missing field. `npm run check:columns` asserts parity; run it after touching either list.
+**A new column is invisible to `anon` until granted.** That is the right default — it fails
+closed — but it is a standing obligation: adding a column that should be public means
+updating the grant *and* the select list together.
+**Not solved: enumeration.** An anonymous caller can still list every published profile's
+public columns without knowing a slug. Deliberately out of scope; recorded in `NOW.md`.
+Fixing it would need an RPC-by-slug or rate limiting, decided separately.
+**Rules out.** Reading athlete data anonymously through the table beyond these 18 columns,
+and using `getProfileBySlug` for anything needing the full row. An Edit Profile flow must
+use its own authenticated full-row query and type.
+**Verified.** End to end against the live project with a disposable published profile
+before merge: 18 columns readable, the other 17 refused with 42501 — including via
+`select=*` and via filter predicates, so a hidden column cannot be used as an oracle — the
+published hero still signed and delivered its bytes, and once unpublished the row returned
+zero rows and the hero could no longer be signed.
+
 ---
 
 ## Data Model

@@ -1,6 +1,6 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-09 · `main` @ `885a671`
+Last updated: 2026-09-11 · `main` @ `e7cb1de`
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -99,24 +99,16 @@ refreshed these docs. Merged branches have since been deleted.
   see the column-exposure item below), and **the canonical/root-slug question is still
   open and blocks ever allowing profiles to index**, because indexing the wrong URL shape
   is harder to undo than not indexing at all.
-- **Anonymous API reads every column of a published profile, including fields the page
-  never shows.** Separate from indexing and *not* fixed by it. `grant select on
-  public.athlete_profiles to anon` is table-wide; RLS filters *rows* (`is_published =
-  true`) but not *columns*. So for any published profile an anonymous caller holding the
-  publishable key can read, straight from PostgREST: `recruiting_contact`,
-  `recruiting_notes`, `recruiting_status`, `nil_contact`, `nil_interests`, `nil_open`,
-  `school_or_team`, and all six `social_*` columns — **none of which are rendered
-  anywhere**. The public page shows only name, sport, position, class year, city/state,
-  height/weight, bio and highlight links; the social icons on the hero are placeholder
-  glyphs, not data. Published rows are also enumerable without knowing a slug, so the
-  whole pilot cohort is one query. `GUARDRAILS.md § Athlete data`: contact fields exist
-  "so an athlete can be reached deliberately, not so they can be scraped in bulk", and
-  these are minors. **Likely fix:** replace the table-wide anon grant with a column-level
-  grant covering only what the public page renders, keeping the full grant for
-  `authenticated` under the existing owner policy — and narrow the anonymous select list
-  in `profile-repository.ts` at the same time, since it currently names every column and
-  would start failing. **Requires founder approval** (`GUARDRAILS.md § Authority`: grants).
-  Proposed as its own hardening checkpoint, audit first.
+- **Anonymous reads are now column-scoped; enumeration is the remaining gap.** `anon` holds
+  a column-level `SELECT` on exactly the 18 columns a published profile renders, not a
+  table-wide grant (`DECISIONS.md § Anonymous reads are column-scoped`). Contact,
+  recruiting, NIL, all six socials and `school_or_team` are refused with 42501 — verified
+  live, including via `select=*` and filter predicates. **What is still open:** an
+  anonymous caller can enumerate every published profile's *public* columns without
+  knowing a slug, so the pilot cohort is one query. Accepted and deliberately out of
+  scope — fixing it needs an RPC-by-slug or rate limiting. **Standing obligation:** the
+  grant and `PUBLIC_PROFILE_COLUMNS` must name the same columns, and a newly added column
+  is invisible to `anon` until explicitly granted. `npm run check:columns` asserts it.
 - **Never hardcode an OTP length.** The live project issues 8-digit codes and the length
   is a dashboard setting. The OTP code field must not set `maxLength`.
 - **Save always republishes.** Every successful save writes `is_published = true`, which
