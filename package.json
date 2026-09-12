@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
     "check:columns": "node scripts/check-anon-column-parity.mjs"
   },
   "dependencies": {
