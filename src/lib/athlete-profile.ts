@@ -253,6 +253,7 @@ const SLUG_PATTERN = /^[a-z][a-z0-9-]{2,29}$/;
 
 const RESERVED_SLUGS = new Set([
   "get-started",
+  "edit-profile",
   "athletes",
   "jordan-bell",
   "example",

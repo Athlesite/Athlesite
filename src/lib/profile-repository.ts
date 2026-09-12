@@ -2,8 +2,11 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
   toPublicAthleteProfileRecord,
+  toOwnerAthleteProfileRecord,
   type PublicAthleteProfileRecord,
   type PublicAthleteProfileRow,
+  type OwnerAthleteProfileRecord,
+  type AthleteProfileRow,
 } from "@/lib/db-mappers";
 import { ATHLETE_MEDIA_BUCKET } from "@/lib/media-paths";
 
@@ -78,6 +81,56 @@ export const getProfileBySlug = cache(async function getProfileBySlug(
 
   return toPublicAthleteProfileRecord(data as unknown as PublicAthleteProfileRow);
 });
+
+/**
+ * Every column, for the authenticated owner reading their own row. Named
+ * explicitly rather than `select("*")`, matching PUBLIC_PROFILE_COLUMNS's
+ * convention — a schema drift surfaces here rather than silently.
+ */
+const OWNER_PROFILE_COLUMNS = `
+  id, owner_user_id, slug,
+  first_name, last_name, sport, position, class_year, school_or_team, city, state,
+  height_in, weight_lb, bio,
+  hero_photo_position_x, hero_photo_position_y, hero_photo_zoom,
+  hero_photo_path, profile_photo_path,
+  highlight_links,
+  recruiting_status, recruiting_contact, recruiting_notes,
+  social_instagram, social_twitter, social_tiktok, social_hudl, social_youtube, social_website,
+  nil_open, nil_contact, nil_interests,
+  is_published, created_at, updated_at
+`;
+
+/**
+ * Looks up the signed-in athlete's own profile, full row.
+ *
+ * `userId` must come from the current request's own authenticated session
+ * (getUser(), server-side) — never from a route param, query string, or other
+ * client-supplied value. The query filters on it explicitly rather than
+ * relying on RLS alone to say what this call means — but RLS ("Owner can view
+ * own profile": auth.uid() = owner_user_id) is what actually enforces it
+ * regardless of any mistake here.
+ *
+ * Unlike getProfileBySlug, this is not wrapped in React's cache(): it is
+ * called at most once per request today (from /edit-profile), so there is
+ * nothing yet to deduplicate.
+ */
+export async function getOwnProfile(userId: string): Promise<OwnerAthleteProfileRecord | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("athlete_profiles")
+    .select(OWNER_PROFILE_COLUMNS)
+    .eq("owner_user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load own profile: ${error.message}`);
+  }
+
+  if (!data) return null;
+
+  return toOwnerAthleteProfileRecord(data as unknown as AthleteProfileRow);
+}
 
 /**
  * Turns a stored object path into a temporary URL an `<img>` can load.

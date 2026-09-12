@@ -64,7 +64,7 @@ export function AthleteProfileView({
         <Section className="text-center">
           <Container>
             <Link
-              href="/get-started"
+              href="/edit-profile"
               className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Edit your profile →
