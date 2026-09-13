@@ -18,6 +18,7 @@ import { MediaSection } from "@/components/edit-profile/sections/MediaSection";
 import { PublishSection } from "@/components/edit-profile/PublishSection";
 import { toAthleteProfileView, MIN_HERO_ZOOM, type AthleteProfileData } from "@/lib/athlete-profile";
 import { updateProfile, type MediaSlotIntent } from "@/lib/profile-save";
+import { signOutAndGetRedirectPath, navigateAfterSignOut } from "@/components/edit-profile/sign-out";
 import type { OwnerAthleteProfileRecord } from "@/lib/db-mappers";
 import {
   isEditable,
@@ -140,6 +141,7 @@ export function EditProfileForm({ record, heroPhotoUrl, profilePhotoUrl }: EditP
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<EditProfileSaveState>("idle");
+  const [signingOut, setSigningOut] = useState(false);
 
   const errors = validateAthleteInfo(profile);
   const athlete = toAthleteProfileView(profile);
@@ -238,13 +240,50 @@ export function EditProfileForm({ record, heroPhotoUrl, profilePhotoUrl }: EditP
     }
   }
 
+  /**
+   * Ends the session and leaves this route entirely via a real, full-page
+   * navigation (never router.push) — the guarantee that this component's own
+   * React state, and Next's client Router Cache for /edit-profile, both
+   * disappear rather than reappearing on a Back navigation. See sign-out.ts
+   * for why the auth call and the navigation are split out and testable,
+   * and for why navigation is specifically `location.replace`.
+   *
+   * signOutAndGetRedirectPath rejects (rather than resolving) when Supabase
+   * reports a real sign-out failure — see signOutCurrentUser's own docblock
+   * — so navigation only ever runs after a genuinely confirmed sign-out; a
+   * failure here leaves the athlete on this page, still signed in, with a
+   * recoverable error instead of a false "you're signed out" navigation.
+   */
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      const destination = await signOutAndGetRedirectPath();
+      navigateAfterSignOut(destination);
+    } catch {
+      setSigningOut(false);
+      setErrorMessage("Couldn't sign out. Check your connection and try again.");
+    }
+  }
+
   return (
     <div>
       <Section className="border-b border-border pb-8 pt-12 sm:pt-16">
         <Container className="max-w-2xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            Edit your Athlesite
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Edit your Athlesite
+            </h1>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => void handleSignOut()}
+              disabled={signingOut}
+              className="shrink-0"
+            >
+              {signingOut ? "Signing out…" : "Sign out"}
+            </Button>
+          </div>
           {persistedIsPublished ? (
             <p className="mt-4 text-sm text-muted-foreground">
               <span className="text-accent-light">●</span> Published — visible at{" "}
