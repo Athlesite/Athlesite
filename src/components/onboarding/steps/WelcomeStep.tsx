@@ -1,6 +1,7 @@
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
+import { WELCOME_INTRO_COPY } from "@/components/onboarding/steps/welcome-copy";
 
 const opportunities = [
   {
@@ -27,11 +28,7 @@ export function WelcomeStep({ onNext }: { onNext: () => void }) {
         <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
           Let&apos;s build your Athlesite.
         </h1>
-        <p className="mt-6 text-lg text-muted-foreground">
-          This is an early preview build. What you enter here is stored only on this
-          device and browser — it isn&apos;t public yet, and there&apos;s no account or
-          backend behind it. You&apos;re helping shape what Athlesite becomes.
-        </p>
+        <p className="mt-6 text-lg text-muted-foreground">{WELCOME_INTRO_COPY}</p>
         <div className="mt-12 space-y-8 border-t border-border pt-10">
           {opportunities.map((item) => (
             <div key={item.title}>

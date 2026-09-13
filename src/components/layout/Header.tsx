@@ -3,6 +3,7 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { MobileNav } from "@/components/layout/MobileNav";
+import { RETURNING_ATHLETE_PATH } from "@/components/layout/returning-athlete-link";
 
 export const navLinks = [
   { href: "/#for-athletes", label: "For Athletes" },
@@ -37,7 +38,13 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden justify-self-end lg:block">
+        <div className="hidden items-center gap-5 justify-self-end lg:flex">
+          <Link
+            href={RETURNING_ATHLETE_PATH}
+            className="whitespace-nowrap text-[0.9rem] font-medium text-white/75 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            Sign In
+          </Link>
           <Button href="/get-started" shape="rounded" className="h-10 whitespace-nowrap px-5 text-[0.9rem]">
             Create Your Athlesite
           </Button>

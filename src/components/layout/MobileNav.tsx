@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { RETURNING_ATHLETE_PATH } from "@/components/layout/returning-athlete-link";
 
 type NavLink = { href: string; label: string };
 
@@ -57,6 +58,13 @@ export function MobileNav({ links }: { links: NavLink[] }) {
             <Button href="/get-started" onClick={() => setOpen(false)} className="mt-2">
               Create Your Athlesite
             </Button>
+            <Link
+              href={RETURNING_ATHLETE_PATH}
+              onClick={() => setOpen(false)}
+              className="text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Already have an Athlesite? Sign in
+            </Link>
           </nav>
         </div>
       ) : null}

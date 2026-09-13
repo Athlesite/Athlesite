@@ -145,8 +145,124 @@ export async function getCurrentUser(): Promise<User | null> {
   return data.user ?? null;
 }
 
-/** Ends the browser session. Present so a signed-in athlete can switch accounts. */
-export async function signOutCurrentUser(): Promise<void> {
-  const supabase = createClient();
-  await supabase.auth.signOut();
+/**
+ * A Supabase auth error as this function actually reads it — just the
+ * message. Matches the shape of the real SDK's `AuthError` (which carries
+ * more, e.g. `status`/`name`, none of which this function uses).
+ */
+type SignOutAuthError = { message?: string };
+
+/**
+ * The minimal slice of the Supabase client signOutCurrentUser needs.
+ *
+ * Kept narrow and local, rather than typed against the full SupabaseClient/
+ * GoTrueClient shape, so a test can supply a plain fake object without
+ * satisfying (or casting past) dozens of unrelated auth methods this
+ * function never touches. The real client returned by createClient()
+ * satisfies this structurally, no cast required. `getSession()`'s return
+ * shape mirrors the real SDK's documented envelope — `{ data: { session },
+ * error }`, where `session` is `null` once nothing is stored locally —
+ * because that exact shape is what the fail-safe logic below depends on.
+ */
+type SignOutClient = {
+  auth: {
+    signOut: () => Promise<{ error: SignOutAuthError | null }>;
+    getSession: () => Promise<{
+      data: { session: unknown | null };
+      error: SignOutAuthError | null;
+    }>;
+  };
+};
+
+/**
+ * Ends the browser session. Present so a signed-in athlete can switch
+ * accounts, including on a device someone else uses next.
+ *
+ * The governing rule: this function may resolve (report success, and
+ * upstream trigger navigation away from /edit-profile) **only when it has
+ * positive evidence that the local session is no longer usable.** Absence
+ * of proof is not proof of sign-out — it is treated as a failure, so the
+ * athlete stays on the page with a recoverable error rather than being
+ * navigated away while a session might still be live.
+ *
+ * `supabase.auth.signOut()` returning `{ error }` does not by itself prove
+ * the athlete is still signed in — the installed SDK can clear the local
+ * session and still return an auxiliary/server-side error (e.g. the global
+ * sign-out endpoint call failing after the local session was already
+ * wiped). So an `error` from `signOut()` is never trusted on its own: it is
+ * followed by a direct check of `getSession()`, the SDK's own read of local
+ * session storage — the only source that can actually supply the positive
+ * evidence the rule above requires.
+ *
+ * Four outcomes:
+ *  - **No error from `signOut()`** — positive evidence of success on its
+ *    own. Resolve.
+ *  - **Error from `signOut()`, but `getSession()` cleanly reports
+ *    `{ data: { session: null }, error: null }`** — positive evidence the
+ *    local session is gone despite the auxiliary error. Resolve.
+ *  - **Error from `signOut()`, and `getSession()` reports a session still
+ *    exists** — direct evidence sign-out did *not* complete. Throw.
+ *  - **Error from `signOut()`, and the follow-up `getSession()` call itself
+ *    is inconclusive** — it throws, or resolves with its own non-null
+ *    `error` — there is no positive evidence either way, which the
+ *    governing rule above treats as failure, not success. Throw. (This
+ *    deliberately supersedes an earlier version of this function that
+ *    resolved here instead, reasoning that resolving was the "safer"
+ *    default; the safe default the product actually wants is the opposite —
+ *    require evidence, never assume it.)
+ *
+ * A thrown/rejected `signOut()` call (e.g. the initial network request
+ * never reaching the Auth server at all) is treated as an ordinary
+ * exception and propagates unchanged, without a follow-up session check:
+ * unlike a *returned* `{ error }`, nothing here indicates `signOut()` ever
+ * reached far enough to have changed local session state one way or the
+ * other, so there is no specific "did it actually clear locally" question
+ * this function can usefully resolve — the caller's existing recoverable
+ * error handling is the correct behavior, unchanged from before this fix.
+ *
+ * Every thrown error here is a sanitized, athlete-safe message — the raw
+ * Supabase error text is never surfaced to a caller.
+ *
+ * `createSupabaseClient` defaults to the project's real createClient() — an
+ * injectable seam purely for testing these branches without a live
+ * Supabase project (see auth.test.ts), never a second sign-out
+ * implementation. Every branch above ultimately calls the same, one real
+ * `supabase.auth.signOut()`/`getSession()`.
+ */
+export async function signOutCurrentUser(
+  createSupabaseClient: () => SignOutClient = createClient
+): Promise<void> {
+  const supabase = createSupabaseClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (!error) {
+    return;
+  }
+
+  const notProvenSignedOut = () =>
+    new Error(friendlyMessage(error.message, "Couldn't sign out. Try again."));
+
+  let sessionCheck: Awaited<ReturnType<SignOutClient["auth"]["getSession"]>>;
+  try {
+    sessionCheck = await supabase.auth.getSession();
+  } catch {
+    // The session check itself is inconclusive — no positive evidence of
+    // sign-out, so this is a failure, not a success. See docblock.
+    throw notProvenSignedOut();
+  }
+
+  if (sessionCheck.error) {
+    // Same reasoning as the thrown case immediately above: an error here
+    // answers nothing about whether the local session is actually gone.
+    throw notProvenSignedOut();
+  }
+
+  if (sessionCheck.data.session === null) {
+    // Positive evidence: the local session is genuinely gone despite
+    // signOut()'s own auxiliary error.
+    return;
+  }
+
+  // A session demonstrably still exists — this is a real, confirmed failure.
+  throw notProvenSignedOut();
 }
