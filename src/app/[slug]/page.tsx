@@ -41,7 +41,7 @@ async function viewerOwnsProfile(ownerUserId: string): Promise<boolean> {
  */
 export async function generateMetadata({
   params,
-}: PageProps<"/athletes/[slug]">): Promise<Metadata> {
+}: PageProps<"/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const record = await getProfileBySlug(slug);
 
@@ -71,7 +71,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function AthleteProfilePage({ params }: PageProps<"/athletes/[slug]">) {
+export default async function AthleteProfilePage({ params }: PageProps<"/[slug]">) {
   const { slug } = await params;
   const record = await getProfileBySlug(slug);
 

@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/Container";
 import { SocialGlyph, CameraGlyph } from "@/components/profile/glyphs";
+import { heroHeadline, heroMeta } from "@/components/profile/profile-display";
 import { clampHeroZoom, type AthleteProfileView } from "@/lib/athlete-profile";
 
 type FocalPoint = { x: number; y: number };
@@ -21,12 +22,31 @@ type ProfileHeroProps = {
   photoPosition?: FocalPoint;
   /** Zoom multiplier (see clampHeroZoom). Defaults to 1 (no zoom) when omitted. */
   photoZoom?: number;
+  /**
+   * Whether this surface is the explicitly-labelled fictional example.
+   *
+   * Gates the decorative social/contact glyph row, which is not backed by any
+   * athlete data — no social field is in the anonymous 18, and none is ever
+   * read here. On a real profile those icons read as the athlete's actual
+   * links, and the row's own screen-reader text used to say so out loud
+   * ("sample placeholders") on a real athlete's page. Shown only on the demo,
+   * where sample presentation is the point.
+   */
+  example?: boolean;
 };
 
-export function ProfileHero({ athlete, photoUrl, photoPosition, photoZoom }: ProfileHeroProps) {
+export function ProfileHero({
+  athlete,
+  photoUrl,
+  photoPosition,
+  photoZoom,
+  example,
+}: ProfileHeroProps) {
   const position = photoPosition ?? DEFAULT_PHOTO_POSITION;
   const zoom = clampHeroZoom(photoZoom ?? 1);
   const focalPointPercent = `${position.x * 100}% ${position.y * 100}%`;
+  const headline = heroHeadline(athlete);
+  const meta = heroMeta(athlete);
 
   return (
     <section className="border-b border-border">
@@ -76,28 +96,32 @@ export function ProfileHero({ athlete, photoUrl, photoPosition, photoZoom }: Pro
           <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-6xl md:text-7xl">
             {athlete.name}
           </h1>
-          <p className="mt-3 text-lg text-[var(--athlete-accent-light)] sm:text-xl">
-            {athlete.sport} · {athlete.position}
-          </p>
-          <p className="mt-1 text-base text-muted-foreground">
-            Class of {athlete.classYear} · {athlete.location}
-          </p>
+          {headline ? (
+            <p className="mt-3 text-lg text-[var(--athlete-accent-light)] sm:text-xl">{headline}</p>
+          ) : null}
+          {meta ? <p className="mt-1 text-base text-muted-foreground">{meta}</p> : null}
         </Container>
       </div>
 
-      <Container className="flex flex-wrap items-center justify-between gap-4 py-5">
-        {athlete.heightWeight ? (
-          <p className="text-sm text-muted-foreground">{athlete.heightWeight}</p>
-        ) : (
-          <span />
-        )}
-        <div aria-hidden="true" className="flex items-center gap-2">
-          <SocialGlyph icon="handle" />
-          <SocialGlyph icon="camera" />
-          <SocialGlyph icon="mail" />
-        </div>
-        <p className="sr-only">Social and contact links (sample placeholders).</p>
-      </Container>
+      {athlete.heightWeight || example ? (
+        <Container className="flex flex-wrap items-center justify-between gap-4 py-5">
+          {athlete.heightWeight ? (
+            <p className="text-sm text-muted-foreground">{athlete.heightWeight}</p>
+          ) : (
+            <span />
+          )}
+          {example ? (
+            <>
+              <div aria-hidden="true" className="flex items-center gap-2">
+                <SocialGlyph icon="handle" />
+                <SocialGlyph icon="camera" />
+                <SocialGlyph icon="mail" />
+              </div>
+              <p className="sr-only">Social and contact links (sample placeholders).</p>
+            </>
+          ) : null}
+        </Container>
+      ) : null}
     </section>
   );
 }

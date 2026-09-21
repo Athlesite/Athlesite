@@ -3,6 +3,7 @@ import {
   type AthleteProfileData,
   type AthleteProfileView,
 } from "@/lib/athlete-profile";
+import type { RecruitingPosture } from "@/components/profile/profile-display";
 
 // Kept as an alias so existing imports/typing elsewhere don't need to change.
 export type ExampleAthlete = AthleteProfileView;
@@ -44,9 +45,24 @@ const jordanBellData: AthleteProfileData = {
   nilInterests: "",
 };
 
-export const exampleAthlete: ExampleAthlete = {
-  ...toAthleteProfileView(jordanBellData),
-  // Preserve the original aspirational short link shown on the homepage teaser
-  // rather than the hyphenated slug used for the actual route.
-  displayUrl: "athlesite.com/jordanbell",
+/**
+ * Derived straight from the fixture, with no overrides.
+ *
+ * The previous `displayUrl: "athlesite.com/jordanbell"` override showed a URL
+ * that matched neither this fixture's own slug (`jordan-bell`) nor any route
+ * that existed — the same class of defect Checkpoint 5D.3 fixes for real
+ * athletes. Now that profiles live at the root, the derived value and the
+ * real route agree.
+ */
+export const exampleAthlete: ExampleAthlete = toAthleteProfileView(jordanBellData);
+
+/**
+ * The example's real recruiting/NIL posture, which the demo page may render
+ * because these are fictional fixture values on a page banner-labelled as
+ * sample data. No real public profile can supply this — see
+ * profile-display.ts's RecruitingPosture.
+ */
+export const exampleAthletePosture: RecruitingPosture = {
+  recruitingStatus: jordanBellData.recruitingStatus,
+  nilOpen: jordanBellData.nilOpen,
 };

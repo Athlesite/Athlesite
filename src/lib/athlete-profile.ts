@@ -56,6 +56,37 @@ export type AthleteProfileData = {
 };
 
 /**
+ * Exactly the athlete fields an anonymous visitor may read — the domain-model
+ * half of the approved 18-column anonymous grant (docs/ai/DECISIONS.md
+ * § Anonymous reads are column-scoped).
+ *
+ * This exists so a public surface is *structurally incapable* of reading a
+ * private field, rather than merely discouraged from it. The subtlety it
+ * guards against is specific and would otherwise be invisible:
+ * `toAthleteProfileData` normalizes a partial row, so on the public read path
+ * the un-fetched private columns silently become `recruitingStatus:
+ * "undecided"`, `nilOpen: false`, and empty contacts/socials — values
+ * indistinguishable from a real athlete's choice. Rendering any of those
+ * would not be "missing data", it would be a *fabricated claim* about a
+ * minor. Omitting them from the type makes that a compile error.
+ *
+ * `schoolOrTeam` is excluded for the same reason it is excluded from the
+ * grant: name + school + city + class year is a precise real-world locator
+ * for a minor.
+ */
+export type PublicAthleteProfileFields = Omit<
+  AthleteProfileData,
+  | "schoolOrTeam"
+  | "recruitingStatus"
+  | "recruitingContact"
+  | "recruitingNotes"
+  | "social"
+  | "nilOpen"
+  | "nilContact"
+  | "nilInterests"
+>;
+
+/**
  * The flat, presentational shape the existing profile-rendering
  * components (ProfileHero, ProfileRecruitingNil, etc.) already consume.
  */
@@ -231,7 +262,43 @@ function formatHeightWeight(heightIn: number | null, weightLb: number | null): s
   return parts.join(" · ");
 }
 
-export function toAthleteProfileView(data: AthleteProfileData): AthleteProfileView {
+/**
+ * The public host an athlete's link is spoken and written as.
+ *
+ * Deliberately a bare host with no scheme: this is what an athlete reads,
+ * copies, and says out loud, not something used to build an href. Navigation
+ * always uses athleteRoutePath below.
+ */
+export const PUBLIC_HOST = "athlesite.com";
+
+/**
+ * The canonical in-app path for an athlete's public profile: the slug at the
+ * root, with no prefix (docs/ai/DECISIONS.md § The canonical public athlete
+ * URL is athlesite.com/{slug}).
+ *
+ * The old implementation-stage `/athletes/{slug}` shape is kept working as a
+ * permanent redirect (see next.config.ts) so any link shared before this
+ * change still resolves — but nothing generates it any more.
+ */
+export function athleteRoutePath(slug: string): string {
+  return `/${slug}`;
+}
+
+/**
+ * The same URL as the athlete sees it written.
+ *
+ * Built from athleteRoutePath rather than re-templated, so the displayed URL
+ * and the route it actually navigates to cannot drift apart — which is
+ * exactly what happened before this checkpoint, when the product told
+ * athletes `athlesite.com/{slug}` while serving `/athletes/{slug}`. The
+ * invariant `displayUrl === PUBLIC_HOST + routePath` is asserted in
+ * athlete-profile.test.ts.
+ */
+export function athleteDisplayUrl(slug: string): string {
+  return `${PUBLIC_HOST}${athleteRoutePath(slug)}`;
+}
+
+export function toAthleteProfileView(data: PublicAthleteProfileFields): AthleteProfileView {
   const name = `${data.firstName} ${data.lastName}`.trim();
   const location = [data.city, data.state].filter(Boolean).join(", ");
 
@@ -244,14 +311,35 @@ export function toAthleteProfileView(data: AthleteProfileData): AthleteProfileVi
     heightWeight: formatHeightWeight(data.heightIn, data.weightLb),
     bio: data.bio,
     highlights: data.highlightLinks,
-    displayUrl: `athlesite.com/${data.slug}`,
-    routePath: `/athletes/${data.slug}`,
+    displayUrl: athleteDisplayUrl(data.slug),
+    routePath: athleteRoutePath(data.slug),
   };
 }
 
 const SLUG_PATTERN = /^[a-z][a-z0-9-]{2,29}$/;
 
+/**
+ * Root-level names an athlete may not claim as a slug.
+ *
+ * Load-bearing as of this checkpoint: athlete profiles now live at the root
+ * (`/{slug}`), so this list is the only thing standing between an athlete's
+ * live public URL and a future application or marketing route silently
+ * shadowing it. A static segment always wins over the root dynamic segment in
+ * Next's router, so adding `src/app/privacy/` later would not error — it
+ * would just quietly take over `/privacy` from whichever athlete had claimed
+ * it, breaking a link they had already shared.
+ *
+ * That is why this list covers names that are *not* routes yet. Reserving a
+ * name costs nothing today (no athlete holds a slug); un-reserving one after
+ * an athlete has shared their link is a live-URL migration.
+ * `npm run check:slugs` asserts every existing root segment appears here, but
+ * a machine check can only cover routes that already exist — the
+ * forward-looking entries are the deliberate part.
+ *
+ * Never shrink this list (docs/ai/GUARDRAILS.md § Authority).
+ */
 const RESERVED_SLUGS = new Set([
+  // Existing application routes.
   "get-started",
   "edit-profile",
   "athletes",
@@ -262,6 +350,32 @@ const RESERVED_SLUGS = new Set([
   "login",
   "signup",
   "onboarding",
+
+  // Legal and policy pages the pilot will need.
+  "privacy",
+  "terms",
+
+  // Marketing and company routes.
+  "about",
+  "contact",
+  "support",
+  "help",
+  "pricing",
+  "blog",
+  "resources",
+
+  // Account and application surfaces.
+  "account",
+  "settings",
+  "dashboard",
+
+  // Product-section names already used as marketing anchors.
+  "recruiting",
+  "nil",
+
+  // Infrastructure hostnames that must never resolve to an athlete.
+  "www",
+  "app",
 ]);
 
 export function slugify(input: string): string {

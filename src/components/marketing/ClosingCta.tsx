@@ -24,7 +24,7 @@ export function ClosingCta() {
         </p>
         <div className="mt-9 flex flex-wrap gap-3">
           <Button href="/get-started">Create Your Athlesite</Button>
-          <Button href="/athletes/jordan-bell" variant="secondary">See It In Action</Button>
+          <Button href="/jordan-bell" variant="secondary">See It In Action</Button>
         </div>
       </Container>
     </section>

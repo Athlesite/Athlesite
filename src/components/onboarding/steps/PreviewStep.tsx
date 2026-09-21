@@ -113,6 +113,11 @@ export function PreviewStep({
           photoZoom={profile.heroPhotoZoom ?? MIN_HERO_ZOOM}
         />
         <ProfileBio bio={athlete.bio} />
+        {/*
+          Preview parity (Checkpoint 5D.3): no posture is passed even though
+          the draft has one, so this preview shows exactly what the athlete's
+          real public page will show — see EditProfileForm for the same note.
+        */}
         <ProfileHighlights highlights={athlete.highlights} />
         <ProfileRecruitingNil athlete={athlete} />
       </div>

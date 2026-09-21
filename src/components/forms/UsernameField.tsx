@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { cn } from "@/lib/cn";
+import { PUBLIC_HOST } from "@/lib/athlete-profile";
 
 type UsernameFieldProps = {
   value: string;
@@ -53,7 +54,7 @@ export function UsernameField({
           error ? "border-red-500/60" : "border-border"
         )}
       >
-        <span className="pl-4 font-mono text-sm text-muted-foreground">athlesite.com/</span>
+        <span className="pl-4 font-mono text-sm text-muted-foreground">{PUBLIC_HOST}/</span>
         <input
           id={id}
           ref={inputRef}
