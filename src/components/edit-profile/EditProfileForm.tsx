@@ -16,7 +16,13 @@ import { BrandLinksSection } from "@/components/edit-profile/sections/BrandLinks
 import { HighlightsSection } from "@/components/edit-profile/sections/HighlightsSection";
 import { MediaSection } from "@/components/edit-profile/sections/MediaSection";
 import { PublishSection } from "@/components/edit-profile/PublishSection";
-import { toAthleteProfileView, MIN_HERO_ZOOM, type AthleteProfileData } from "@/lib/athlete-profile";
+import {
+  toAthleteProfileView,
+  athleteRoutePath,
+  athleteDisplayUrl,
+  MIN_HERO_ZOOM,
+  type AthleteProfileData,
+} from "@/lib/athlete-profile";
 import { updateProfile, type MediaSlotIntent } from "@/lib/profile-save";
 import { signOutAndGetRedirectPath, navigateAfterSignOut } from "@/components/edit-profile/sign-out";
 import type { OwnerAthleteProfileRecord } from "@/lib/db-mappers";
@@ -288,10 +294,10 @@ export function EditProfileForm({ record, heroPhotoUrl, profilePhotoUrl }: EditP
             <p className="mt-4 text-sm text-muted-foreground">
               <span className="text-accent-light">●</span> Published — visible at{" "}
               <Link
-                href={`/athletes/${persistedSlug}`}
+                href={athleteRoutePath(persistedSlug)}
                 className="text-foreground underline-offset-4 hover:underline"
               >
-                {`athlesite.com/${persistedSlug}`}
+                {athleteDisplayUrl(persistedSlug)}
               </Link>
             </p>
           ) : (
@@ -314,6 +320,13 @@ export function EditProfileForm({ record, heroPhotoUrl, profilePhotoUrl }: EditP
           photoZoom={profile.heroPhotoZoom ?? MIN_HERO_ZOOM}
         />
         <ProfileBio bio={athlete.bio} />
+        {/*
+          Preview parity (Checkpoint 5D.3): this form holds the athlete's full
+          owner record, including recruiting status and NIL openness — and
+          deliberately passes neither. A preview richer than the real public
+          page would teach the athlete their posture is published when it is
+          not. What they see here is what a coach sees.
+        */}
         <ProfileHighlights highlights={athlete.highlights} />
         <ProfileRecruitingNil athlete={athlete} />
       </div>
@@ -381,7 +394,7 @@ function buildSuccessMessage(
   slugChanged: boolean,
   mediaCleanupWarning?: string
 ): string {
-  const url = `athlesite.com/${slug}`;
+  const url = athleteDisplayUrl(slug);
 
   let message: string;
   if (!slugChanged) {

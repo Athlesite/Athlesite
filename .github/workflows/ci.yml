@@ -9,10 +9,14 @@ on:
       - main
 
 # Read-only: this workflow never needs to write to the repo, and the build
-# needs no secrets or environment variables — /athletes/[slug] is fully
-# dynamic, never statically generated, so nothing at build time touches
-# Supabase (verified: `npm run build` succeeds identically with no .env.local
-# present at all).
+# needs no secrets or environment variables — /[slug] is fully dynamic,
+# never statically generated, so nothing at build time touches Supabase
+# (verified: `npm run build` succeeds identically with no .env.local present
+# at all). The redirect check below spins up the real built server and needs
+# no Supabase configuration either: it asserts redirect behavior only, and
+# is deliberately agnostic to the unrelated 500 that Supabase-backed pages
+# (`/edit-profile`, `/get-started`) correctly return with no config present
+# (see check-redirects.mjs's own docblock).
 permissions:
   contents: read
 
@@ -50,3 +54,9 @@ jobs:
 
       - name: Anonymous column grant parity
         run: npm run check:columns
+
+      - name: Reserved root-slug parity
+        run: npm run check:slugs
+
+      - name: Redirect canonicalization (real server)
+        run: npm run check:redirects

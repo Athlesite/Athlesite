@@ -12,7 +12,11 @@ import { PreviewStep } from "@/components/onboarding/steps/PreviewStep";
 import type { PhotoPreview } from "@/components/forms/FileField";
 import { useInlineOtp } from "@/components/auth/useInlineOtp";
 import { getCurrentUser } from "@/lib/supabase/auth";
-import { createEmptyAthleteProfile, type AthleteProfileData } from "@/lib/athlete-profile";
+import {
+  athleteRoutePath,
+  createEmptyAthleteProfile,
+  type AthleteProfileData,
+} from "@/lib/athlete-profile";
 import { loadDraft, saveDraft, loadDraftStep, saveDraftStep } from "@/lib/onboarding-storage";
 import { createProfile, checkOwnershipStatus, type SaveProfileResult } from "@/lib/profile-save";
 
@@ -184,7 +188,7 @@ export function OnboardingWizard() {
     });
 
     if (result.ok) {
-      router.push(`/athletes/${result.slug}`);
+      router.push(athleteRoutePath(result.slug));
       return result;
     }
 

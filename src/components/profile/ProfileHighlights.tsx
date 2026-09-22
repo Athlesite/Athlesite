@@ -1,12 +1,29 @@
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { HighlightMedia } from "@/components/profile/HighlightMedia";
+import { usableHighlights } from "@/components/profile/profile-display";
 import type { HighlightLink } from "@/lib/athlete-profile";
 
-export function ProfileHighlights({ highlights }: { highlights: HighlightLink[] }) {
-  if (highlights.length === 0) return null;
+type ProfileHighlightsProps = {
+  highlights: HighlightLink[];
+  /**
+   * Whether this surface is the explicitly-labelled fictional example.
+   *
+   * Gates two demo-only behaviours: keeping highlight slots that have a label
+   * but no URL (which render as cards that look playable and are not — fine
+   * when demonstrating the layout, misleading on a real athlete's page), and
+   * the note describing which formats Athlesite supports, which is product
+   * copy rather than anything the athlete wrote.
+   */
+  example?: boolean;
+};
 
-  const [featured, ...secondary] = highlights;
+export function ProfileHighlights({ highlights, example }: ProfileHighlightsProps) {
+  const visible = usableHighlights(highlights, { example });
+
+  if (visible.length === 0) return null;
+
+  const [featured, ...secondary] = visible;
 
   return (
     <Section className="border-b border-border bg-surface/40">
@@ -31,9 +48,11 @@ export function ProfileHighlights({ highlights }: { highlights: HighlightLink[] 
           </div>
         ) : null}
 
-        <p className="mt-4 text-xs text-muted-foreground">
-          Real highlight reels, Hudl embeds, and uploaded film live here alongside YouTube.
-        </p>
+        {example ? (
+          <p className="mt-4 text-xs text-muted-foreground">
+            Real highlight reels, Hudl embeds, and uploaded film live here alongside YouTube.
+          </p>
+        ) : null}
       </Container>
     </Section>
   );

@@ -58,6 +58,13 @@ export function AthleteProfileView({
         photoZoom={record.profile.heroPhotoZoom ?? MIN_HERO_ZOOM}
       />
       <ProfileBio bio={athlete.bio} />
+      {/*
+        No `posture` and no `example`, deliberately. Recruiting status and NIL
+        openness are outside the anonymous 18-column grant, so this page cannot
+        know them — and a default would be a fabricated claim, not a blank
+        field. The components render facts only: no recruiting sentence, no NIL
+        section, no placeholder contact paths. See profile-display.ts.
+      */}
       <ProfileHighlights highlights={athlete.highlights} />
       <ProfileRecruitingNil athlete={athlete} />
       {isOwner ? (

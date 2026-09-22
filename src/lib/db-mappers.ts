@@ -2,6 +2,7 @@ import {
   clampHeroZoom,
   normalizeAthleteProfileData,
   type AthleteProfileData,
+  type PublicAthleteProfileFields,
 } from "@/lib/athlete-profile";
 
 /**
@@ -105,6 +106,16 @@ export type PublicAthleteProfileRow = Pick<
  *
  * Media fields are object *paths*, never URLs. Signed URLs are generated at
  * render time (docs/ai/GUARDRAILS.md § Storage).
+ *
+ * `profile` is deliberately `PublicAthleteProfileFields`, not the full
+ * `AthleteProfileData` (Checkpoint 5D.3). The distinction is load-bearing:
+ * `toAthleteProfileData` normalizes a *partial* row, so on the public read
+ * path the un-fetched private columns come back as `recruitingStatus:
+ * "undecided"`, `nilOpen: false`, and empty contacts/socials — values a
+ * renderer cannot tell apart from a real athlete's choice. Rendering one
+ * would not be a missing field, it would be a fabricated claim about a
+ * minor. Narrowing the type here makes reading one a compile error rather
+ * than a judgement call at every call site.
  */
 export type PublicAthleteProfileRecord = {
   /**
@@ -119,7 +130,7 @@ export type PublicAthleteProfileRecord = {
   ownerUserId: string;
   isPublished: boolean;
   heroPhotoPath: string | null;
-  profile: AthleteProfileData;
+  profile: PublicAthleteProfileFields;
 };
 
 /**
@@ -208,7 +219,7 @@ export function toPublicAthleteProfileRecord(
  * Deliberately a separate, unrelated type from PublicAthleteProfileRecord —
  * not a superset via extension — so a component that expects one can never
  * accept the other by accident. This is what an athlete's own /edit-profile
- * reads; a public /athletes/[slug] view must never receive this shape.
+ * reads; a public /[slug] view must never receive this shape.
  *
  * Media fields are object *paths*, never URLs. Signed URLs are generated at
  * render time (docs/ai/GUARDRAILS.md § Storage).
@@ -400,6 +411,48 @@ export function toAthleteProfileUpdateRow(
 // @ts-expect-error — OwnerAthleteProfileRecord must not satisfy PublicAthleteProfileRecord.
 const _ownerIsNotPublic: PublicAthleteProfileRecord = null as unknown as OwnerAthleteProfileRecord;
 void _ownerIsNotPublic;
+
+/**
+ * Compile-time proof that a public record cannot surface a private field
+ * (Checkpoint 5D.3).
+ *
+ * Each line below reads a field that exists on the athlete's full row but is
+ * outside the anonymous 18-column grant. Every one must be a type error: if
+ * `PublicAthleteProfileRecord["profile"]` were ever widened back to
+ * `AthleteProfileData`, these reads would start succeeding, the
+ * `@ts-expect-error` directives would report themselves as unused, and the
+ * build would fail — turning a silent re-widening into a loud one.
+ *
+ * What makes this worth guarding rather than trusting to review: these reads
+ * would not fail at runtime or look obviously wrong. They would quietly
+ * return `"undecided"` / `false` / `""` — normalized defaults for columns
+ * that were never fetched — and a renderer would present them as the
+ * athlete's own answers. These lines produce no runtime code.
+ */
+type _PublicProfile = PublicAthleteProfileRecord["profile"];
+
+type _PrivateFieldsAreUnreadable = {
+  // @ts-expect-error — recruiting status is private; a public surface must not read it.
+  recruitingStatus: _PublicProfile["recruitingStatus"];
+  // @ts-expect-error — NIL openness is private.
+  nilOpen: _PublicProfile["nilOpen"];
+  // @ts-expect-error — recruiting contact is private.
+  recruitingContact: _PublicProfile["recruitingContact"];
+  // @ts-expect-error — NIL contact is private.
+  nilContact: _PublicProfile["nilContact"];
+  // @ts-expect-error — recruiting notes are private.
+  recruitingNotes: _PublicProfile["recruitingNotes"];
+  // @ts-expect-error — NIL interests are private.
+  nilInterests: _PublicProfile["nilInterests"];
+  // @ts-expect-error — social links are private.
+  social: _PublicProfile["social"];
+  // @ts-expect-error — school/team is deliberately outside the public grant.
+  schoolOrTeam: _PublicProfile["schoolOrTeam"];
+};
+
+// Type-only: erased entirely at build time, so this asserts without running.
+const _privateFieldsAreUnreadable: _PrivateFieldsAreUnreadable | undefined = undefined;
+void _privateFieldsAreUnreadable;
 
 /**
  * The columns the application writes. Deliberately narrower than

@@ -78,7 +78,7 @@ export function Hero() {
               </Button>
 
               <Link
-                href="/athletes/jordan-bell"
+                href="/jordan-bell"
                 className="group inline-flex items-center gap-3.5 rounded-full text-[15px] font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <span className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full border border-border-strong text-foreground/80 transition-colors group-hover:border-accent group-hover:text-accent-light">
