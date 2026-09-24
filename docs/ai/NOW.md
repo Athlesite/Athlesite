@@ -1,6 +1,10 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-23 · `main` @ `e315e35`
+Deployment checkpoint updated: 2026-09-24 · base `main` @ `23c5e1622c9a62cb3de2b6a9be8f0e70e143cdd5`
+
+Only deployment-related status was refreshed for 5D.5B. The older branch table and
+Phase B follow-ups below are historical and need a separate reconciliation; do not
+treat them as a current inventory without checking the code.
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -183,7 +187,8 @@ custom SMTP is on). Never hardcode an OTP length — it is a dashboard value.
 domain verification and therefore custom email.
 
 **Site URL is deliberately still `http://localhost:3000`.** It stays that way until a
-deployment host exists; nothing should invent a production URL before then.
+deployment is ready. The selected future production origin is
+`https://athlesite.com`; the live Supabase setting has not been changed.
 
 **Verified end to end against the live Athlete project (2026-09-23).** A full lifecycle
 was driven in a real browser: onboard → 8-digit OTP → hero + profile upload → save and
@@ -223,33 +228,39 @@ blocks Tailwind's native `.node` binary inside Turbopack's PostCSS worker. `npm 
 and `npm start` are unaffected, and the lifecycle above was verified against a production
 build. Machine-local, unrelated to Supabase.
 
-**Deployment — deliberately unresolved.** No provider has been chosen and this is not
-yet a founder decision. Do not assume Vercel or any other host, and do not add
-host-specific configuration until the founders decide.
+**Deployment — Vercel Pro selected; repository preparation (5D.5B).** The canonical
+production origin is `https://athlesite.com`; `www.athlesite.com` will redirect to
+the apex. Marketing/app subdomains are deferred. No Vercel project, DNS change,
+live Supabase configuration change, or additional Supabase project is part of this
+checkpoint. Production environment values are not committed. Preview deployments
+must have no production Athlete Supabase configuration; only marketing and the
+fictional example work without it. Auth and real-profile routes fail at request time.
+See `DECISIONS.md § The athlete app deploys to Vercel Pro` for environment scoping,
+the required `supabase config diff` review before future config pushes, and
+organization-wide Supabase billing implications for Athlete and Ops.
 
 ## Not present in this repo
 
-No deployment configuration of any kind — no host chosen, so nothing host-specific
-exists (`DECISIONS.md § Deployment provider is deliberately undecided`).
-
-No `error.tsx` / `not-found.tsx` boundary. Save failures are shown to athletes in the
-UI, but there is no centralized server-side error reporting for founders — so a pilot
-athlete's problem is invisible unless they report it.
+No live deployment setup yet. Repository preparation pins Node 24 to match CI,
+adds a validated metadata origin with a localhost default, and provides branded
+`error.tsx` / `not-found.tsx` fallbacks. The error boundary covers children of the
+root layout, not errors in the root layout itself. There is still no centralized
+error reporting or alerting for founders; the boundary logs only a digest in the
+browser. Error visibility remains follow-up work.
 
 *(Previously listed here and now built: CI, a PR template, a test runner wired into CI,
 a `typecheck` script, and the whole authentication path — all present.)*
 
 ## Next
 
-1. **5D.5 — deployment.** Choosing a host is now the critical path; it also resolves the
-   Site URL, which is deliberately still localhost.
+1. **5D.5 — deployment.** Independently review 5D.5B, then separately authorize
+   Vercel project setup, Production-only environment values, apex and `www` domain
+   setup, and the Supabase Site URL change. Validate on-host redirects before launch.
 2. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
-   guardian-consent process, draft-clearing on shared devices, error boundaries and
-   minimum error visibility.
+   guardian-consent process, draft-clearing on shared devices, and minimum error visibility.
 
 ## Blocked on founder
 
 - Pilot definition: how many athletes, by when, and what counts as success.
-- Deployment provider.
 - Whether `recruiting_status` should ever become publicly readable (deferred at 5D.3, so
   public profiles currently state no recruiting or NIL posture at all).
