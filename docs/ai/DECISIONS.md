@@ -486,13 +486,73 @@ OTP expiry 3600s; `rate_limit_email_sent` raised from 2/hour to **30/hour**.
 declaring a partial `[auth.email.smtp]` block in `config.toml` (the API masks
 `smtp_pass`, so it can never round-trip).
 
-### Deployment provider is deliberately undecided
-**Active** · 2026-09-06
-**Decision.** No deployment host has been chosen. Leave it open.
-**Why.** It is not yet a founder decision, and committing host-specific configuration
-now would quietly make it one.
-**Rules out.** Assuming Vercel or any other host, and adding host-specific config,
-adapters, or deploy scripts before the founders decide.
+### The athlete app deploys to Vercel Pro, serving the apex `athlesite.com`
+**Active** · 2026-09-24 · founder decision · supersedes "Deployment provider is
+deliberately undecided" (2026-09-06)
+
+**Decision.**
+- **Host: Vercel Pro.** Pro rather than Hobby because Hobby's terms exclude commercial
+  use, and Athlesite is a commercial product.
+- **Canonical production origin: `https://athlesite.com`** — the apex, served by the
+  Next app itself.
+- **`www.athlesite.com` redirects to the apex.**
+- **The marketing/app subdomain split is deferred.** The Next app continues to own the
+  apex.
+
+**Why Vercel specifically, for this codebase.** The canonicalisation behaviour settled in
+5D.3 — the three-rule redirect table, `skipTrailingSlashRedirect`, and one-hop
+`/athletes/:slug/` → `/:slug` — is verified by `npm run check:redirects` driving a real
+`next start` server. CI verifies local Next.js routing; verify Vercel routing and domain
+redirects on the deployed host before launch. A third-party adapter reimplements routing and would require
+re-verifying every hop. `proxy.ts` is also Next 16's new middleware convention, where
+first-party support removes adapter-lag risk outright. For two founders with no ops
+capacity, that is worth more than a cheaper tier.
+
+**Why the apex, and why the split is deferred.** Athlete profiles live at
+`/{slug}`, and `PUBLIC_HOST` in `src/lib/athlete-profile.ts` tells every athlete their
+link is `athlesite.com/{slug}`. Whatever serves the apex must therefore be the app.
+Putting the app on `app.athlesite.com` would re-open the exact defect 5D.3 closed —
+showing athletes a URL that does not resolve — and lengthening the link contradicts the
+product thesis of one clean, ownable identity link. A split cannot work while profiles
+sit at the apex, because both deployments would need it.
+
+**Rules out.** Serving athlete profiles from a subdomain; treating `www` as canonical;
+and adding host-specific configuration where `next.config.ts` already covers the
+behaviour (no `vercel.json` is expected — portability is worth more than convenience).
+
+**Deployment preparation (5D.5B).** This checkpoint prepares the repository only.
+No Vercel project or DNS changes are made. The `www` → apex redirect is a future
+hosting/domain setup step, not something `metadataBase` implements. Verify the
+redirect and existing path canonicalization on the actual host before launch.
+The Supabase Site URL remains localhost until the deployment is ready; do not
+change it or any live configuration during repository preparation. Before any
+future Supabase configuration push, run and review `supabase config diff` against
+the intended Athlete project, preserving dashboard-managed SMTP settings.
+
+**Environment and preview isolation.** Production environment values are never
+committed. `.env.example` lists names with empty values; configure real values in
+the hosting platform's **Production** scope only. The site origin there will be
+`https://athlesite.com`. Preview deployments must not read or write production
+Athlete Supabase: leave their Supabase variables absent, including branch-specific
+overrides, and never import a production `.env.local` into previews. No additional
+Supabase project is created for this checkpoint. The homepage and `/jordan-bell`
+fixture work without Supabase; `/get-started`, `/edit-profile`, and real profile
+routes fail at request time without it. This is an accepted preview limitation,
+not a reason to connect previews to production or bypass authentication.
+
+**Indexing.** Real athlete profile metadata remains `noindex, nofollow` for the
+pilot. Missing and invisible profiles share the same generic `notFound()` path;
+Next supplies `noindex` for 404s. The homepage and fictional example stay indexable.
+No `robots.ts` or sitemap is added: blocking crawling would prevent crawlers from
+seeing the existing per-page `noindex` directives.
+
+**Supabase billing.** Plans are organization-based: upgrading the shared organization
+to Pro affects both Athlete and Ops projects, with compute charged per project.
+This records billing scope, not an instruction to upgrade or a claim that an upgrade
+has occurred. See [Supabase billing documentation](https://supabase.com/docs/guides/platform/billing-on-supabase).
+
+**Revisit when.** Marketing moves to a CMS, or the app outgrows a single deployment.
+Even then the app keeps the apex.
 
 ---
 

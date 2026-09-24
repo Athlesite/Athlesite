@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Anton, Geist, Geist_Mono, Oswald } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { resolveSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,17 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
+  /**
+   * The base every relative metadata URL resolves against. Supplied by
+   * NEXT_PUBLIC_SITE_URL, falling back to localhost so local development and
+   * a bare `npm run build` need no configuration — see site-url.ts, which
+   * throws rather than silently accepting a malformed value.
+   *
+   * No page sets an Open Graph or Twitter image yet, so nothing resolves
+   * against this today; it is here so the first one that does is correct in
+   * production rather than pointing at localhost.
+   */
+  metadataBase: resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   title: "Athlesite — Your Name. Your Game. Your Brand.",
   description:
     "Athlesite gives athletes one professional digital home for their identity, recruiting story, and brand.",
