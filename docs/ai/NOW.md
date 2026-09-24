@@ -1,6 +1,6 @@
 # NOW — Athlesite current state
 
-Last updated: 2026-09-11 · `main` @ `e7cb1de`
+Last updated: 2026-09-23 · `main` @ `e315e35`
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -149,34 +149,79 @@ refreshed these docs. Merged branches have since been deleted.
 
 ## Real external setup state
 
-**Supabase — created, migrated, and running.** Both Phase A migrations were applied by
-pasting them into the SQL Editor and executing them successfully: migration 1 created
-the athlete profile schema and its RLS, migration 2 created the private `athlete-media`
-bucket and its Storage policies. Email authentication and new-user signup are enabled.
+**Supabase — the athlete product now runs on its own project.** Athlete and Ops are
+separated (`DECISIONS.md § Athlete and Ops are separate Supabase projects`):
 
-*Consequence:* because the migrations were applied by hand rather than through the CLI,
-the repository and the live project are not linked. `supabase/config.toml` does not
-exist — `supabase init` has not been run and committed — so migrations are not yet
-reproducibly appliable by a second person or machine. The SQL files remain
-authoritative; apply them in order.
+| Project | Role |
+| --- | --- |
+| **Athlete Supabase project** | the only project this repo links to |
+| **Ops Supabase project** | retained, Ops-only, **never targeted from here** |
+
+Project refs are deliberately not recorded in this repository — it is public, and
+`GUARDRAILS.md § Secrets` excludes Supabase project refs from tracked files. The live
+ref lives only in gitignored `supabase/.temp/` and in the Supabase dashboard.
+
+All three migrations are applied to the Athlete project and verified `local == remote`:
+the `athlete_profiles` table + slug index + `set_updated_at()` trigger, five table RLS
+policies, the column-scoped `anon` grant of exactly 18 columns, and the **private**
+`athlete-media` bucket with its four Storage policies. `supabase/config.toml` now exists
+and is linked to the Athlete project, closing the old "not reproducibly appliable"
+gap — the remote ref lives in gitignored `supabase/.temp/`, never in the committed file.
+
+**Transactional email — live, on Resend via Supabase custom SMTP.** `smtp.resend.com:465`,
+user `resend`, sender `Athlesite <noreply@athlesite.com>`. The *Confirm signup* and
+*Magic link / OTP* templates use `{{ .Token }}` with **no** `{{ .ConfirmationURL }}` — a
+link in the email would be a navigation path, and navigating away from onboarding
+destroys the in-memory photo state. Template customization is gated behind custom SMTP,
+so SMTP must be configured before templates can be edited at all.
+
+**Auth settings on the Athlete project.** OTP length **8**, OTP expiry **3600s**, email
+rate limit **30/hour** (raised from the 2/hour default, which only becomes raisable once
+custom SMTP is on). Never hardcode an OTP length — it is a dashboard value.
 
 **Domain — owned.** `athlesite.com` is registered through Porkbun. This unblocked Resend
 domain verification and therefore custom email.
 
-**Transactional email — live, on Resend via Supabase custom SMTP.** DKIM and the send
-records are verified. Sender is `Athlesite <noreply@athlesite.com>`. Password-reset and
-invitation delivery were both verified by hand. The *Confirm signup* and *Magic
-link / OTP* templates use `{{ .Token }}` with **no** `{{ .ConfirmationURL }}` — a link in
-the email would be a navigation path, and navigating away from onboarding destroys the
-in-memory photo state.
+**Site URL is deliberately still `http://localhost:3000`.** It stays that way until a
+deployment host exists; nothing should invent a production URL before then.
 
-Note that template customization was gated behind configuring custom SMTP: on the free
-tier the default templates could not be edited, so numeric-OTP delivery was genuinely
-blocked until Resend was in place — not merely unbranded.
+**Verified end to end against the live Athlete project (2026-09-23).** A full lifecycle
+was driven in a real browser: onboard → 8-digit OTP → hero + profile upload → save and
+publish → canonical root URL → sign out → sign back in → text edit → slug change → media
+replaced → two successive saves → unpublish → republish. Anonymous checks confirmed the
+18 public columns readable, all 17 private columns refused with `42501`, `select=*`
+refused, and anon insert/update/delete blocked. All test data was deleted afterwards;
+the project is back to 0 profiles, 0 auth users, 0 Storage objects.
 
-**OTP codes are 8 digits, not 6.** This is a dashboard setting and can change without a
-code deploy, so nothing may hardcode a length. Most Supabase examples show 6; do not
-copy that in.
+Four things that verification established, worth carrying forward:
+
+- **A published athlete's *current* media is enumerable and fetchable by anyone holding
+  the publishable key.** The Storage read policy grants `anon` SELECT on objects whose
+  owner has a published profile, so the folder can be listed and objects fetched without
+  a signed URL. This is the existing policy design, not a regression — "private bucket"
+  means no public URL, not no anon access. Media on a published profile is public by
+  intent; treat it that way.
+- **The verified media-replacement lifecycle left no orphaned objects.** After replacing
+  both photos the folder held exactly two objects. Cleanup remains **best-effort** by
+  design (see the failed-save follow-up above), and the current contents of a published
+  athlete's folder stay listable under the existing Storage policy — so this observation
+  narrows the point above without eliminating it.
+- **Requesting an OTP creates the auth user immediately.** `shouldCreateUser: true` means
+  a mistyped address leaves a permanent unverified, never-signed-in user. One appeared
+  during testing from a single abandoned request. Expect strays during the pilot.
+- **`service_role` lacks `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on
+  `athlete_profiles`**, so ordinary PostgREST CRUD is unavailable to it. It retains
+  `TRUNCATE`, `REFERENCES`, and `TRIGGER` privileges. Operator tooling therefore cannot
+  read or write athlete rows through PostgREST; deletion goes through
+  `owner_user_id … on delete cascade`.
+
+**Still untested: WebP uploads.** PNG has now gone through the product's own upload path
+end to end; WebP has not.
+
+**`next dev` is broken on at least one founder machine** — Windows Application Control
+blocks Tailwind's native `.node` binary inside Turbopack's PostCSS worker. `npm run build`
+and `npm start` are unaffected, and the lifecycle above was verified against a production
+build. Machine-local, unrelated to Supabase.
 
 **Deployment — deliberately unresolved.** No provider has been chosen and this is not
 yet a founder decision. Do not assume Vercel or any other host, and do not add
@@ -184,19 +229,27 @@ host-specific configuration until the founders decide.
 
 ## Not present in this repo
 
-No CI, no PR template, no test framework, no `typecheck` npm script. All four exist in
-`athlesite-ops` and are portable — each as its own change, not bundled with feature work.
+No deployment configuration of any kind — no host chosen, so nothing host-specific
+exists (`DECISIONS.md § Deployment provider is deliberately undecided`).
 
-Authentication is not wired up yet either; the Supabase client and session plumbing
-landed in Phase B checkpoint 1, but nothing signs in or reads data through it so far.
+No `error.tsx` / `not-found.tsx` boundary. Save failures are shown to athletes in the
+UI, but there is no centralized server-side error reporting for founders — so a pilot
+athlete's problem is invisible unless they report it.
+
+*(Previously listed here and now built: CI, a PR template, a test runner wired into CI,
+a `typecheck` script, and the whole authentication path — all present.)*
 
 ## Next
 
-1. Phase B checkpoints 2–5 — mappers and profile reads, email OTP, save/publish, media.
-2. Register a domain, then finish Resend/SMTP and OTP email templates.
+1. **5D.5 — deployment.** Choosing a host is now the critical path; it also resolves the
+   Site URL, which is deliberately still localhost.
+2. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
+   guardian-consent process, draft-clearing on shared devices, error boundaries and
+   minimum error visibility.
 
 ## Blocked on founder
 
 - Pilot definition: how many athletes, by when, and what counts as success.
-- Domain registration — which in turn unblocks Resend/SMTP and OTP templates.
 - Deployment provider.
+- Whether `recruiting_status` should ever become publicly readable (deferred at 5D.3, so
+  public profiles currently state no recruiting or NIL posture at all).

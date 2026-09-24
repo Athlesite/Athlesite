@@ -424,6 +424,68 @@ own `AGENTS.md` for stack-specific technical instructions.
 with thin per-repo technical layers does not.
 **Rules out.** Duplicating shared context into `athlesite-ops`; it should link here.
 
+### Athlete and Ops are separate Supabase projects
+**Active** · 2026-09-23 · founder decision
+**Decision.** The athlete product and the internal Ops console run on **two separate
+Supabase projects**, each with its own database, Storage, and `auth.users`.
+
+- **Athlete Supabase project** (this repo): the only project this repository is ever
+  linked to.
+- **Ops Supabase project** (retained): keeps the Ops tables and the two founder Ops
+  identities. **Nothing in this repo may target it.**
+
+Neither project ref is recorded here. This repository is public, and
+`GUARDRAILS.md § Secrets` excludes Supabase project refs from tracked files — docs say
+*where* configuration lives, never *what* it is. The Athlete ref lives only in gitignored
+`supabase/.temp/` and in the Supabase dashboard.
+
+**Why.** Both products previously shared one project, which meant athletes and founders
+would land in the same `auth.users` table — `signInWithOtp({ shouldCreateUser: true })`
+creates an account for any email that requests a code, so a pilot athlete's identity
+would have been adjacent to Ops identities in one namespace. Separation also gives the
+athlete product its own blast radius, its own rate limits, and its own email
+configuration. The audit that preceded this (Checkpoint 5D.4A) found the athlete app
+touches exactly one table (`athlete_profiles`), one bucket (`athlete-media`), and zero
+Ops objects, so nothing had to be split.
+
+**Timing.** Done with 0 athlete profiles and 0 athlete auth users in existence, so no
+data migration was required — the cheapest possible moment.
+
+**What moved.** All three migrations were applied to the new project and verified
+(`local == remote` for each): the `athlete_profiles` table, its index, the
+`set_updated_at()` function and trigger, five table RLS policies, the column-scoped
+`anon` grant of exactly 18 columns, the private `athlete-media` bucket, and its four
+Storage policies.
+
+**Rules out.** Pointing this repo at the Ops Supabase project; a shared `auth.users`
+between athletes and founders; and any assumption that an Ops table is reachable from
+the athlete app.
+
+**Note.** `service_role` lacks `SELECT`, `INSERT`, `UPDATE`, and `DELETE` privileges on
+`athlete_profiles`, so ordinary PostgREST CRUD is unavailable. It retains `TRUNCATE`,
+`REFERENCES`, and `TRIGGER` privileges. The migrations grant table privileges only to
+`anon` and `authenticated`. Account deletion therefore works through the schema's own
+`owner_user_id … on delete cascade` instead.
+
+### Athlete Auth is configured through the Management API, not `config push`
+**Active** · 2026-09-23
+**Decision.** Auth settings on the Athlete project are changed with surgical
+`PATCH /v1/projects/{ref}/config/auth` calls. `supabase config push` is not used for
+auth configuration.
+**Why.** `UpdateAuthConfigBody` has no required fields, so a PATCH touches exactly the
+fields it names. `config push`, by contrast, sends every property `supabase/config.toml`
+*declares* — including values present only because `supabase init` wrote them — and the
+CLI's own help warns that a non-interactive push defaults to proceeding. A push with the
+stock template would have silently reverted the 8-digit OTP to 6 and pointed `site_url`
+at localhost.
+**Live configuration set this way.** Custom SMTP via Resend (`smtp.resend.com:465`, user
+`resend`, sender `Athlesite <noreply@athlesite.com>`); *Confirm signup* and *Magic link*
+templates containing `{{ .Token }}` and **no** `{{ .ConfirmationURL }}`; OTP length 8;
+OTP expiry 3600s; `rate_limit_email_sent` raised from 2/hour to **30/hour**.
+**Rules out.** Running `config push` without first reviewing `config diff`, and
+declaring a partial `[auth.email.smtp]` block in `config.toml` (the API masks
+`smtp_pass`, so it can never round-trip).
+
 ### Deployment provider is deliberately undecided
 **Active** · 2026-09-06
 **Decision.** No deployment host has been chosen. Leave it open.
