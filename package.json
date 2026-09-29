@@ -12,7 +12,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import ./scripts/register-alias-resolver.mjs --test",
-    "check:columns": "node scripts/check-anon-column-parity.mjs",
+    "check:columns": "node scripts/check-public-projection-parity.mjs",
     "check:slugs": "node scripts/check-reserved-slugs.mjs",
     "check:redirects": "node scripts/check-redirects.mjs"
   },

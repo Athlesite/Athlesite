@@ -31,7 +31,7 @@
  * static, fixture-only pages (`/`, `/jordan-bell`) get a hard `200`
  * assertion, since those never touch Supabase either way.
  *
- * Deliberately dependency-free, matching check-anon-column-parity.mjs and
+ * Deliberately dependency-free, matching check-public-projection-parity.mjs and
  * check-reserved-slugs.mjs.
  *
  * Usage: npm run check:redirects   (exit 0 = every hop below matches)
