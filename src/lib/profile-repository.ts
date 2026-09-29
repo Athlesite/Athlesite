@@ -9,33 +9,56 @@ import {
   type AthleteProfileRow,
 } from "@/lib/db-mappers";
 import { ATHLETE_MEDIA_BUCKET } from "@/lib/media-paths";
+import { decidePublicReadStep } from "@/lib/profile-read-decisions";
 
 /**
  * Read access to athlete profiles.
  *
- * Visibility is decided by RLS, not by this module. The policies in
- * supabase/migrations/ allow an anonymous reader to select only rows where
- * `is_published = true`, while an authenticated athlete may additionally select
- * their own row. So an unpublished profile simply returns no rows to anyone but
- * its owner — there is no filter here to forget, and no way for a caller to opt
- * out of the check (docs/ai/GUARDRAILS.md § Ownership).
+ * Visibility is decided by the database, not by this module — but as of
+ * Checkpoint 5D.7 it is decided in two different ways, and the difference
+ * matters:
+ *
+ * - **Published profiles** are read through `get_published_profile_by_slug`, a
+ *   SECURITY DEFINER function that takes one slug, compares it with equality, and
+ *   hard-codes `is_published = true`. `anon` has no grant on the table at all any
+ *   more, so this function is the entire anonymous read surface. That is what
+ *   makes "published" mean *the exact link works* rather than *the cohort is one
+ *   query* — a filterless bulk read is no longer expressible.
+ * - **An owner's own row** is read directly from the table under the unchanged
+ *   "Owner can view own profile" policy, which is what still allows an athlete to
+ *   preview their own *unpublished* profile at its real URL.
+ *
+ * Neither path can be talked out of its check: the function will not return an
+ * unpublished row to anyone, and RLS will not return another athlete's row to a
+ * signed-in caller (docs/ai/GUARDRAILS.md § Ownership). Which of the two runs is
+ * decided by profile-read-decisions.ts.
  *
  * Writes live in profile-save.ts, which is client-side because the session is
  * established in the browser by the inline OTP flow.
  */
 
 /**
- * Exactly the columns `anon` is granted in
- * supabase/migrations/20260911000001_restrict_anon_profile_columns.sql, named
- * explicitly so a schema drift surfaces here rather than silently.
+ * The public projection, named explicitly so a schema drift surfaces here rather
+ * than silently.
  *
- * **These two lists must stay identical.** Asking for a column `anon` cannot
- * read fails the entire query with 42501, which would turn every public profile
- * page into a 500 — not a missing field. `npm run check:columns` asserts the
- * parity; run it after touching either list.
+ * **This list and the `returns table (...)` of
+ * `get_published_profile_by_slug` in
+ * supabase/migrations/20260928000001_add_published_profile_rpc.sql must stay
+ * identical.** The function's declared output is the authoritative definition of
+ * what is public once 5D.7 is applied; until then the live project still uses
+ * `anon`'s column grant. `npm run check:columns` asserts this parity, and
+ * separately pins the three 5D.7 migrations byte-for-byte by SHA-256 — so any
+ * change to that SQL fails until the digest is deliberately updated and
+ * re-reviewed. Run it after touching either list.
  *
- * Everything omitted here — school, recruiting, NIL, socials, timestamps — is
- * unreadable to an anonymous caller by design, and is rendered nowhere.
+ * Used for the owner-preview read below as well as documenting the function's
+ * shape, so that an owner viewing their own unpublished profile receives exactly
+ * the same fields a visitor would — never a wider row that could leak a private
+ * column into the rendered payload.
+ *
+ * Everything omitted here — school, recruiting, NIL, socials, profile photo,
+ * timestamps — is unreadable through either public path by design, and is
+ * rendered nowhere.
  */
 const PUBLIC_PROFILE_COLUMNS = `
   owner_user_id, slug,
@@ -64,22 +87,70 @@ export const getProfileBySlug = cache(async function getProfileBySlug(
 ): Promise<PublicAthleteProfileRecord | null> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // Step 1 — the published read. One slug, equality, `is_published = true`
+  // enforced inside the function. This is the only path an anonymous visitor can
+  // take, and it serves the overwhelmingly common case (a real, published
+  // profile) in a single round trip.
+  const { data: publishedRow, error: publishedError } = await supabase
+    .rpc("get_published_profile_by_slug", { profile_slug: slug })
+    .maybeSingle();
+
+  if (publishedError) {
+    // Surface real failures (network, misconfiguration, schema drift) rather
+    // than rendering them as a missing profile. The message is Supabase's own
+    // and carries no credentials.
+    throw new Error(`Failed to load profile "${slug}": ${publishedError.message}`);
+  }
+
+  // Reading the session from this request's cookies. Deliberately not getUser():
+  // this is not an authorization decision and must not cost a network round trip
+  // on a public page. It only decides whether step 2 is worth attempting — RLS
+  // re-decides what may actually be read. See profile-read-decisions.ts.
+  let hasLocalSession = false;
+  if (!publishedRow) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      hasLocalSession = sessionData.session !== null;
+    } catch {
+      // An unreadable session is simply "no session": the owner-preview step is
+      // skipped and an unpublished profile 404s, exactly as it would for a
+      // signed-out visitor.
+      hasLocalSession = false;
+    }
+  }
+
+  const step = decidePublicReadStep({
+    publishedRowFound: publishedRow !== null,
+    hasLocalSession,
+  });
+
+  if (step === "resolved") {
+    return toPublicAthleteProfileRecord(publishedRow as unknown as PublicAthleteProfileRow);
+  }
+
+  if (step === "not-found") return null;
+
+  // Step 2 — owner preview. Nothing published matched, but this caller has a
+  // session, so their own row may be an unpublished profile at this slug. RLS
+  // ("Owner can view own profile") is what restricts this to the caller's own
+  // row; the filter below only says which slug is being asked about.
+  //
+  // Selecting PUBLIC_PROFILE_COLUMNS rather than the full row is deliberate: the
+  // owner's preview must render from exactly the fields a visitor would get, so
+  // no private column can reach the page payload through this path.
+  const { data: ownRow, error: ownError } = await supabase
     .from("athlete_profiles")
     .select(PUBLIC_PROFILE_COLUMNS)
     .eq("slug", slug)
     .maybeSingle();
 
-  if (error) {
-    // Surface real failures (network, misconfiguration, schema drift) rather
-    // than rendering them as a missing profile. The message is Supabase's own
-    // and carries no credentials.
-    throw new Error(`Failed to load profile "${slug}": ${error.message}`);
+  if (ownError) {
+    throw new Error(`Failed to load profile "${slug}": ${ownError.message}`);
   }
 
-  if (!data) return null;
+  if (!ownRow) return null;
 
-  return toPublicAthleteProfileRecord(data as unknown as PublicAthleteProfileRow);
+  return toPublicAthleteProfileRecord(ownRow as unknown as PublicAthleteProfileRow);
 });
 
 /**
@@ -137,10 +208,17 @@ export async function getOwnProfile(userId: string): Promise<OwnerAthleteProfile
  *
  * The bucket is private, so media is never served directly — a signed URL is
  * minted per render (docs/ai/GUARDRAILS.md § Storage). Signing is itself
- * authorised by the Storage read policy, which joins back to
- * `athlete_profiles.is_published`: an anonymous visitor can only obtain a URL
- * for a published profile's media, and the athlete can obtain one for their own
- * either way.
+ * authorised by the Storage read policy, which since Checkpoint 5D.7 matches on
+ * the **exact object** a published profile currently references, not on the
+ * owner's folder. So a non-owner can only sign the hero that is live right now:
+ * a superseded photo, an orphan from a failed save, and profile-slot media are
+ * all refused, and unpublishing cuts off signing immediately. The owner can still
+ * sign anything in their own folder, which is what replacement and reconciliation
+ * need.
+ *
+ * Note this means a *failed* signing attempt is a normal outcome for a stale
+ * path, not necessarily an error — hence the undefined return below rather than a
+ * throw.
  *
  * Returns undefined rather than throwing. A profile page is public and must
  * keep rendering if Storage is unreachable — the hero simply falls back to its

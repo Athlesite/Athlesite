@@ -1,0 +1,11 @@
+# Checkpoint 5D.7 — the three reviewed access-boundary migrations are pinned
+# byte-for-byte by SHA-256 in scripts/sql-contract.mjs. A raw-byte digest is only
+# meaningful if every checkout produces the same bytes, and this repository is
+# developed on Windows with core.autocrlf=true while CI runs on Linux — so without
+# this rule the same commit would hash differently on the two platforms and the
+# contract would fail in CI while passing locally.
+#
+# Scoped deliberately to SQL rather than applied repo-wide: a broad `* text=auto`
+# would renormalise unrelated files in a checkpoint that is supposed to change only
+# the access boundary.
+*.sql text eol=lf

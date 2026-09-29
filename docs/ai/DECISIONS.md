@@ -147,48 +147,187 @@ are the real access control, and there is no privileged path to accidentally exp
 decision to introduce a separate non-browser runtime for it.
 
 ### Anonymous reads are column-scoped, not only row-scoped
-**Active** · 2026-09-11 · founder decision
-**Decision.** `anon` holds a column-level `SELECT` on exactly the 18 columns a published
-public profile renders, not a table-wide grant (migration
-`20260911000001_restrict_anon_profile_columns.sql`). `authenticated` keeps the full table
-grant under the unchanged owner policies.
-**Why.** RLS restricts *rows*; it cannot restrict *columns*. Every field of a published
-profile was therefore readable by anyone holding the publishable key — contact, recruiting,
-NIL, all six socials, and `school_or_team` — none of which any page renders. Measured, not
-assumed: all 35 columns returned HTTP 200 to an anonymous caller before this change.
-`GUARDRAILS.md § Athlete data` says contact fields exist "so an athlete can be reached
-deliberately, not so they can be scraped in bulk", and these are minors.
-**The 18.** `owner_user_id`, `slug`, `first_name`, `last_name`, `sport`, `position`,
-`class_year`, `city`, `state`, `height_in`, `weight_lb`, `bio`, `hero_photo_position_x`,
-`hero_photo_position_y`, `hero_photo_zoom`, `hero_photo_path`, `highlight_links`,
-`is_published`.
-**Why `owner_user_id` and `is_published` are in it.** Both are load-bearing, not
-convenience. The Storage read policy joins this table on both, and a policy subquery is
-subject to the caller's own column privileges — revoke either and anonymous visitors stop
-being able to sign a published athlete's hero photo. `owner_user_id` is also already
-public in every signed media URL (`{uid}/hero/{uuid}.ext`), so hiding the column would
-conceal nothing while breaking photos.
-**`school_or_team` is deliberately out.** It is rendered nowhere today, and name + school +
-city + class year is a precise real-world locator for a minor. Revisit if and when
-something renders it.
-**Two lists, one truth.** The grant and `PUBLIC_PROFILE_COLUMNS` in
-`profile-repository.ts` must name the same columns. Selecting an ungranted column fails the
-*whole* query with 42501, so the symptom is a 500 on every public profile page, not a
-missing field. `npm run check:columns` asserts parity; run it after touching either list.
-**A new column is invisible to `anon` until granted.** That is the right default — it fails
-closed — but it is a standing obligation: adding a column that should be public means
-updating the grant *and* the select list together.
-**Not solved: enumeration.** An anonymous caller can still list every published profile's
-public columns without knowing a slug. Deliberately out of scope; recorded in `NOW.md`.
-Fixing it would need an RPC-by-slug or rate limiting, decided separately.
-**Rules out.** Reading athlete data anonymously through the table beyond these 18 columns,
-and using `getProfileBySlug` for anything needing the full row. An Edit Profile flow must
-use its own authenticated full-row query and type.
-**Verified.** End to end against the live project with a disposable published profile
-before merge: 18 columns readable, the other 17 refused with 42501 — including via
-`select=*` and via filter predicates, so a hidden column cannot be used as an oracle — the
-published hero still signed and delivered its bytes, and once unpublished the row returned
-zero rows and the hero could no longer be signed.
+**Superseded** · 2026-09-11 → 2026-09-28 · replaced by "Public profile reads go through
+an exact-slug RPC; nothing else reads the table", immediately below.
+It established the 18-column public projection, and the point that RLS restricts *rows*
+while only grants restrict *columns*. Checkpoint 5D.7 **intends to revoke** that `anon`
+grant outright — **the grant still exists on the live Athlete project** and this mechanism
+remains in force there until migration `20260928000003` is approved and applied. What the
+entry defined, the 18-column projection, survives unchanged as the RPC's return type. Git
+holds the full original entry.
+
+### Public profile reads go through an exact-slug RPC; nothing else reads the table
+**Active** · 2026-09-28 · founder decision · supersedes "Anonymous reads are
+column-scoped, not only row-scoped" (2026-09-11)
+
+**Decision.**
+
+> **Tense.** Every bullet below describes the model this checkpoint **establishes**, not
+> the state of any live system. It is implemented on
+> `claude/5d7-access-boundary-hardening` and **has not been applied to any project**. The
+> live Athlete project still enforces the superseded model above. Read each "will" as
+> conditional on founder approval to apply the migrations.
+
+- **Public profile access will be unchanged where it matters:** an athlete's profile stays
+  readable at their exact URL, `/{slug}`. Nothing about sharing a link changes.
+- **Published means the exact link works. It does not mean enumerable, searchable, or
+  discoverable.** This checkpoint moves that distinction from intent into a database
+  boundary — once applied.
+- `anon` **will hold no** `SELECT` on `public.athlete_profiles` — neither a table grant nor
+  a row policy. Migration `20260928000003` revokes the grant and drops the policy; until it
+  runs, anonymous direct table reads remain possible and the pilot cohort remains one query.
+- **An unrelated authenticated user will not be able to read another athlete's row at all**,
+  private columns included. This is the larger of the two holes: the superseded policy was
+  declared `to anon, authenticated` while `authenticated` held a table-wide grant, so any
+  signed-in athlete could read **all 35 columns** of every published profile —
+  `recruiting_contact`, `nil_contact`, `school_or_team`, and all six socials included.
+  `anon` was column-scoped; `authenticated` was not. Signing in must never grant access to
+  another athlete's private fields.
+- All public reads go through `public.get_published_profile_by_slug(text)`: exactly one
+  scalar slug, compared with equality, `is_published = true` hard-coded in the body,
+  `limit 1`.
+- The RPC returns exactly the approved **18-field** projection as explicit scalar columns —
+  deliberately **not** `setof public.athlete_profiles`, which would expose all 35 as the
+  contract and widen silently every time a column is added.
+- **The owner keeps direct table access to their own full row** (all 35 columns) under the
+  unchanged owner policies. `/edit-profile` is unaffected.
+- **An owner previewing their own unpublished profile** uses an RLS-protected fallback read
+  of the same 18 columns. The RPC refuses unpublished rows to *everyone*, owner included,
+  so the fallback is what keeps preview working — and it selects only the public projection
+  so no private column can reach the rendered payload.
+- **Non-owner Storage reads require all four of:** the profile is published, the object name
+  equals its `hero_photo_path` exactly, the object's folder segment equals *that profile's
+  own* `owner_user_id`, and the slot segment is `hero`. The owner binding is not a sanity
+  check — `hero_photo_path` is owner-writable *and* publicly readable, so without it any
+  athlete could copy a victim's hero path off their public profile, point their own published
+  row at it, and keep the victim's object readable after the victim unpublished or replaced
+  it. Enforced in the database, not by validating what an athlete may write to that column.
+  (Caught by Codex review before the migration was ever applied.)
+- **`profile_photo_path` remains non-public.** It is in no public projection and no public
+  page renders it. Exposing profile media is a separate coordinated product + policy change
+  that must move the projection and the Storage helper together.
+- **Superseded and unreferenced media may remain stored** and simply stop being publicly
+  readable. Nothing is deleted for being old; cleanup stays best-effort and owner-driven,
+  and the ambiguous-write reconciliation path is untouched.
+- **Discovery remains a separate future visibility concept requiring founder approval.** It
+  is not implied by publishing, and this design gives it no mechanism.
+
+**Why a function, and not a narrower grant or a view.** A view is still queried with
+arbitrary filters and cannot demand an argument, and *any* column grant leaves a filterless
+bulk read expressible — which is exactly how the pilot cohort became one query. Only a
+function can require a slug before it returns anything.
+
+**Why `postgres` owns the RPC (Option A).** `SECURITY DEFINER` runs with the owner's
+privileges, so the owner choice *is* the security model. A dedicated least-privilege owner
+role was designed, evaluated, and **rejected for now** on operational grounds:
+- PostgreSQL 16+ auto-grants a `CREATEROLE` creator only `ADMIN TRUE, **SET FALSE**`, so
+  `ALTER FUNCTION … OWNER TO` needs a further non-obvious grant before it will succeed.
+  Verified against the PostgreSQL 16/17 documentation.
+- **The decisive reason:** there is no Docker on the founders' machines, so there is no
+  local stack and no shadow database. None of the above can be rehearsed — the first
+  execution would be against the only real database, which is also the pilot's production.
+
+An earlier draft of this entry also claimed a migration-created role would be absent from a
+`roles.sql`-based restore and therefore fail on recovery. **That claim is withdrawn**: it was
+reasoning from documentation about one restore path, not something we verified, and Supabase
+offers more than one. The rehearsal problem above is the reason that actually holds, and it
+is sufficient on its own.
+
+**The consequence of Option A, accepted explicitly and not mitigated away.** Because
+`postgres` owns `athlete_profiles`, the function bypasses RLS at runtime and can read every
+column. The hard-coded `is_published = true` and the explicit return list are the *only*
+runtime enforcement. **There is no runtime privilege isolation on this path, and nothing in
+CI creates any.**
+
+`npm run check:columns` is a **static review gate** — explicitly *not* a substitute for a
+least-privilege owner, and it must never be described as one. It constrains what SQL can
+reach review and `db push`; it does nothing once the function is running.
+
+**These three migrations are pinned byte-for-byte by SHA-256. Any change requires an
+explicit contract update and renewed security review.**
+
+`supabase/migrations/20260928000001_add_published_profile_rpc.sql`,
+`…0002_scope_media_reads_to_referenced_hero.sql`, and
+`…0003_restrict_profile_table_reads.sql` each have a digest recorded in
+`scripts/sql-contract.mjs`. Nothing is normalised — not comments, whitespace, case, quoted
+identifiers, string literals, or line endings. `.gitattributes` pins `*.sql` to `eol=lf`
+because a raw-byte digest is only meaningful if every checkout produces the same bytes, and
+this repo is developed on Windows with `core.autocrlf=true` while CI runs on Linux.
+
+**How it got here, after three rejected attempts.** The first guard asserted keyword presence;
+Codex bypassed it with a private column aliased as a public one, `row_to_json(p)::text`, and
+attributes moved into a comment. The second decomposed the SQL structurally; Codex bypassed
+that by appending executable statements the decomposition never inspected — `grant all … to
+public`, `alter function … security invoker`, a second `create or replace function`. The third
+canonicalised the SQL with a hand-written lexer; Codex bypassed that too, because PostgreSQL's
+lexical rules (nested block comments, dollar-quote tags, unterminated comments, escape-string
+syntax) are richer than any checker short of a real parser. Each fix was an escalation toward
+writing a PostgreSQL parser, which is the wrong destination. A hash has nothing to
+out-reason.
+
+**Deliberately brittle.** A comment typo or a reflowed line fails the contract. That is the
+intended behaviour: updating the digest is a small, obvious diff that forces a second look at
+a security boundary. The question a failure asks is "has this migration been re-reviewed?",
+not "how do I make the check pass".
+
+Coverage: `scripts/sql-contract.test.mjs` holds **29 tests — 5 baseline, 13 bypass
+regressions, 4 asserting the brittleness is intentional (comment, whitespace, trailing
+newline, and CRLF conversion all fail), 5 application-projection-parity, and 2 for the digest
+primitive.** The bypass cases include the nested-comment wrapper and unterminated block
+comment that defeated the lexer.
+
+**What the hash does NOT prove.** That the SQL is safe, or correct. It proves only that the
+bytes are the reviewed bytes. Correctness rests on human review and the live acceptance
+harness. The projection-parity check alongside it is an *application-consistency* check — it
+catches the app's select list drifting from the intended 18 fields, and says nothing about SQL
+safety either. **Treat a hash failure as a request for renewed security review** — and never
+read a pass as evidence of runtime containment.
+
+**Revisit when** a reproducible local Supabase roles workflow exists — Docker plus
+`supabase/roles.sql` pushed with `--include-roles`. A dedicated least-privilege owner is the
+better model and becomes safe to adopt once it can be rehearsed.
+
+**Rules out.** Reading athlete data anonymously through the table at all; making a column
+public by granting it rather than by adding it to the RPC projection; pattern matching
+(`LIKE`, prefix, regex, arrays) anywhere in either function body; and introducing a second
+visibility concept — unlisted, discoverable, preview tokens — without redesigning the RPC
+and the Storage policy together with founder sign-off.
+
+**Known residuals, recorded rather than discovered later.**
+- **The media helper binds owner and slot but does not validate the full
+  `{owner}/{slot}/{uuid}` format.** It checks path segments 1 and 2 only, so a malformed
+  path with extra segments could still match if segments 1 and 2 are correct. Acceptable: a
+  malformed path that satisfies the owner binding is necessarily *inside the caller's own
+  folder*, so it cannot widen cross-owner access, which is the property that matters.
+- **Already-issued signed URLs remain usable until that specific URL's issued expiration.**
+  Tightening a policy does not revoke bearer access already granted, so an object signed
+  moments before an unpublish stays fetchable until its own expiry. The application currently
+  *requests* a one-hour TTL (`SIGNED_URL_TTL_SECONDS` in `profile-repository.ts`), but
+  Storage authorization must **not** be described as enforcing a one-hour maximum: whether
+  the provider caps, honours, or extends a requested TTL has not been independently
+  verified. **Live acceptance item (not yet run):** confirm the deployed signing behaviour we
+  rely on — the actual expiry granted for a requested TTL, whether a longer TTL can be
+  requested, and whether an issued URL survives the referenced row being unpublished.
+- **Storage listing is narrowed, not eliminated.** A non-owner `LIST` still succeeds and
+  still reveals the currently public hero object. There is nothing further to enumerate, but
+  this is a narrowing of enumeration rather than its removal, and should not be described as
+  "listing is denied".
+- **An authenticated user can read objects under their own uid folder with no profile row.**
+  Deliberate, consistent with the existing insert/update/delete policies, and confined to
+  their own folder — see the migration comment in `20260928000002` for why it is required.
+
+**Status.** Implemented on `claude/5d7-access-boundary-hardening` and **not applied to the
+live Athlete project.** The live project still enforces the superseded model above until
+migrations are explicitly approved. **Three rounds of independent Codex review have run**, all
+returning NEEDS CHANGES: round one found the cross-owner media forgery (a real defect in the
+SQL), round two rejected the structural guard, round three rejected the lexer-based guard in
+favour of hash pinning. **Codex round three confirms the SQL source itself is sound** — the
+exact-slug RPC, the 18-field projection, the quoted `"position"`, the publication predicate,
+the ACL statements, the owner + hero-slot Storage binding, and the owner-only direct table
+reads. Live fixture verification is written (`scripts/verify-access-boundary.mjs`, **~70 matrix
+assertions plus one write-verification and one read-back verification per registered
+mutation**, four-account-value fixture model with endpoint-specific denial shapes) and gated
+behind `ATHLESITE_LIVE_ACCEPTANCE=1`; **it has not been run and no fixtures exist.**
 
 ---
 
@@ -236,13 +375,25 @@ schema and domain model visible immediately.
 ## Media & Storage
 
 ### The media bucket is private; visibility is a policy, not a bucket setting
-**Active** · 2026-09-06
-**Decision.** `athlete-media` is created with `public = false`. Read access comes from
-an RLS policy on `storage.objects` that joins back to `athlete_profiles.is_published`.
+**Active** · 2026-09-06 · read rule narrowed 2026-09-28 (Checkpoint 5D.7)
+**Decision.** `athlete-media` is created with `public = false`. Read access comes from an
+RLS policy on `storage.objects` which derives from `athlete_profiles.is_published`.
 **Why.** One visibility rule, enforced in one place, for both the profile row and its
 images. A public bucket would expose media even for unpublished profiles.
-**Rules out.** Flipping the bucket public, or serving media through any path that does
-not evaluate that policy.
+**The read rule LIVE today.** The policy matches the owner's *folder*, so every object an
+athlete has ever uploaded — superseded photos and orphans from failed saves included — is
+readable by anyone once that profile is published. This is the current live behaviour and it
+is a known exposure.
+
+**The read rule 5D.7 INTENDS, on branch and not yet applied.** A non-owner may read only the
+**exact object a published profile currently references** — its `hero_photo_path`, in that
+profile owner's own `hero` folder — through the
+`public.is_publicly_referenced_media(text)` helper. The owner still reads their whole folder,
+which replacement and reconciliation depend on, and `profile_photo_path` is deliberately not
+covered because no public page renders it. **Nothing changes until migration
+`20260928000002` is approved and applied.**
+**Rules out.** Flipping the bucket public; serving media through any path that does not
+evaluate that policy; and re-widening the read rule to a folder prefix.
 
 ### Storage paths are stored; URLs are generated at render time
 **Active** · 2026-09-06
@@ -264,9 +415,16 @@ that was supposed to authorise the change. A save that then failed (a taken user
 say) left the athlete's live photo silently replaced despite the failure. Versioned
 paths move the only visible change to the database upsert, which is the real commit
 point: uploads touch nothing anyone can see.
-**Consequences.** A failed save can leave an unreferenced object behind. That is
-accepted: it lives in the athlete's own folder, is invisible to everyone, and costs
-storage rather than correctness. Cleanup can be a later maintenance pass.
+**Consequences.** A failed save can leave an unreferenced object behind. That was accepted on
+the grounds that it costs storage rather than correctness, and that it is invisible to
+everyone but its owner.
+**That invisibility is NOT true today.** Under the folder-scoped Storage policy that is
+currently live, an orphan in a *published* athlete's folder **is publicly readable** — so
+this clause has always described an intended property the policy did not provide. 5D.7 scopes
+the read rule to the exact referenced object, which is what would make the claim hold, but
+that migration is **on branch and not applied**. Until it is, treat orphaned and superseded
+media in a published athlete's folder as public. Recorded because the reasoning for accepting
+orphans at all depended on a property that was never in force.
 **Rules out.** `upsert: true` on athlete media, and any fixed per-slot path. Also rules
 out treating the extension as meaningful — `contentType` set at upload time is
 authoritative; the extension exists so the bucket can be read by a human during the

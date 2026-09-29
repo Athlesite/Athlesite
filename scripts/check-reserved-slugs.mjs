@@ -14,7 +14,7 @@
  * about routes we expect to add — this check is what stops one from landing
  * without the matching reservation.
  *
- * Deliberately dependency-free, matching check-anon-column-parity.mjs.
+ * Deliberately dependency-free, matching check-public-projection-parity.mjs.
  *
  * Usage: npm run check:slugs   (exit 0 = every root route is reserved)
  */
