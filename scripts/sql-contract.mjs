@@ -1,5 +1,10 @@
 /**
- * Byte-for-byte hash pinning for Checkpoint 5D.7's reviewed access-boundary migrations.
+ * Byte-for-byte hash pinning for this project's reviewed security-sensitive migrations.
+ *
+ * Currently covers the three 5D.7 access-boundary migrations plus the 5D.8 search-path
+ * hardening migration. The set is whatever PINNED_MIGRATIONS lists — not a fixed count —
+ * and any migration that changes an access boundary, a grant, a policy, or a function's
+ * execution context belongs in it.
  *
  * ── WHY IT IS A HASH, AFTER THREE FAILED ATTEMPTS ────────────────────────────────
  *
@@ -75,6 +80,16 @@ export const PINNED_MIGRATIONS = [
     // Migration C was not touched and its digest is deliberately unchanged.
     sha256: "6903dc426408a41ef0d22ce410e392a97cca7fb6f571e236ccdef5178c3e5610",
     bytes: 3966,
+  },
+  {
+    label: "migration D (5D.8) — pin empty search_path on set_updated_at()",
+    path: "supabase/migrations/20260929000001_harden_set_updated_at_search_path.sql",
+    // Added 2026-09-29 (Checkpoint 5D.8). Executable content is a single statement:
+    //   alter function public.set_updated_at() set search_path = '';
+    // Digest computed after its comments were finalised, so a later comment edit fails
+    // this contract — which is the intended behaviour, not a limitation.
+    sha256: "c1c3c4f2c1779b4f46b0170471df6641024a8505c50b8f6def4ccca585e75bab",
+    bytes: 3049,
   },
 ];
 

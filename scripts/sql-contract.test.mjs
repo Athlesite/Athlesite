@@ -31,6 +31,7 @@ import {
 const RPC = PINNED_MIGRATIONS[0];
 const MEDIA = PINNED_MIGRATIONS[1];
 const REVOKE = PINNED_MIGRATIONS[2];
+const SEARCH_PATH = PINNED_MIGRATIONS[3];
 
 const realBytes = Object.fromEntries(PINNED_MIGRATIONS.map(({ path }) => [path, readFileSync(path)]));
 const REPOSITORY_SQL = readFileSync("src/lib/profile-repository.ts", "utf8");
@@ -67,11 +68,30 @@ describe("5D.7 migration hash contract — baseline", () => {
     }
   });
 
-  test("all three access-boundary migrations are pinned", () => {
+  test("every reviewed security-sensitive migration is pinned", () => {
     const paths = PINNED_MIGRATIONS.map((m) => m.path).join("\n");
     assert.match(paths, /20260928000001_add_published_profile_rpc\.sql/);
     assert.match(paths, /20260928000002_scope_media_reads_to_referenced_hero\.sql/);
     assert.match(paths, /20260928000003_restrict_profile_table_reads\.sql/);
+    assert.match(paths, /20260929000001_harden_set_updated_at_search_path\.sql/);
+    assert.equal(PINNED_MIGRATIONS.length, 4);
+  });
+
+  test("the three 5D.7 digests are unchanged by the 5D.8 addition", () => {
+    // Guards against a careless edit to the contract silently re-pinning 5D.7.
+    const byPath = Object.fromEntries(PINNED_MIGRATIONS.map((m) => [m.path, m]));
+    const expected = {
+      "supabase/migrations/20260928000001_add_published_profile_rpc.sql":
+        ["2096aec79c699a3544f8a82152a080ea7a2139959c163ce603a0e5a0c433860b", 5103],
+      "supabase/migrations/20260928000002_scope_media_reads_to_referenced_hero.sql":
+        ["fe622ce390e4d0d5378fadd998c19bf6b0e8b42f4ad3b9e389f93e70589910f5", 9334],
+      "supabase/migrations/20260928000003_restrict_profile_table_reads.sql":
+        ["6903dc426408a41ef0d22ce410e392a97cca7fb6f571e236ccdef5178c3e5610", 3966],
+    };
+    for (const [path, [sha, bytes]] of Object.entries(expected)) {
+      assert.equal(byPath[path]?.sha256, sha, `5D.7 digest changed for ${path}`);
+      assert.equal(byPath[path]?.bytes, bytes, `5D.7 byte length changed for ${path}`);
+    }
   });
 
   test("the migrations contain no CR bytes, so the digest is stable across platforms", () => {
@@ -198,6 +218,99 @@ describe("5D.7 migration hash contract — Codex bypasses", () => {
 });
 
 // ───────────────────── changes that are harmless but must STILL fail ──
+
+describe("5D.8 migration hash contract — set_updated_at search_path", () => {
+  test("missing file/content is reported rather than silently skipped", () => {
+    for (const absent of [null, undefined]) {
+      const problems = validateMigrationDigests({ ...realBytes, [SEARCH_PATH.path]: absent });
+      assert.ok(problems.some((p) => /file not provided/.test(p) && p.includes(SEARCH_PATH.path)),
+        `expected a missing-file problem for ${JSON.stringify(absent)}`);
+    }
+  });
+
+  test("altered search_path SQL invalidates the hash", () => {
+    // The whole point of the migration: anything but an empty search_path must fail.
+    for (const replacement of [
+      "set search_path = public",
+      "set search_path = pg_catalog",
+      "set search_path = public, pg_catalog",
+      "set search_path to ''",
+    ]) {
+      expectDigestRejected(SEARCH_PATH, (sql) => sql.replace("set search_path = ''", replacement),
+        `altered search_path -> ${replacement}`);
+    }
+  });
+
+  test("changing the EXECUTABLE target function invalidates the hash", () => {
+    // Anchored on the full statement token, which occurs exactly once and only in the
+    // executable SQL. Matching the bare `public.set_updated_at()` would hit the first
+    // COMMENT occurrence (line 1 of the migration) instead, and the test would then pass
+    // by proving comment-mutation rejection rather than executable-target drift.
+    const original = realBytes[SEARCH_PATH.path].toString("utf8");
+    const EXEC_TOKEN = "alter function public.set_updated_at()";
+    assert.equal(
+      original.split(EXEC_TOKEN).length - 1, 1,
+      "expected the executable ALTER token to occur exactly once"
+    );
+
+    const executableOf = (sql) => sql.replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim();
+    const mutated = original.replace(EXEC_TOKEN, "alter function public.set_updated_at_other()");
+
+    // Prove the mutation landed in the executable SQL, not in prose.
+    assert.notEqual(executableOf(mutated), executableOf(original),
+      "mutation did not change the executable SQL — it must not be a comment-only edit");
+    assert.match(executableOf(mutated), /set_updated_at_other\(\)/);
+    assert.doesNotMatch(executableOf(mutated), /alter function public\.set_updated_at\(\)/);
+
+    expectDigestRejected(SEARCH_PATH, () => mutated, "renamed executable target function");
+  });
+
+  test("appended executable SQL invalidates the hash", () => {
+    for (const [label, appended] of [
+      ["CREATE OR REPLACE FUNCTION", "\ncreate or replace function public.set_updated_at()\nreturns trigger language plpgsql as $x$ begin return new; end; $x$;\n"],
+      ["SECURITY DEFINER switch", "\nalter function public.set_updated_at() security definer;\n"],
+      ["OWNER TO", "\nalter function public.set_updated_at() owner to postgres;\n"],
+      ["GRANT to public", "\ngrant execute on function public.set_updated_at() to public;\n"],
+      ["trigger DDL", "\ndrop trigger if exists set_athlete_profiles_updated_at on public.athlete_profiles;\n"],
+      ["a second unrelated ALTER", "\nalter table public.athlete_profiles disable row level security;\n"],
+    ]) {
+      expectDigestRejected(SEARCH_PATH, (sql) => sql + appended, `appended ${label}`);
+    }
+  });
+
+  test("a comment-only mutation invalidates the hash — brittleness is intentional", () => {
+    expectDigestRejected(SEARCH_PATH,
+      (sql) => sql.replace("-- Checkpoint 5D.8.", "-- Checkpoint 5D.8 (reworded)."),
+      "comment-only change");
+  });
+
+  test("a whitespace-only mutation invalidates the hash", () => {
+    expectDigestRejected(SEARCH_PATH,
+      (sql) => sql.replace("  set search_path = '';", "   set search_path = '';"),
+      "whitespace-only change");
+  });
+
+  test("a single-byte mutation invalidates the hash", () => {
+    expectDigestRejected(SEARCH_PATH, (sql) => sql + " ", "trailing single byte");
+  });
+
+  test("a CRLF conversion invalidates the hash", () => {
+    // Documents the .gitattributes dependency for this file too.
+    expectDigestRejected(SEARCH_PATH, (sql) => sql.replace(/\n/g, "\r\n"), "CRLF conversion");
+  });
+
+  test("the pinned 5D.8 file is LF-only and matches its recorded byte length", () => {
+    const bytes = realBytes[SEARCH_PATH.path];
+    assert.equal(bytes.includes(0x0d), false, "5D.8 migration contains a CR byte");
+    assert.equal(bytes.length, SEARCH_PATH.bytes);
+  });
+
+  test("the executable SQL is exactly the one approved statement", () => {
+    const exec = realBytes[SEARCH_PATH.path].toString("utf8")
+      .replace(/--[^\n]*/g, " ").replace(/\s+/g, " ").trim();
+    assert.equal(exec, "alter function public.set_updated_at() set search_path = '';");
+  });
+});
 
 describe("5D.7 migration hash contract — brittleness is intentional", () => {
   test("an ordinary comment change fails by design", () => {

@@ -1,0 +1,56 @@
+-- Pin an empty search_path on public.set_updated_at().
+--
+-- Checkpoint 5D.8. Scope is deliberately one statement. This migration exists only to
+-- harden the search path of an existing trigger function; it changes nothing else.
+--
+-- WHY. Every other function in this schema pins `search_path` explicitly
+-- (get_published_profile_by_slug and is_publicly_referenced_media, both added in 5D.7).
+-- `set_updated_at()` predates that convention and was left with a mutable search path,
+-- which is what Supabase's own linter flags as `function_search_path_mutable`. Pinning it
+-- makes name resolution inside the function independent of whatever the calling session
+-- happens to have set.
+--
+-- WHAT PINNING ACTUALLY BUYS. The precise PostgreSQL rule is narrower than "pg_catalog
+-- always wins", and the difference is the reason to pin:
+--
+--   * When `pg_catalog` is NOT explicitly listed in `search_path`, PostgreSQL searches it
+--     implicitly, BEFORE the listed schemas.
+--   * When a caller lists it explicitly and LATER — e.g.
+--     `search_path = other_schema, pg_catalog` — that earlier schema is searched first and
+--     CAN win for a matching function name.
+--
+-- So an unpinned function's name resolution is, in principle, caller-controlled ordering.
+-- Setting `search_path = ''` takes that out of the caller's hands: resolution stops
+-- depending on whatever the calling session configured, and `now()` still resolves safely
+-- from the implicit `pg_catalog`.
+--
+-- THIS IS HARDENING, NOT A DEMONSTRATED EXPLOIT. The function is SECURITY INVOKER (no
+-- `security definer` was declared), so it runs with the caller's own privileges and grants
+-- them nothing extra. Its body is two statements:
+--
+--     new.updated_at = now();
+--     return new;
+--
+-- `new.updated_at` is a PL/pgSQL record field, resolved by the language rather than by
+-- schema lookup. The value of pinning is consistency with the 5D.7 functions and that the
+-- guarantee stops depending on this reasoning staying true if the body is ever edited.
+--
+-- WHAT THIS MIGRATION DOES NOT DO, deliberately:
+--   * it does not replace the function body (no CREATE OR REPLACE FUNCTION)
+--   * it does not change the owner
+--   * it does not change grants (EXECUTE is left exactly as it is)
+--   * it does not change the security mode — the function stays SECURITY INVOKER
+--   * it does not touch the trigger `set_athlete_profiles_updated_at`, its binding, or
+--     its timing; the trigger continues to reference public.set_updated_at()
+--
+-- `ALTER FUNCTION ... SET search_path` writes only the function's per-function
+-- configuration setting (pg_proc.proconfig). It does not touch prosrc, proowner, proacl,
+-- or prosecdef, which is why each of the guarantees above holds by construction rather
+-- than by convention.
+--
+-- 20260825000001 declared this function and is applied, so it is not edited
+-- (docs/ai/GUARDRAILS.md § Migrations: never edit an applied migration; add a corrective
+-- one).
+
+alter function public.set_updated_at()
+  set search_path = '';
