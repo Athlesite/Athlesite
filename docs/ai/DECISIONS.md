@@ -150,11 +150,10 @@ decision to introduce a separate non-browser runtime for it.
 **Superseded** · 2026-09-11 → 2026-09-28 · replaced by "Public profile reads go through
 an exact-slug RPC; nothing else reads the table", immediately below.
 It established the 18-column public projection, and the point that RLS restricts *rows*
-while only grants restrict *columns*. Checkpoint 5D.7 **intends to revoke** that `anon`
-grant outright — **the grant still exists on the live Athlete project** and this mechanism
-remains in force there until migration `20260928000003` is approved and applied. What the
-entry defined, the 18-column projection, survives unchanged as the RPC's return type. Git
-holds the full original entry.
+while only grants restrict *columns*. Checkpoint 5D.7 **revoked** that `anon` grant
+outright — migration `20260928000003` is applied, so **this mechanism no longer exists on
+the live Athlete project**. What the entry defined, the 18-column projection, survives
+unchanged as the RPC's return type. Git holds the full original entry.
 
 ### Public profile reads go through an exact-slug RPC; nothing else reads the table
 **Active** · 2026-09-28 · founder decision · supersedes "Anonymous reads are
@@ -162,22 +161,20 @@ column-scoped, not only row-scoped" (2026-09-11)
 
 **Decision.**
 
-> **Tense.** Every bullet below describes the model this checkpoint **establishes**, not
-> the state of any live system. It is implemented on
-> `claude/5d7-access-boundary-hardening` and **has not been applied to any project**. The
-> live Athlete project still enforces the superseded model above. Read each "will" as
-> conditional on founder approval to apply the migrations.
+> **Tense.** Every bullet below describes the **current live model**. All three migrations
+> are applied to the Athlete project and were verified against it (82/82 live acceptance).
+> The superseded entry above is history, not a description of anything still in force.
 
-- **Public profile access will be unchanged where it matters:** an athlete's profile stays
-  readable at their exact URL, `/{slug}`. Nothing about sharing a link changes.
+- **Public profile access is unchanged where it matters:** an athlete's profile stays
+  readable at their exact URL, `/{slug}`. Nothing about sharing a link changed.
 - **Published means the exact link works. It does not mean enumerable, searchable, or
-  discoverable.** This checkpoint moves that distinction from intent into a database
-  boundary — once applied.
-- `anon` **will hold no** `SELECT` on `public.athlete_profiles` — neither a table grant nor
-  a row policy. Migration `20260928000003` revokes the grant and drops the policy; until it
-  runs, anonymous direct table reads remain possible and the pilot cohort remains one query.
-- **An unrelated authenticated user will not be able to read another athlete's row at all**,
-  private columns included. This is the larger of the two holes: the superseded policy was
+  discoverable.** That distinction is now a database boundary rather than an intent.
+- `anon` **holds no** `SELECT` on `public.athlete_profiles` — neither a table grant nor a row
+  policy. Migration `20260928000003` revoked the grant and dropped the policy; anonymous
+  direct table reads now return 401 with `42501`, verified live, including a `limit=1000`
+  bulk attempt.
+- **An unrelated authenticated user cannot read another athlete's row at all**,
+  private columns included. This was the larger of the two holes: the superseded policy was
   declared `to anon, authenticated` while `authenticated` held a table-wide grant, so any
   signed-in athlete could read **all 35 columns** of every published profile —
   `recruiting_contact`, `nil_contact`, `school_or_team`, and all six socials included.
@@ -270,11 +267,13 @@ intended behaviour: updating the digest is a small, obvious diff that forces a s
 a security boundary. The question a failure asks is "has this migration been re-reviewed?",
 not "how do I make the check pass".
 
-Coverage: `scripts/sql-contract.test.mjs` holds **29 tests — 5 baseline, 13 bypass
-regressions, 4 asserting the brittleness is intentional (comment, whitespace, trailing
-newline, and CRLF conversion all fail), 5 application-projection-parity, and 2 for the digest
-primitive.** The bypass cases include the nested-comment wrapper and unterminated block
-comment that defeated the lexer.
+Coverage: `scripts/sql-contract.test.mjs` holds **40 tests — 6 baseline, 13 bypass
+regressions, 10 for the 5D.8 search-path migration, 4 asserting the brittleness is intentional
+(comment, whitespace, trailing newline, and CRLF conversion all fail), 5
+application-projection-parity, and 2 for the digest primitive.** The bypass cases include the
+nested-comment wrapper and unterminated block comment that defeated the lexer. One baseline
+test pins the three 5D.7 digests and byte lengths independently, so adding a migration to the
+contract cannot quietly disturb them.
 
 **What the hash does NOT prove.** That the SQL is safe, or correct. It proves only that the
 bytes are the reviewed bytes. Correctness rests on human review and the live acceptance
@@ -299,15 +298,25 @@ and the Storage policy together with founder sign-off.
   path with extra segments could still match if segments 1 and 2 are correct. Acceptable: a
   malformed path that satisfies the owner binding is necessarily *inside the caller's own
   folder*, so it cannot widen cross-owner access, which is the property that matters.
-- **Already-issued signed URLs remain usable until that specific URL's issued expiration.**
-  Tightening a policy does not revoke bearer access already granted, so an object signed
-  moments before an unpublish stays fetchable until its own expiry. The application currently
-  *requests* a one-hour TTL (`SIGNED_URL_TTL_SECONDS` in `profile-repository.ts`), but
-  Storage authorization must **not** be described as enforcing a one-hour maximum: whether
-  the provider caps, honours, or extends a requested TTL has not been independently
-  verified. **Live acceptance item (not yet run):** confirm the deployed signing behaviour we
-  rely on — the actual expiry granted for a requested TTL, whether a longer TTL can be
-  requested, and whether an issued URL survives the referenced row being unpublished.
+- **Bearer credentials outlive the policy change that would deny a new one. MEASURED LIVE,
+  not assumed — and accepted for the pilot.** These are explicitly **not**
+  immediate-revocation guarantees:
+  - The application *requests* a **3600s** TTL (`SIGNED_URL_TTL_SECONDS` in
+    `profile-repository.ts`). Supabase **granted every longer TTL requested in live testing,
+    including 604800s (7 days)**, returning the requested lifetime essentially verbatim. So
+    Storage does **not** enforce a one-hour maximum; the one-hour window is a client-side
+    choice and must never be described as an enforced ceiling.
+  - An **already-issued signed URL kept working after the profile was unpublished** (HTTP 200),
+    until that URL's own expiry, while a *new* anonymous signing attempt was correctly refused
+    (400). Tightening the policy does not revoke access already handed out.
+  - **Global sign-out revokes refresh/session state but not issued access JWTs.**
+    `supabase.auth.signOut()` is global-scope: after it, GoTrue returned 403 and the refresh
+    exchange 400, yet the already-issued access token **still authenticated against PostgREST**
+    until expiry, because that path verifies the signature rather than consulting session
+    state.
+  Treat all three as one class. If the pilot ever needs true immediate revocation, that is a
+  separate design problem — shorter TTLs, a revocation check, or both — not something the
+  current policies provide.
 - **Storage listing is narrowed, not eliminated.** A non-owner `LIST` still succeeds and
   still reveals the currently public hero object. There is nothing further to enumerate, but
   this is a narrowing of enumeration rather than its removal, and should not be described as
@@ -316,18 +325,92 @@ and the Storage policy together with founder sign-off.
   Deliberate, consistent with the existing insert/update/delete policies, and confined to
   their own folder — see the migration comment in `20260928000002` for why it is required.
 
-**Status.** Implemented on `claude/5d7-access-boundary-hardening` and **not applied to the
-live Athlete project.** The live project still enforces the superseded model above until
-migrations are explicitly approved. **Three rounds of independent Codex review have run**, all
-returning NEEDS CHANGES: round one found the cross-owner media forgery (a real defect in the
-SQL), round two rejected the structural guard, round three rejected the lexer-based guard in
-favour of hash pinning. **Codex round three confirms the SQL source itself is sound** — the
-exact-slug RPC, the 18-field projection, the quoted `"position"`, the publication predicate,
-the ACL statements, the owner + hero-slot Storage binding, and the owner-only direct table
-reads. Live fixture verification is written (`scripts/verify-access-boundary.mjs`, **~70 matrix
-assertions plus one write-verification and one read-back verification per registered
-mutation**, four-account-value fixture model with endpoint-specific denial shapes) and gated
-behind `ATHLESITE_LIVE_ACCEPTANCE=1`; **it has not been run and no fixtures exist.**
+**Status: MERGED AND APPLIED LIVE.** Merged as `c28a3cc`; all three migrations applied to the
+Athlete project, with the remote migration history matching the Git versions. **This entry now
+describes the live model, not an intent.** The superseded column-grant entry above is history.
+
+**Five rounds of independent Codex review ran**, each returning NEEDS CHANGES and each
+narrower: round one found the cross-owner media forgery (a real defect in the SQL); rounds two
+and three rejected the static guard, not the SQL — a structural checker still accepted appended
+executable statements, and a hand-written canonicaliser still lost to PostgreSQL's lexical
+rules — which is how the guard ended up as byte-for-byte hash pinning; rounds four and five
+found only harness-validation and documentation issues. **The SQL source was confirmed sound
+from round three onward.**
+
+**Live acceptance: PASS, 82 of 82, zero failures**, run once against the live project
+(`scripts/verify-access-boundary.mjs`, three-account fixture model — A published, B
+unpublished, C unrelated published attacker). It exercised the 18-field projection,
+unpublished/nonexistent indistinguishability, anon table denial including a bulk attempt,
+pattern- and array-shaped RPC arguments, all 17 private columns denied to an unrelated athlete,
+owner 35-field access, media allow/deny across current/superseded/profile-slot/foreign objects,
+**all four forgery attempts refused** (three cross-owner, one same-owner profile-slot), and
+unpublish cutting off both profile and hero. Every harness mutation was restored and
+independently re-verified. **Fixture cleanup is complete** — 7 Storage objects, 3 profile rows,
+3 auth users — leaving 0 profiles, 0 auth users, 0 Storage objects.
+
+**Two findings the live run produced that the design had not predicted, both now fixed or
+recorded.** The Storage API returns `signedURL` **relative to the Storage API base**
+(`/storage/v1`), not to the project origin; resolving it against the origin 404s, and a 404 is
+indistinguishable from a correct access denial, so that bug would have manufactured false
+passes in an access-boundary harness. And `anon` table denial surfaces as **HTTP 401 with
+`code=42501`**, not 403 — the assertion accepts either, and branches on the SQLSTATE rather
+than the status.
+
+### Every function in `public` pins an empty `search_path`
+**Active** · 2026-09-29 · Checkpoint 5D.8
+
+**Decision.** Every function this project defines in `public` sets `search_path = ''`
+explicitly. `get_published_profile_by_slug` and `is_publicly_referenced_media` did so from the
+moment they were written (5D.7). `set_updated_at()` predates that convention and is brought in
+line by `20260929000001_harden_set_updated_at_search_path.sql`, whose entire content is:
+
+```sql
+alter function public.set_updated_at()
+  set search_path = '';
+```
+
+**Why, honestly scoped.** This is consistency and defence in depth, **not** a fix for a
+demonstrated exploit, and it should not be written up as one.
+
+The precise PostgreSQL rule is narrower than "pg_catalog always wins", and the difference is
+the whole point of pinning:
+
+- When `pg_catalog` is **not** explicitly listed in `search_path`, PostgreSQL searches it
+  **implicitly, before** the listed schemas.
+- When a caller lists it explicitly and **later** — for example
+  `search_path = other_schema, pg_catalog` — that earlier schema is searched first and **can
+  win** for a matching function name.
+
+So an unpinned function's name resolution is in principle **caller-controlled ordering**.
+Setting `search_path = ''` removes that from the caller's hands: resolution no longer depends on
+whatever the calling session configured, and `now()` still resolves safely from the implicit
+`pg_catalog`.
+
+What is *not* being claimed: any exploit here. `set_updated_at()` is SECURITY INVOKER, so it
+confers no privilege of its own; its body is `new.updated_at = now(); return new;`, where
+`new.updated_at` is a PL/pgSQL record field resolved by the language rather than by schema
+lookup. The value of pinning is that the guarantee stops depending on that reasoning staying
+true if the body is ever edited, and it clears Supabase's `function_search_path_mutable` lint.
+
+**Why `ALTER`, not `CREATE OR REPLACE`.** `ALTER FUNCTION … SET` writes only
+`pg_proc.proconfig`. It cannot touch `prosrc`, `proowner`, `proacl`, or `prosecdef`, so "the
+body, owner, grants, security mode, trigger binding and trigger body are all unchanged" holds
+by construction rather than by careful authoring. `20260825000001` declared the function and is
+applied, so it is not edited (`GUARDRAILS.md § Migrations`).
+
+**Pinned by the hash contract.** `scripts/sql-contract.mjs` covers the three 5D.7
+access-boundary migrations **and this 5D.8 hardening migration** — four in total.
+`npm run check:columns` fails if the raw bytes of any pinned migration change, and stays
+failing until the new bytes are deliberately reviewed and re-pinned. That is change detection
+only: it proves the bytes are the reviewed bytes, never that the SQL is semantically safe.
+
+**Rules out.** Adding a function to `public` without pinning its `search_path`; and using
+`CREATE OR REPLACE FUNCTION` where an `ALTER` suffices, since the former silently permits body,
+security-mode, and volatility changes to ride along.
+
+**Status.** On `claude/5d8-set-updated-at-search-path` and **not applied to the live Athlete
+project.** No local PostgreSQL exists (no Docker), so the statement has not been executed
+anywhere; it has been source-reviewed against documented PostgreSQL semantics only.
 
 ---
 
@@ -380,18 +463,19 @@ schema and domain model visible immediately.
 RLS policy on `storage.objects` which derives from `athlete_profiles.is_published`.
 **Why.** One visibility rule, enforced in one place, for both the profile row and its
 images. A public bucket would expose media even for unpublished profiles.
-**The read rule LIVE today.** The policy matches the owner's *folder*, so every object an
-athlete has ever uploaded — superseded photos and orphans from failed saves included — is
-readable by anyone once that profile is published. This is the current live behaviour and it
-is a known exposure.
+**The read rule BEFORE 5D.7 — historical, no longer in force.** The policy matched the
+owner's *folder*, so every object an athlete had ever uploaded — superseded photos and
+orphans from failed saves included — was readable by anyone once that profile was published.
+That was a real exposure, and it is the reason 5D.7 exists. It is not current behaviour.
 
-**The read rule 5D.7 INTENDS, on branch and not yet applied.** A non-owner may read only the
+**The read rule LIVE today (5D.7, applied).** A non-owner may read only the
 **exact object a published profile currently references** — its `hero_photo_path`, in that
 profile owner's own `hero` folder — through the
 `public.is_publicly_referenced_media(text)` helper. The owner still reads their whole folder,
 which replacement and reconciliation depend on, and `profile_photo_path` is deliberately not
-covered because no public page renders it. **Nothing changes until migration
-`20260928000002` is approved and applied.**
+covered because no public page renders it. Migration `20260928000002` is applied, and this
+was verified live: a deliberately orphaned object and a profile-slot object were both refused
+to anon while remaining signable by their owner.
 **Rules out.** Flipping the bucket public; serving media through any path that does not
 evaluate that policy; and re-widening the read rule to a folder prefix.
 
@@ -418,12 +502,12 @@ point: uploads touch nothing anyone can see.
 **Consequences.** A failed save can leave an unreferenced object behind. That was accepted on
 the grounds that it costs storage rather than correctness, and that it is invisible to
 everyone but its owner.
-**That invisibility is NOT true today.** Under the folder-scoped Storage policy that is
-currently live, an orphan in a *published* athlete's folder **is publicly readable** — so
-this clause has always described an intended property the policy did not provide. 5D.7 scopes
-the read rule to the exact referenced object, which is what would make the claim hold, but
-that migration is **on branch and not applied**. Until it is, treat orphaned and superseded
-media in a published athlete's folder as public. Recorded because the reasoning for accepting
+**That invisibility was NOT true before 5D.7 — historical.** Under the folder-scoped Storage
+policy in force until then, an orphan in a *published* athlete's folder **was publicly
+readable**, so this clause described an intended property the policy did not actually provide.
+**5D.7 fixed that and is applied:** the read rule is now scoped to the exact referenced object,
+so an orphan is readable only by its owner and the original claim finally holds. What remains
+is storage cost, not exposure. Recorded because the reasoning for accepting
 orphans at all depended on a property that was never in force.
 **Rules out.** `upsert: true` on athlete media, and any fixed per-slot path. Also rules
 out treating the extension as meaningful — `contentType` set at upload time is

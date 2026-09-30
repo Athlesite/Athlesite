@@ -1,7 +1,10 @@
 /**
- * Verifies that Checkpoint 5D.7's three reviewed migrations are byte-for-byte unchanged,
- * and that the application's public select list still matches the intended 18-field
- * projection.
+ * Verifies that every reviewed security-sensitive migration is byte-for-byte unchanged, and
+ * that the application's public select list still matches the intended 18-field projection.
+ *
+ * The pinned set is whatever PINNED_MIGRATIONS lists — currently the three 5D.7
+ * access-boundary migrations plus the 5D.8 search-path hardening migration, four in total —
+ * so this file needs no edit when another migration joins the contract.
  *
  * Replaces check-anon-column-parity.mjs, which compared the app's select list against
  * `anon`'s column grant — migration B revokes that grant, so the grant is no longer the
@@ -13,7 +16,8 @@
  * boundary change to arrive as a reviewable two-part diff.
  *
  * This is a **change-detection gate**, not runtime isolation, and it does not prove the
- * SQL is safe — only that the bytes are the reviewed bytes. `postgres` owns both public
+ * SQL is safe — only that the bytes are the reviewed bytes. `postgres` owns the two public
+ * SECURITY DEFINER read
  * functions, so at runtime they bypass RLS and can read every column of
  * `athlete_profiles` (docs/ai/DECISIONS.md, Option A). Correctness of the SQL is
  * established by human review and by the gated live acceptance harness.
@@ -41,7 +45,7 @@ const { problems, publicColumns } = validateSqlContract({
 });
 
 if (problems.length > 0) {
-  console.error("\n  FAIL: 5D.7 migration hash contract / projection parity\n");
+  console.error("\n  FAIL: reviewed migration hash contract / projection parity\n");
   for (const problem of problems) console.error(`    ${problem}`);
   console.error(
     "\n  These migrations are the security source of truth. A hash failure is a request for\n" +

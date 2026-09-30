@@ -1,15 +1,19 @@
 # NOW — Athlesite current state
 
-Access-boundary checkpoint updated: 2026-09-28 · base `main` @ `d64bf1e37f4cc964d698645cbd3bae80909ff63e`
+Access-boundary checkpoint updated: 2026-09-29 · base `main` @ `c28a3ccea0689fa5db962726718bc8694551a64e`
 
-Only the access-boundary status was refreshed for 5D.7. The older branch table and
+Only the access-boundary status was refreshed for 5D.7/5D.8. The older branch table and
 Phase B follow-ups below are historical and need a separate reconciliation; do not
 treat them as a current inventory without checking the code.
 
-**Read this before assuming anything about access control.** 5D.7 changes the
-public/private read boundary, and it exists **only on a task branch**. The live Athlete
-project still enforces the *previous* model. Where this file describes access, it says
-which of the two it means.
+**5D.7 IS MERGED AND LIVE.** The exact-slug RPC read path and the hero-only Storage
+boundary are applied to the Athlete project and verified against it. `anon` has no direct
+table access; an unrelated signed-in athlete cannot read another athlete's row. Statements
+in this file about the *previous* column-grant model are historical unless explicitly
+labelled as current.
+
+**5D.8 is on a branch and NOT applied.** It adds one forward migration that pins an empty
+`search_path` on `set_updated_at()`. Nothing else.
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -34,67 +38,74 @@ refreshed these docs. Merged branches have since been deleted.
   UI in onboarding ✅, (4) save/publish upsert ✅, (5) media upload and signed URLs ✅.
   All five verified against the live project; test data has been removed.
 - **Supabase Phase A.** Schema is applied and live; the read path uses it.
-- **5D.7 — public profile and media access boundary. Implemented on a branch, five
-  independent review rounds recorded, NOT applied anywhere.** On `claude/5d7-access-boundary-hardening`; nothing committed, no
-  migration run on any project. **Everything below is what the branch *intends*. None of it
-  is live.**
-  *Intended changes:* public profile reads move to an exact-slug
+- **5D.7 — public profile and media access boundary. MERGED, APPLIED LIVE, and verified
+  against the live Athlete project.** Merged as `c28a3cc`; all three migrations applied, and
+  the remote migration history matches the Git versions. **This is the current live model.**
+  *Live now:* public profile reads go through the exact-slug
   `get_published_profile_by_slug(text)` RPC returning only the 18-field public projection;
-  `anon` loses direct table `SELECT` entirely; the shared published-row policy is dropped so
-  an unrelated signed-in athlete can no longer read another athlete's row or private columns;
-  the owner keeps full direct access to their own row plus an RLS-protected fallback for
-  previewing their own *unpublished* profile; and non-owner Storage reads narrow to the
-  currently referenced hero **in that profile owner's own folder** — so superseded and
-  orphaned objects would remain stored but stop being publicly readable, and
-  `profile_photo_path` would stay non-public.
-  *Still live, and still exposed until migrations are applied:* bulk enumeration by `anon`,
-  all-35-column reads of any published profile by any signed-in athlete, and the
-  **folder-scoped Storage policy** under which every object in a published athlete's folder —
-  superseded photos and orphans included — is publicly readable.
-  Three migrations, numbered so filename order *is* the safe apply order (RPC → Storage →
-  revoke); applying the revoke before the Storage policy would break every published hero.
-  *Five rounds of independent Codex review have run, each returning NEEDS CHANGES and each
-  narrower than the last; rounds 4 and 5 found only harness-validation and documentation
-  issues, with the migration SQL, hash contract, `.gitattributes`, migration ordering and
-  core access boundary all passing.* Round 1 found a real
-  defect: the media helper asked only whether *some* published row referenced a path, which is
-  forgeable — an athlete could point their own published `hero_photo_path` at a victim's object
-  and keep it publicly readable after the victim unpublished or replaced it. Fixed by binding
-  the object's folder segment to that row's own `owner_user_id`, plus a hero-slot check.
-  Rounds 2 and 3 both rejected the *static guard*, not the SQL: a structural checker still
-  accepted appended executable statements, and a hand-written canonicaliser still lost to
-  PostgreSQL's lexical rules (nested block comments, dollar-quote tags, unterminated
-  comments). **Round 3 confirms the SQL source itself is sound.**
-  The guard is now **SHA-256 hash pinning over the raw bytes** of the three reviewed
-  migrations, recorded in `scripts/sql-contract.mjs`, with nothing normalised and the lexer
-  deleted. `.gitattributes` pins `*.sql` to `eol=lf` — without it the same commit would hash
-  differently on Windows and Linux CI, which would have broken on first push. Any byte change
-  fails until the digest is deliberately updated and re-reviewed; a comment typo failing is
-  intended. **It is change detection, not runtime privilege isolation and not proof the SQL is
-  safe:** `postgres` owns both functions and bypasses RLS at runtime.
-  Local checks all pass: lint, typecheck, **309 tests** (234 pre-existing + 6 read-path
-  decisions + 29 hash contract + 16 signed-URL resolver + 24 response classifiers), build, `check:columns`, `check:slugs`, and `check:redirects`
-  against a deliberately env-less build proven not to contain the project ref. Live
-  verification is written (`scripts/verify-access-boundary.mjs`, ~70 assertions,
-  endpoint-specific denial shapes, forgery writes verified before their denial assertions,
-  allowlisted diagnostic codes) and **gated behind `ATHLESITE_LIVE_ACCEPTANCE=1`; it has not
-  been run and no fixtures exist.**
-  **Next gate: staging and commit, then founder approval to apply the
-  migrations**, then the live run, then manual fixture deletion.
+  `anon` has **no** direct table `SELECT` (401 / `42501`); the shared published-row policy is
+  gone, so an unrelated signed-in athlete cannot read another athlete's row or private
+  columns; the owner keeps full direct access to their own row plus an RLS-protected fallback
+  for previewing their own *unpublished* profile; and non-owner Storage reads are limited to
+  the currently referenced hero **in that profile owner's own folder** — superseded and
+  orphaned objects are stored but not publicly readable, and `profile_photo_path` is not
+  public.
+  *Live acceptance: **PASS, 82/82, zero failures**.* Run once against the live project with a
+  three-account fixture model (A published, B unpublished, C unrelated published attacker).
+  Covered the 18-field projection, unpublished/nonexistent indistinguishability, anon table
+  denial, pattern-shaped and array-shaped RPC arguments, all 17 private columns denied to an
+  unrelated athlete, owner 35-field access, media allow/deny across
+  current/superseded/profile-slot/foreign objects, **all four forgery attempts refused**, and
+  unpublish cutting off both profile and hero. All harness mutations were restored and
+  independently re-verified afterwards.
+  *Fixture cleanup complete.* All 7 fixture Storage objects removed through the Storage API,
+  all 3 fixture profile rows deleted, all 3 fixture auth users deleted from the dashboard by
+  the founder. Verified afterwards: every fixture refresh token rejected, every old access
+  token non-resolving, every fixture slug returning 0 rows from the public RPC, every fixture
+  object unsignable.
+  *Bearer-credential residuals — accepted for the pilot, measured not assumed.* These are
+  **not** immediate-revocation guarantees:
+  - The application **requests** 3600s signed URLs. Supabase **accepted longer TTL requests
+    in live testing, including 604800s (7 days)** — so Storage does not enforce a one-hour
+    maximum; the 1-hour window is a client-side choice.
+  - An **already-issued signed URL keeps working after the profile is unpublished**, until
+    that URL's own expiry, while a *new* anon signing attempt is correctly refused (400).
+  - **Global sign-out revokes refresh/session state** (GoTrue 403, refresh exchange 400) but
+    an **already-issued access JWT remains usable against PostgREST until it expires**,
+    because that path verifies the signature rather than consulting session state.
+  Treat all three as the same class: a credential already handed out outlives the policy
+  change that would deny a new one. Revisit if the pilot needs true immediate revocation.
+- **5D.8 — `set_updated_at()` search-path hardening. On a branch, NOT applied.** On
+  `claude/5d8-set-updated-at-search-path`. One forward migration
+  (`20260929000001_harden_set_updated_at_search_path.sql`) containing a single statement:
+  `alter function public.set_updated_at() set search_path = ''`. It replaces no function
+  body, and changes no owner, grant, security mode, trigger binding or trigger body —
+  `ALTER FUNCTION ... SET` writes only `pg_proc.proconfig`. The function stays SECURITY
+  INVOKER. **This exists only to pin that search path**, bringing the one pre-5D.7 function
+  in line with the convention the 5D.7 functions already follow.
+  *Framing — hardening, not a demonstrated exploit.* The precise rule matters: PostgreSQL
+  searches `pg_catalog` implicitly **before** the listed schemas *only when `pg_catalog` is not
+  itself named in `search_path`*. A caller who lists it explicitly and later — say
+  `search_path = other_schema, pg_catalog` — makes `other_schema` win for a matching function
+  name. So an unpinned function's name resolution is, in principle, caller-controlled. Pinning
+  `search_path = ''` removes that ordering from the caller's hands entirely, and `now()` still
+  resolves safely from the implicit `pg_catalog`. No exploit has been demonstrated here: the
+  function is SECURITY INVOKER and grants nothing extra, and the whole body is
+  `new.updated_at = now(); return new;`.
 
 ## Known follow-ups
 
-- **Failed saves can leave orphaned media objects, and today those orphans are PUBLIC.**
+- **Failed saves can still leave orphaned media objects, but they are no longer public.**
   Uploads go to fresh versioned paths before the database write, so a save that fails
   afterwards leaves an unreferenced object in the athlete's own folder. The versioning is
   deliberate — it is the cost of never mutating a published profile's photo before the write
-  that authorises it. **What was wrong was calling the leftover "invisible to everyone":**
-  under the folder-scoped Storage policy that is currently live, every object in a *published*
-  athlete's folder is publicly readable, orphans and superseded photos included. So an athlete
-  who replaced a photo still has the old one fetchable by anyone holding the path.
-  5D.7 would close this by scoping reads to the exact referenced object, but **that migration
-  is on a branch and not applied** — so until it is, treat this as a live exposure rather than
-  harmless housekeeping, and note that a storage cleanup pass is *not* what fixes it.
+  that authorises it. **Historical note worth keeping:** under the folder-scoped Storage policy
+  that was live before 5D.7, every object in a *published* athlete's folder was publicly
+  readable, orphans and superseded photos included — so the original claim that a leftover was
+  "invisible to everyone" was never true. **5D.7 closed that and is now applied:** non-owner
+  reads are scoped to the exact referenced hero, so an orphan is readable only by its owner.
+  What remains is storage cost, not exposure. Verified live during 5D.7 acceptance, where a
+  deliberately orphaned object was refused to anon and signable only by its owner.
 - **Metadata stripping is client-side only, so it is a product guarantee rather than an
   enforced one.** Photos are re-encoded in the browser before upload, which removes every
   identifying field from the source — GPS/location, device make and model, capturing
@@ -161,23 +172,22 @@ refreshed these docs. Merged branches have since been deleted.
   see the column-exposure item below), and **the canonical/root-slug question is still
   open and blocks ever allowing profiles to index**, because indexing the wrong URL shape
   is harder to undo than not indexing at all.
-- **Enumeration and cross-athlete private-column reads: fixed on the 5D.7 branch, still
-  open live.** On the **live** project as it stands today, `anon` holds a column-level
-  `SELECT` on exactly the 18 columns a published profile renders, and **an anonymous caller
-  can enumerate every published profile's public columns without knowing a slug — the pilot
-  cohort is one query.** Worse and less obvious: the shared published-row policy is declared
-  `to anon, authenticated` while `authenticated` holds a *table-wide* grant, so **any
-  signed-in athlete can read all 35 columns of every published profile**, contact and NIL
+- **Enumeration and cross-athlete private-column reads: CLOSED and applied live.** Before
+  5D.7, `anon` held a column-level `SELECT` on the 18 columns a published profile renders, so
+  **an anonymous caller could enumerate every published profile without knowing a slug — the
+  pilot cohort was one query.** Worse and less obvious: the shared published-row policy was
+  declared `to anon, authenticated` while `authenticated` holds a *table-wide* grant, so **any
+  signed-in athlete could read all 35 columns of every published profile**, contact and NIL
   included. `anon` was column-scoped; `authenticated` was not.
-  **Both are closed by 5D.7** (`DECISIONS.md § Public profile reads go through an exact-slug
-  RPC`), which is implemented on a branch and **not applied** — so treat both as live gaps
-  until migrations are approved and run. Nothing may be published to real athletes before
-  then. **Standing obligation, which changes shape at 5D.7:** the public projection must
-  match in both places it is defined. Today that is the `anon` grant and
-  `PUBLIC_PROFILE_COLUMNS`; once 5D.7 is applied it becomes the RPC's `returns table` and
-  `PUBLIC_PROFILE_COLUMNS`. `npm run check:columns` asserts that parity and, separately,
-  pins the three 5D.7 migrations byte-for-byte by SHA-256 — it does not inspect SQL
-  semantics at all.
+  **5D.7 closed both and is applied** (`DECISIONS.md § Public profile reads go through an
+  exact-slug RPC`). Verified live in the 82/82 acceptance run: anon direct table reads return
+  401 / `42501` including a `limit=1000` bulk attempt, and an unrelated signed-in athlete gets
+  zero rows for all 17 private columns of another athlete's profile.
+  **Standing obligation:** the public projection must match in both places it is defined —
+  the RPC's `returns table` and `PUBLIC_PROFILE_COLUMNS`. `npm run check:columns` asserts that
+  parity and, separately, pins **four** reviewed migrations byte-for-byte by SHA-256 — the three
+  5D.7 access-boundary migrations plus the 5D.8 search-path hardening migration. It does not
+  inspect SQL semantics at all, and a hash pass is not evidence of runtime containment.
 - **Never hardcode an OTP length.** The live project issues 8-digit codes and the length
   is a dashboard setting. The OTP code field must not set `maxLength`.
 - **Save always republishes.** Every successful save writes `is_published = true`, which
@@ -235,12 +245,14 @@ The **first three** migrations are applied to the Athlete project and verified
 five table RLS policies, the column-scoped `anon` grant of exactly 18 columns, and the
 **private** `athlete-media` bucket with its four Storage policies.
 
-**The three 5D.7 migrations are NOT applied anywhere.** They exist only on
-`claude/5d7-access-boundary-hardening`. So the live access model is still the one described
-above — column-scoped `anon` grant, shared published-row policy, folder-scoped Storage
-reads — and it stays that way until migrations are explicitly approved and pushed. There is
-**no production athlete data**: 0 profiles, 0 auth users, 0 Storage objects, which is why
-this is the cheapest possible moment to change the access model. `supabase/config.toml` now exists
+**The three 5D.7 migrations ARE applied**, and the remote migration history matches the Git
+versions exactly (`20260825000001`, `20260825000002`, `20260911000001`, `20260928000001`,
+`20260928000002`, `20260928000003`). The live access model is therefore the 5D.7 one — no
+anon table grant, owner-only direct reads, exact-slug RPC, referenced-hero-only Storage —
+**not** the column-grant model described in the paragraph above, which is historical.
+There is **no production athlete data**: 0 profiles, 0 auth users, 0 Storage objects, after
+the 5D.7 acceptance fixtures were fully cleaned up. **5D.8's migration
+(`20260929000001`) is NOT applied** — it is on a branch awaiting review. `supabase/config.toml` now exists
 and is linked to the Athlete project, closing the old "not reproducibly appliable"
 gap — the remote ref lives in gitignored `supabase/.temp/`, never in the committed file.
 
@@ -272,17 +284,21 @@ the project is back to 0 profiles, 0 auth users, 0 Storage objects.
 
 Four things that verification established, worth carrying forward:
 
-- **A published athlete's *current* media is enumerable and fetchable by anyone holding
-  the publishable key.** The Storage read policy grants `anon` SELECT on objects whose
-  owner has a published profile, so the folder can be listed and objects fetched without
-  a signed URL. This is the existing policy design, not a regression — "private bucket"
-  means no public URL, not no anon access. Media on a published profile is public by
-  intent; treat it that way.
+- **PRE-5D.7, HISTORICAL — a published athlete's *whole folder* was enumerable and fetchable
+  by anyone holding the publishable key.** The old Storage read policy granted `anon` SELECT
+  on every object whose owner had a published profile, so the folder could be listed and any
+  object in it fetched. **5D.7 replaced that and is applied:** a non-owner now reaches only
+  the *currently referenced* `hero_photo_path` in that profile owner's own `hero` folder.
+  Current behaviour, verified live: listing a published athlete's hero folder as anon returns
+  **exactly the one referenced object**, their profile folder returns **nothing**, and an
+  unpublished athlete's folder returns **nothing**. "Private bucket" still means no public
+  URL rather than no anon access — but that access is now one object, not a folder.
 - **The verified media-replacement lifecycle left no orphaned objects.** After replacing
   both photos the folder held exactly two objects. Cleanup remains **best-effort** by
-  design (see the failed-save follow-up above), and the current contents of a published
-  athlete's folder stay listable under the existing Storage policy — so this observation
-  narrows the point above without eliminating it.
+  design (see the failed-save follow-up above). Re-confirmed during 5D.7 acceptance: a clean
+  replace deleted the superseded object, so the orphan used as a fixture had to be created
+  deliberately. Under the current policy an orphan would in any case be readable only by its
+  owner.
 - **Requesting an OTP creates the auth user immediately.** `shouldCreateUser: true` means
   a mistyped address leaves a permanent unverified, never-signed-in user. One appeared
   during testing from a single abandoned request. Expect strays during the pilot.
@@ -325,18 +341,18 @@ a `typecheck` script, and the whole authentication path — all present.)*
 
 ## Next
 
-1. **5D.7 — access boundary.** Independent Codex review of
-   `claude/5d7-access-boundary-hardening`. Then, as separate approvals: apply the three
-   migrations in filename order (RPC → Storage → revoke), create live fixtures, run the
-   gated acceptance harness, delete the fixtures. Nothing goes to a real athlete until this
-   lands — the live project still allows bulk enumeration and cross-athlete private-column
-   reads.
-2. **5D.5 — deployment.** Vercel Pro and deployment are **deliberately deferred** until
+1. **5D.7 — access boundary. COMPLETE.** Reviewed (five rounds), merged as `c28a3cc`, all
+   three migrations applied, live acceptance PASS 82/82, fixtures cleaned up. Nothing
+   outstanding.
+2. **5D.8 — `set_updated_at()` search-path hardening.** On
+   `claude/5d8-set-updated-at-search-path`, reviewed once with no Critical/High findings.
+   Awaiting final narrow review, then founder approval to apply the single migration.
+3. **5D.5 — deployment.** Vercel Pro and deployment are **deliberately deferred** until
    closer to real pilot athletes, to avoid recurring cost during pre-pilot work. Vercel
    remains the selected host. When resumed: project setup, Production-only environment
    values, apex and `www` domains, and the Supabase Site URL change, each separately
    authorized, with on-host redirects validated before launch.
-3. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
+4. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
    guardian-consent process, draft-clearing on shared devices, and minimum error visibility.
 
 ## Blocked on founder
