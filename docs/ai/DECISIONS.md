@@ -404,13 +404,16 @@ access-boundary migrations **and this 5D.8 hardening migration** — four in tot
 failing until the new bytes are deliberately reviewed and re-pinned. That is change detection
 only: it proves the bytes are the reviewed bytes, never that the SQL is semantically safe.
 
+**Status.** Merged as `0282c01` (PR #20) and **applied to the Athlete project**, with the remote
+migration history aligned to the repo version `20260929000001`. Verified live:
+`public.set_updated_at()` carries a function-local `search_path = ''`, SECURITY INVOKER behaviour
+is unchanged, and the trigger binding is unchanged. The `function_search_path_mutable` advisor
+warning is cleared; the only remaining advisor warnings are the two expected SECURITY DEFINER RPC
+ones.
+
 **Rules out.** Adding a function to `public` without pinning its `search_path`; and using
 `CREATE OR REPLACE FUNCTION` where an `ALTER` suffices, since the former silently permits body,
 security-mode, and volatility changes to ride along.
-
-**Status.** On `claude/5d8-set-updated-at-search-path` and **not applied to the live Athlete
-project.** No local PostgreSQL exists (no Docker), so the statement has not been executed
-anywhere; it has been source-reviewed against documented PostgreSQL semantics only.
 
 ---
 
@@ -583,6 +586,305 @@ client-side validation.
 
 ## Publishing
 
+### Athlete account deletion is founder-assisted, owner-scoped, and Auth-last
+**Active** · 2026-09-30 · Checkpoint 5D.9 · founder decision
+
+**Decision.** Permanent deletion of an athlete account during the pilot is **founder-assisted**.
+A local, gated founder tool performs only the steps an authenticated **owner** is already
+authorised to perform, in a fixed order, and then stops:
+
+    unpublish  ->  enumerate  ->  delete media  ->  delete profile row  ->  STOP
+
+The **Auth user is deleted manually by the founder in the Supabase dashboard, strictly last**.
+Nothing automates it.
+
+**Deliberately not introduced:** `service_role`, admin API credentials in the app, a server
+admin route or action, a self-service Delete Account UI, a `deletion_requests` table, a
+`deleted_at` / soft-delete model, an orphan sweeper, or any RLS / Storage-policy / migration
+change. 5D.9 required **none** of them.
+
+**Why founder-assisted.** Permanent deletion needs Auth-user deletion, which needs an admin
+credential this project deliberately does not hold (§ No service-role key in this project).
+Automating it would mean standing up an endpoint whose purpose is destroying accounts — a
+high-value target whose authz must be perfect. At pilot scale, with rare requests, that trade is
+not worth it. The urgent capability already exists and is self-service: **an athlete can
+unpublish themselves**, which stops fresh public access and fresh hero signing. Only permanent
+erasure is founder-assisted. Note the mechanics precisely, because the operational instruction
+depends on them: the Visibility switch in `PublishSection` is local component state, and the
+value reaches the server only when the athlete presses **Save**. "Flip the switch" is not
+sufficient guidance; "turn Published off **and Save**" is.
+
+**Why Auth is strictly last.** `athlete_profiles.owner_user_id` is
+`references auth.users(id) on delete cascade`, but **nothing cascades to Storage**. Deleting the
+Auth user first removes the profile row while the media survives, and the **reliable** route to
+removing it is then gone: Storage owner authorization is keyed on `auth.uid()`, and the sign-in path
+that mints a token carrying that claim no longer exists.
+
+What is not claimed: that the objects become admin-only the instant the Auth user is deleted. A
+token issued beforehand still carries the claim and may remain API-valid until it expires. The point
+of the ordering is that no *dependable* owner credential remains — planning cleanup around a
+credential that expires at an unknown moment is not a plan. This supersedes the older note that
+described the cascade as the account-deletion path.
+
+**Identity is bound, never looked up.** The target is **environment fingerprint + verified Auth
+UID**, decided once and never re-derived. Slug is informational only: slugs are mutable and
+reusable, so re-resolving by slug on a retry could retarget the operation at an innocent
+athlete. The profile row id is supporting evidence — used to detect that the row changed, never
+to decide who the target is. Path ownership is decided by **exact first-segment equality**,
+never `startsWith`, which would wrongly accept `<uid>2/...`.
+
+**Enumeration covers the whole owner namespace.** Completeness is all of `{uid}/`, discovered
+recursively — **not** `{uid}/hero` plus `{uid}/profile`, which are current app conventions
+rather than a definition of what the athlete owns. Root-level files, unexpected folders, and
+arbitrary nesting all count. No filtering by extension, UUID shape, slot name, or depth. Every
+folder is paginated to exhaustion with deterministic ordering, and enumeration completes
+**before** any deletion, because offset pagination over a shrinking collection skips entries.
+Verified feasible under the existing owner SELECT policy — `(storage.foldername(name))[1] =
+auth.uid()::text` matches at any depth — so **no policy change was needed**.
+
+**Verified absence, never acknowledgement.** A delete response moves a key to
+`pending-verification`, never to absent. An object counts as absent only after an **authorized,
+complete** enumeration no longer lists it. Explicitly *not* evidence of absence: a successful
+delete call, a failed signing attempt, an empty list from an unauthorised reader, a failed
+`getUser()`, or a rejected refresh token. A malformed or unreadable listing is **UNKNOWN**, not
+empty — "empty" is what authorises the next destructive step. The app's media-replacement
+cleanup helper reasons about delete acknowledgements and is therefore **deliberately not
+reused** here; it is left unchanged.
+
+**Six checkpoints,** each recording evidence and a timestamp: `bound` → `inventory-ready` →
+`media-absent` → `profile-absent` → `auth-deletion-recorded` → `verified-complete`. Checkpoints
+cannot be skipped and a stored checkpoint never excuses skipping fresh preconditions on resume.
+If facts regress — media reappears, profile activity appears — downstream state is invalidated,
+previously-proven absences revert to `unknown`, and the operation stops rather than silently
+advancing.
+
+**Cooperative quiet window — a limitation, stated honestly.** Unpublishing installs **no write
+barrier**. Another tab, a stale edit form, or a second session can still save or upload
+mid-operation. The tool re-scans before each destructive transition and rolls the checkpoint
+backward when it detects interference, but it cannot prevent it. The quiet window is an
+operational agreement with the athlete. **This workflow is not race-safe and must not be
+described as such.** A per-environment/per-UID lock coordinates founder tooling only; it does
+not block athlete browsers.
+
+**Residual credentials.** Deleting an Auth user revokes session and refresh state but an
+already-issued access JWT can remain signature-valid until expiry (measured in 5D.7: GoTrue 403,
+refresh 400, yet the same token still authenticated against PostgREST). Because the row and
+media are already gone it can read nothing of the athlete's — but deletion must **not** be
+described as instantly revoking every credential. Live acceptance tests reads *and writes* with a
+pre-deletion token after Auth deletion (§17 cases 36–37 of the runbook). The completion condition
+is stated there explicitly for the case where a stale **write** succeeds: the operation stays open
+until the token's `exp` has passed, a clean public verification is re-run, an admin-side
+cross-check confirms no `{uid}/` prefix and no row, and anything the probe created is removed.
+
+**Inventory.** One versioned JSON file per operation in a founder-only local application-data
+directory **outside the repo** — not a temp directory, which can be cleaned and would destroy
+resumability mid-deletion. The directory is canonicalised and then **refused** if it resolves
+inside the repository checkout or a cloud-sync root — symlinks and junctions are resolved first.
+Each write is temp file → `fsync` → rename, then read back, re-validated, and compared
+field-by-field before any caller is told it persisted; a failed save **stops** the operation. This
+is *atomic local persistence with verified read-back*, **not** guaranteed crash-durable storage,
+and must not be described as crash-proof. It **never** stores OTPs, passwords, access or refresh tokens, API
+keys, signed URLs, raw profile bodies, or media bytes; validation refuses an inventory carrying
+any of those. Credentials stay in memory and re-authentication happens on resume, using a
+**sign-in-only** OTP flow — the app's helper sends `shouldCreateUser: true`, which on a retry
+after Auth deletion would silently recreate the account it just removed.
+
+**Rules out.** Deleting the Auth user before media and profile are verifiably gone · treating a
+delete acknowledgement as completion · resolving a deletion target by slug · defining owned
+media by the three-segment path convention · reusing the replacement-cleanup helper for account
+deletion · claiming race-safety under current policies.
+
+**Status.** Implemented on `claude/5d9-account-lifecycle`, based on `0282c01`, and revised once
+after an independent review returned NEEDS CHANGES (see the sub-entry below). **No live deletion
+has been performed, no fixtures created, and no schema, RLS, or Storage policy changed.** A
+controlled live acceptance run against disposable fixtures is designed (runbook §16–§17) but not
+executed.
+
+### The deletion workflow's sequencing lives behind injected ports
+**Active** · 2026-09-30 · Checkpoint 5D.9 repair pass
+
+**Decision.** All ordering and refusal logic for account deletion lives in
+`scripts/lifecycle/orchestrator.mjs`, which performs **no I/O of its own** — every external
+effect is an injected port — and **returns** a refusal instead of exiting.
+`scripts/delete-athlete-account.mjs` is a thin adapter: load config, authenticate when the mode
+needs it, build real ports, map the result to an exit code.
+
+**Why.** The rules that matter here are orderings, and an ordering is only observable by driving
+the sequence and recording what was called. "Enumerate completely before deleting", "never print
+the Auth handoff if the pre-handoff save failed", "an unreadable public surface is UNKNOWN" cannot
+be asserted against a live project without risking real data. With ports, they are ordinary unit
+assertions: 41 sequence tests, no network.
+
+Five substantive behaviour changes came out of the same pass.
+
+**1. Post-Auth verification requires no athlete session.** The earlier design's verification path
+asked the athlete for an OTP — after their Auth user had been deleted, which cannot succeed. That
+made the final step unrunnable. `--mode verify-public` takes no session. The consequence is stated
+rather than papered over: once the Auth user is gone this tool **can no longer obtain a fresh owner
+session**, because the sign-in path that produces one is exactly what was deleted. So owner-scoped
+absence is proven *before* Auth deletion and recorded, and the final run verifies the public surface
+plus the founder's typed confirmation of the deleted UID plus an attested admin-side cross-check. The
+tool refuses `verified-complete` unless the recorded `profile-absent` evidence is present.
+
+What is deliberately **not** claimed: that deleting the Auth user makes the athlete's objects
+unreachable. An access token issued beforehand may stay API-valid until it expires and still carries
+the `auth.uid()` claim the Storage owner policy is keyed on. Whether that access actually remains is
+measured by live acceptance, not assumed in either direction, and a residual capability keeps the
+operation OPEN — see the residual-token completion rule below.
+
+**2. Public absence is three-valued.** absent / exposed / **unknown**. Only a reachable, parsed
+`200` with zero rows is absence; a transport failure, a non-200, an unparseable body, or a missing
+slug is unknown, and unknown never completes an operation. A 404 from a wrong path is
+indistinguishable from a clean result, which is exactly how a false pass gets manufactured.
+
+**3. Both confirmations precede the first mutation.** Quiet window and typed phrase now come before
+the unpublish, so there is no "one allowed early mutation" to document. A resumed destructive run
+asks again — a stored checkpoint is not a standing confirmation.
+
+**4. The founder lock is exclusive by construction, and so is dead-holder recovery.** The record is
+staged to a private temp file and **hard-linked** into place, so the lock path never exists
+half-written (a competitor reads that content to judge liveness). Locks live in a fixed directory
+that `--work-dir` cannot move, since otherwise two operators with different work dirs would never
+see each other. Scope is narrow and worth stating: **one OS user, one host, that user's local
+application-data root** — not distributed, not cross-user, not cross-machine.
+
+Recovery needed its own fix, because "read the holder, see a dead pid, unlink, re-create" admits two
+live workers: A and B both read the same dead record, A unlinks it and claims the lock, then B —
+still acting on its earlier read — unlinks **A's live lock** and claims it too. Nothing in that
+sequence re-checks that the file being removed is still the dead one.
+
+A takeover is therefore gated on winning a **per-dead-instance recovery token**. Every record
+carries a random `instanceId`; a would-be recoverer must exclusively create
+`<lock>.takeover.<instanceId>`, so only one process is ever entitled to remove that instance; the
+winner then re-reads the lock and proceeds only if it is still that exact instance and still dead;
+and the removal is followed by a fresh exclusive claim that a third party may legitimately have won
+in between. B cannot reach the removal step at all. A recoverer that dies mid-way leaves the token,
+which blocks automatic recovery of that instance and forces **manual cleanup** — deliberately, since
+that degrades availability rather than safety.
+
+Everything ambiguous fails closed: a cross-host lock, an unreadable or empty record, a **missing or
+malformed pid**, a record with **no instance id**. None of those is "dead"; a corrupt same-host lock
+is never auto-reclaimed. Age is never evidence, and a matching operation id does **not** bypass a
+live holder. PID reuse is an accepted limitation in the safe direction: if the pid has been handed to
+an unrelated process the lock reads as live and the run refuses, costing availability rather than
+admitting a second worker.
+
+**5. Inventory paths are re-validated as untrusted input.** An inventory is a file on disk: it can
+be edited, corrupted, or carried over. Every load re-checks each key for exact owner ownership and
+the expected bucket, and each delete batch is gated again against the fresh enumeration. A foreign
+path is a hard refusal for the whole operation, never a skipped entry — RLS is the last line of
+defence, not the tool's only one.
+
+**6. Fresh auth at every destructive boundary.** `authValidated: true` is no longer passed through
+from startup. Each destructive boundary re-validates the session and checks the live uid against the
+bound one. What that proves is narrow and is stated as such: the credential is **currently
+accepted**, not that the Auth user exists — a token issued before a deletion can still be accepted.
+So pre-Auth destructive phases require it, and post-Auth phases never call it.
+
+**7. Completion requires recorded outcomes, not an acknowledgement.** `verified-complete` previously
+turned on "confirm you have read the residual-credential caveat", which establishes nothing about the
+system. It now requires: the manual Auth deletion recorded against the bound uid; the stale-token
+**READ and WRITE** outcomes both recorded; and, if either capability remained, that all outstanding
+token-expiry windows have passed, any probe object was removed, the public check was re-run, and a
+founder has attested to the admin-side Storage/profile cross-check. `finalProfileAbsent: true` and
+`finalMediaScanClean: true` are no longer accepted as caller-asserted booleans at all.
+
+The ordering is enforced, not merely documented: the Auth deletion is recorded before the stale-token
+questions are asked, and a missing outcome leaves the operation **open** rather than completing it.
+One probe token is explicitly not treated as evidence about every session that may have been
+outstanding — the question asked is about all of them.
+
+**8. Resource ceilings are global to the enumeration.** `maxEntries` previously broke only the
+current pagination loop while queued folders kept expanding. The budget — entries, folders and pages
+— is now checked at both loop levels, and hitting any of it stops dequeuing entirely and returns
+`complete: false`.
+
+**9. The inventory is a strict versioned schema (format 2).** Every field and nested shape is
+allowlisted exactly, so unknown fields, arbitrary nested evidence objects, object-valued slugs, raw
+profile bodies, response dumps and byte arrays have nowhere to live rather than being recognised and
+rejected one at a time. Validation also enforces **path ownership on every load** — previously a
+foreign key could sit unchallenged in an inventory already past the media phase — and
+checkpoint/evidence consistency, so a checkpoint cannot claim more than its recorded evidence
+supports. A version-1 file is refused rather than migrated.
+
+**Also corrected.** The `sb_secret_` / `service_role` start-up guard is documented as a guard against
+an obvious mistake, **not** an exhaustive role detector: a legacy JWT-format key carries its role
+inside the encoded payload, which the tool does not decode. The cloud-sync work-dir check is
+described as a **heuristic on folder names**, which cannot detect a renamed sync root or a sync
+client pointed at an arbitrary directory. `fsync` is claimed on the **file only** — the directory
+entry is not flushed, since that is not portable. And the takedown procedure now says plainly that an
+unreachable athlete cannot be handled by this tool at all — every mutating step needs their sign-in
+code — and gives the manual dashboard procedure for stopping public exposure instead.
+
+**OTP entry.** The emailed code is read with terminal echo **off**, before any readline interface
+exists, so there is one consumer of stdin and raw mode is always restored. On a non-TTY stdin there
+is nothing to hide and the tool says so instead of implying otherwise. The honest limit: this keeps
+the code out of the visible screen and scrollback; it cannot stop a terminal emulator, multiplexer,
+session recorder or keylogger from capturing keystrokes. "The tool never writes credentials" is a
+property of the tool, not of the terminal — so the claim is stated that way rather than as
+"impossible to persist".
+
+**10. Every destructive entry point re-checks the public surface.** A resumed run at
+`inventory-ready` or `media-absent` previously inherited the public check performed when the
+operation first reached that checkpoint. Both phases now issue a fresh check immediately before
+mutating, and UNKNOWN stops as firmly as EXPOSED.
+
+**11. The completion public check is issued AFTER the stale-token testing.** Completing on the
+reading taken at the top of the run would be completing on evidence that predates the actions it is
+meant to account for. `publicRecheckAt` is stamped only from that later request, never derived from a
+clock reading or carried over, and an EXPOSED or UNKNOWN result there refuses completion.
+
+**12. Residual obligations are monotonic.** Capability once observed stays observed; unresolved
+expiry, probe cleanup, and cross-check stay unresolved until positively confirmed. A later run
+answering "no" means only that it did not reproduce the capability — perhaps its token had since
+expired — and must not discharge what an earlier run recorded. Each obligation has exactly one
+resolution transition, and the tool announces what a run inherited. The probe object key is validated
+against the same exact-ownership rule as every other media key.
+
+**13. A probe object is identified by generation, not by its key.** Removal evidence belongs to an
+object, not to a path. A probe written at a key, removed, and then written at that **same** key is a
+second object, and the first removal says nothing about it — but matching on the key alone let the
+recreated probe inherit the earlier `probeRemovedAt`, so an operation could complete while the
+founder was answering, in that very run, that the new probe had NOT been cleaned up. Each reported
+existence now mints a `probeGeneration`, and cleanup is satisfied only when
+`probeRemovedGeneration === probeGeneration`. The schema additionally refuses an inventory whose
+removal evidence names a generation that is not the current one.
+
+**14. A request ATTEMPT consumes the enumeration budget.** `pages` was incremented after `list()`
+resolved, so a thrown request cost nothing and `maxPages` could be exceeded without limit by a
+backend that fails. The counter now increments before the call and is never rolled back: a hard
+maximum has to bound attempts, not outcomes.
+
+**15. The authoritative inventory is loaded INSIDE the lock.** Serialising execution achieves
+nothing if the state the serialised section operates on was read before the wait. Two runs could load
+one snapshot; the first takes the lock, records a new residual obligation and releases; the second
+then acquires the lock still holding its pre-lock copy, writes that stale state back, and erases the
+obligation — reaching `verified-complete` over work that was still owed. The lock did its job and the
+data defeated it.
+
+Only the lock **key** is now derived before acquisition. For a resumed run with a session the key uses
+the signed-in uid, so a caller inspecting someone else's operation locks only their own identity and
+the refusal happens after the reload. `verify-public` has no session and must discover the bound uid
+from disk, so it performs one read whose *single* use is that uid; the object is discarded and never
+becomes lifecycle state. A new operation is bound inside the lock, so it has no pre-lock read at all.
+
+There is deliberately **no merge** of a pre-lock snapshot with the post-lock load. A snapshot taken
+before a wait has no standing afterwards, and merging it could only downgrade newer on-disk evidence:
+a recorded READ/WRITE capability, a newer probe generation, an unresolved cleanup, an expiry or
+cross-check obligation, or a further checkpoint.
+
+**Rules out.** Testing deletion sequencing only against a live project · asking a deleted user to
+authenticate · recording an unreadable public surface as absence · treating a stored checkpoint as a
+confirmation or as a proof · check-then-write, age-based, or unlink-first lock recovery · treating a
+corrupt or pid-less lock as dead · identifying a probe object by its key alone · counting only
+successful requests against a hard request budget · operating on an inventory read before the lock was
+acquired, or merging one over newer on-disk state · trusting an inventory's own key list · deleting a row that is
+published or whose id is not the bound one · re-deleting an object that regressed from verified-absent
+instead of stopping · completing an operation on an acknowledgement rather than a recorded outcome ·
+completing on public evidence gathered before the stale-token probes · letting a later weaker
+observation discharge an earlier obligation · claiming the Auth user's deletion makes an
+already-issued token harmless.
+
 ### `is_published` is the only public-visibility switch
 **Active** · 2026-09-06
 **Decision.** Anonymous read of a profile row and of its media both derive from
@@ -592,18 +894,29 @@ exactly one answer and one place to audit.
 **Rules out.** Any second visibility mechanism — unlisted links, per-section privacy,
 preview tokens — without redesigning both policies together.
 
-### Auto-publish on every successful save
-**Active** · 2026-09-07 · widened from "first save" once the real write landed
-**Decision.** Every successful save sets `is_published = true`, not just the first.
-**Why.** At pilot scale the athlete's goal is a shareable link, and a separate publish
-step is one more place to get stuck and end up with nothing to share. The only save
-action today is "Save & View My Profile", and nothing can unpublish a profile, so an
-upsert that always publishes matches the product exactly.
-**Rules out.** Assuming a saved profile is private.
-**Revisit when.** Draft/unpublish controls arrive. At that point this becomes a bug:
-editing an intentionally unpublished profile would silently republish it, exposing an
-athlete who had chosen to hide. The write path must then stop forcing the column and
-respect the stored value.
+### Auto-publish on CREATE; updates preserve the chosen publication state
+**Superseded 2026-09-30** · originally "Auto-publish on every successful save", 2026-09-07
+
+**Decision as it stands now.** A first-time create publishes: `buildCreateRow` sets
+`is_published: true`, because at that moment the athlete's goal is a shareable link and a separate
+publish step is one more place to get stuck with nothing to share. An **update** does not force the
+column — `buildUpdateRow` writes whatever `is_published` it is given, and `EditProfileForm` seeds
+that from the stored record and from the Visibility switch.
+
+**What changed, and why the old wording is dangerous.** The original entry said "every successful
+save sets `is_published = true`" and predicted it would become a bug once unpublish controls
+arrived. Those controls arrived (`PublishSection`), and the write path changed with them. Left
+uncorrected, the old wording would tell a reader that editing an intentionally unpublished profile
+republishes it — the opposite of what the code does, and exactly the kind of stale claim that gets
+relied on during a deletion or a takedown.
+
+**How the control actually behaves.** The Visibility switch is **local component state**. Flipping
+it changes nothing on the server; the value is written when the athlete presses **Save**, in the
+same single `.update()` as every other field. So the correct instruction to an athlete is "turn
+Published off **and press Save**", and until that Save succeeds the profile is still public.
+
+**Rules out.** Assuming a saved profile is private · assuming an update republishes · telling an
+athlete that flipping the switch alone takes their profile down.
 
 ### Search indexing is staged: marketing is indexable, athlete profiles are not
 **Active** · 2026-09-09 · founder decision
@@ -706,8 +1019,13 @@ the athlete app.
 **Note.** `service_role` lacks `SELECT`, `INSERT`, `UPDATE`, and `DELETE` privileges on
 `athlete_profiles`, so ordinary PostgREST CRUD is unavailable. It retains `TRUNCATE`,
 `REFERENCES`, and `TRIGGER` privileges. The migrations grant table privileges only to
-`anon` and `authenticated`. Account deletion therefore works through the schema's own
-`owner_user_id … on delete cascade` instead.
+`anon` and `authenticated`.
+
+**Superseded at 5D.9.** This note previously concluded that "account deletion therefore works
+through the schema's own `owner_user_id … on delete cascade`". **Do not follow that.** The
+cascade exists, but using it as the deletion path is unsafe: nothing cascades to Storage, so
+deleting the Auth user first strands the athlete's media beyond any owner's reach. See
+§ Athlete account deletion is founder-assisted, owner-scoped, and Auth-last.
 
 ### Athlete Auth is configured through the Management API, not `config push`
 **Active** · 2026-09-23

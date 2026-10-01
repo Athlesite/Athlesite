@@ -528,10 +528,16 @@ export type MediaPathUpdate = {
  * but keeping it out of the domain type means there is no field for a caller to
  * set hopefully in the first place.
  *
- * `is_published` is true on every save. That matches today's product, where the
- * only save action is "Save & View My Profile" and there is no way to unpublish.
- * It must be revisited when draft/unpublish controls arrive: editing an
- * intentionally unpublished profile must not silently republish it.
+ * `is_published` is true here because this builds the row for a FIRST-TIME create,
+ * whose only entry point is "Save & View My Profile" — a new profile is meant to go
+ * live. It is not a statement that publication is permanent.
+ *
+ * Unpublish controls have since arrived (`PublishSection`), and the concern they
+ * raised is handled on the update side rather than here: `toAthleteProfileUpdateRow`
+ * takes `is_published` as a parameter, and `EditProfileForm` seeds it from the stored
+ * value, so editing an intentionally unpublished profile does not silently republish
+ * it. Verified live during 5D.7 acceptance. Keep that split — a create publishes, an
+ * update preserves whatever the athlete chose.
  */
 export function toAthleteProfileRow(
   profile: AthleteProfileData,
