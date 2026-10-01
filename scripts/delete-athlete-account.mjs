@@ -347,11 +347,15 @@ function buildPorts({ token, identity, workDir, rl }) {
 // ──────────────────────────────────────────────────────────────── main ──
 
 async function main() {
-  const { url, anonKey } = loadEnv();
-  ENV_URL = url;
-  ANON = anonKey;
-  const environment = environmentFingerprint(url);
-
+  // Local-only checks FIRST: the work-dir safety check and the startup banner depend on nothing
+  // Supabase-related, and must run even when .env.local is entirely absent — a clean checkout with
+  // no project configured, which is exactly the state of a fresh CI runner. `loadEnv()` used to run
+  // first and throw ENOENT before either of these ever executed; a generic top-level catch then
+  // turned that into an opaque INTERNAL_ERROR with empty stdout, which is what actually failed on
+  // Linux CI (reproduced locally by removing .env.local — identical failure on this same OS).
+  // Nothing security-relevant moves: the environment gate and argument parsing already run before
+  // main() is even called (see the top of this file), and loadEnv()'s service_role/sb_secret_ guard
+  // still runs — merely later, immediately before its result is first needed.
   const safeDir = assertSafeWorkDir(args.workDir ?? resolveWorkDir());
   if (!safeDir.ok) {
     console.error(`\n  STOP [${safeDir.refusal}] ${safeDir.detail}\n`);
@@ -365,6 +369,18 @@ async function main() {
   console.log(`  mode: ${args.mode}${args.mode === MODE.EXECUTE ? "  (WILL MUTATE)" : "  (read-only)"}`);
   console.log(`  inventory dir: ${workDir}`);
   console.log("  this tool never deletes the Auth user and never uses a service_role key\n");
+
+  if (!needsSession) {
+    log("no session requested: public verification does not authenticate as the athlete");
+  }
+
+  // Everything from here on talks to the configured Supabase project — an OTP request, or (for
+  // verify-public) the public-verification RPC — so the project configuration is loaded now, the
+  // first point it is actually required, rather than at the top of main().
+  const { url, anonKey } = loadEnv();
+  ENV_URL = url;
+  ANON = anonKey;
+  const environment = environmentFingerprint(url);
 
   // The email and the code are read BEFORE any readline interface exists, so the hidden-input
   // reader is the only consumer of stdin while it runs. Two consumers on one stdin is how raw-mode
@@ -412,8 +428,6 @@ async function main() {
     }
     identity = { authValidated: true, uid: confirmed.uid };
     log(`authenticated and identity confirmed (uid ends ...${identity.uid.slice(-6)})`);
-  } else {
-    log("no session requested: public verification does not authenticate as the athlete");
   }
 
   const rl = createInterface({ input, output });
