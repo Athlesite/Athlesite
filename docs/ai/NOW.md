@@ -1,6 +1,6 @@
 # NOW — Athlesite current state
 
-Access-boundary checkpoint updated: 2026-09-29 · base `main` @ `c28a3ccea0689fa5db962726718bc8694551a64e`
+Access-boundary checkpoint updated: 2026-09-30 · base `main` @ `0282c013623032e2297ba3fb0f6b3fddbc40a3d5`
 
 Only the access-boundary status was refreshed for 5D.7/5D.8. The older branch table and
 Phase B follow-ups below are historical and need a separate reconciliation; do not
@@ -12,8 +12,12 @@ table access; an unrelated signed-in athlete cannot read another athlete's row. 
 in this file about the *previous* column-grant model are historical unless explicitly
 labelled as current.
 
-**5D.8 is on a branch and NOT applied.** It adds one forward migration that pins an empty
-`search_path` on `set_updated_at()`. Nothing else.
+**5D.8 IS MERGED AND APPLIED LIVE.** PR #20 merged; `main` is at `0282c01`. Its one forward
+migration (`20260929000001`) is applied to the Athlete project and the remote migration history
+is aligned to the repo version. `public.set_updated_at()` now carries a function-local
+`search_path = ''`; SECURITY INVOKER behaviour and the trigger binding are unchanged. The
+mutable-search-path advisor warning is **cleared**, leaving only the two expected
+SECURITY DEFINER RPC warnings.
 
 A checkpoint, not a log. Overwrite this file; git holds the history.
 If the stamp above is behind `git log -1`, treat this file as stale and say so.
@@ -75,7 +79,7 @@ refreshed these docs. Merged branches have since been deleted.
     because that path verifies the signature rather than consulting session state.
   Treat all three as the same class: a credential already handed out outlives the policy
   change that would deny a new one. Revisit if the pilot needs true immediate revocation.
-- **5D.8 — `set_updated_at()` search-path hardening. On a branch, NOT applied.** On
+- **5D.8 — `set_updated_at()` search-path hardening. MERGED as `0282c01` and APPLIED LIVE.** Was on
   `claude/5d8-set-updated-at-search-path`. One forward migration
   (`20260929000001_harden_set_updated_at_search_path.sql`) containing a single statement:
   `alter function public.set_updated_at() set search_path = ''`. It replaces no function
@@ -190,15 +194,18 @@ refreshed these docs. Merged branches have since been deleted.
   inspect SQL semantics at all, and a hash pass is not evidence of runtime containment.
 - **Never hardcode an OTP length.** The live project issues 8-digit codes and the length
   is a dashboard setting. The OTP code field must not set `maxLength`.
-- **Save always republishes.** Every successful save writes `is_published = true`, which
-  matches today's product — the only save action is "Save & View My Profile" and there
-  is no way to unpublish. **This must be revisited when draft/unpublish controls
-  arrive**: editing an intentionally unpublished profile must not silently republish it.
-  See `DECISIONS.md § Publishing`.
+- **Save preserves the chosen publication state — it does not always republish.** This
+  entry previously said every successful save writes `is_published = true`. That is no
+  longer how the product behaves: `PublishSection` supplies the Visibility value and the
+  save writes *that* value alongside every other field, so editing an intentionally
+  unpublished profile leaves it unpublished. Two consequences worth holding together:
+  the switch is **local component state until Save succeeds**, so "flip the switch" does
+  not unpublish anything; and an update does not silently republish. See
+  `DECISIONS.md § Publishing`.
 - **A stale draft can be republished in one click, without review.** `loadDraft()`
   restores both the draft *and* the step the athlete last reached, so returning to
   `/get-started` — or pressing browser Back after saving — can land straight on Preview
-  with older data and an enabled Save button. Combined with auto-publish on every save,
+  with older data and an enabled Save button. Combined with a create that publishes by default,
   that means a half-finished profile from a previous session can go live without the
   athlete passing back through any earlier step. Observed during checkpoint 4
   verification, where a resumed draft saved under an unintended slug. **Product
@@ -245,14 +252,17 @@ The **first three** migrations are applied to the Athlete project and verified
 five table RLS policies, the column-scoped `anon` grant of exactly 18 columns, and the
 **private** `athlete-media` bucket with its four Storage policies.
 
-**The three 5D.7 migrations ARE applied**, and the remote migration history matches the Git
-versions exactly (`20260825000001`, `20260825000002`, `20260911000001`, `20260928000001`,
-`20260928000002`, `20260928000003`). The live access model is therefore the 5D.7 one — no
+**The three 5D.7 migrations and the 5D.8 hardening migration ARE applied**, and the remote
+migration history matches the Git versions exactly (`20260825000001`, `20260825000002`,
+`20260911000001`, `20260928000001`, `20260928000002`, `20260928000003`, `20260929000001`). The live access model is therefore the 5D.7 one — no
 anon table grant, owner-only direct reads, exact-slug RPC, referenced-hero-only Storage —
 **not** the column-grant model described in the paragraph above, which is historical.
 There is **no production athlete data**: 0 profiles, 0 auth users, 0 Storage objects, after
 the 5D.7 acceptance fixtures were fully cleaned up. **5D.8's migration
-(`20260929000001`) is NOT applied** — it is on a branch awaiting review. `supabase/config.toml` now exists
+(`20260929000001`) IS applied**, with the remote history aligned to the repo version;
+`public.set_updated_at()` has a function-local `search_path = ''`, its SECURITY INVOKER
+behaviour and trigger binding unchanged, and the mutable-search-path advisor warning is cleared
+— only the two expected SECURITY DEFINER RPC warnings remain. `supabase/config.toml` now exists
 and is linked to the Athlete project, closing the old "not reproducibly appliable"
 gap — the remote ref lives in gitignored `supabase/.temp/`, never in the committed file.
 
@@ -304,9 +314,20 @@ Four things that verification established, worth carrying forward:
   during testing from a single abandoned request. Expect strays during the pilot.
 - **`service_role` lacks `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on
   `athlete_profiles`**, so ordinary PostgREST CRUD is unavailable to it. It retains
-  `TRUNCATE`, `REFERENCES`, and `TRIGGER` privileges. Operator tooling therefore cannot
-  read or write athlete rows through PostgREST; deletion goes through
-  `owner_user_id … on delete cascade`.
+  `TRUNCATE`, `REFERENCES`, and `TRIGGER` privileges.
+  **Corrected at 5D.9 — the cascade is NOT the account-deletion path.** Earlier wording here
+  said "deletion goes through `owner_user_id … on delete cascade`". That cascade is real
+  (`auth.users` → `athlete_profiles`) but relying on it would be actively unsafe: **nothing
+  cascades to Storage.** Deleting the Auth user first removes the profile row while the media
+  survives, and the reliable route to removing it is gone: Storage owner authorization is keyed on
+  `auth.uid()` and no new owner credential can be minted. A token issued *before* the deletion may
+  still carry that claim until it expires, so this is **not** a claim that the files instantly
+  become admin-only — only that nothing dependable remains to clean them with.
+  The correct order is **media → profile row → Auth user, strictly in that sequence**, all of it
+  owner-authorised except the final manual Auth step. An authenticated owner can already delete
+  their own row and their own objects (both policies exist and were exercised live during 5D.7
+  cleanup), so no elevated credential is needed for the first two. See
+  `docs/ai/RUNBOOK-deletion.md`.
 
 **Still untested: WebP uploads.** PNG has now gone through the product's own upload path
 end to end; WebP has not.
@@ -344,15 +365,72 @@ a `typecheck` script, and the whole authentication path — all present.)*
 1. **5D.7 — access boundary. COMPLETE.** Reviewed (five rounds), merged as `c28a3cc`, all
    three migrations applied, live acceptance PASS 82/82, fixtures cleaned up. Nothing
    outstanding.
-2. **5D.8 — `set_updated_at()` search-path hardening.** On
-   `claude/5d8-set-updated-at-search-path`, reviewed once with no Critical/High findings.
-   Awaiting final narrow review, then founder approval to apply the single migration.
-3. **5D.5 — deployment.** Vercel Pro and deployment are **deliberately deferred** until
+2. **5D.8 — `set_updated_at()` search-path hardening. COMPLETE.** PR #20 merged as `0282c01`;
+   the migration is **applied live** and the remote history is aligned to `20260929000001`.
+   `public.set_updated_at()` has a function-local `search_path = ''`, SECURITY INVOKER behaviour
+   and trigger binding unchanged, mutable-search-path advisor warning cleared, only the two
+   expected SECURITY DEFINER RPC warnings remaining. Nothing outstanding.
+3. **5D.9 — account and data lifecycle readiness. On a branch; design + tooling only.** On
+   `claude/5d9-account-lifecycle`, based on `0282c01`. Adds `docs/ai/RUNBOOK-deletion.md`, an
+   owner-scoped founder-only local tool, and pure safety helpers. **No live deletion has been
+   performed, no fixtures created, no policy, migration or Storage rule changed, and no
+   service-role or admin capability introduced.** Locked pilot decision: **Option A —
+   founder-assisted permanent deletion**, with Auth-user deletion performed manually and
+   strictly last.
+
+   *Two repair passes applied, after two independent reviews returned NEEDS CHANGES.* The
+   sequencing lives in `scripts/lifecycle/orchestrator.mjs` behind injected ports, so orderings and
+   refusals are testable without a project; the CLI is a thin adapter. What to know before reading
+   the code:
+
+   - **Post-Auth verification needs no athlete session.** `--mode verify-public` exists because the
+     original design asked a deleted user for an OTP, which cannot succeed. Owner-scoped absence is
+     proven *before* Auth deletion and recorded. Afterwards the tool cannot obtain a fresh owner
+     session — and it does **not** claim a previously issued token is therefore harmless; whether
+     one still reads or writes is measured, not assumed.
+   - **Completion needs recorded outcomes, not an acknowledgement.** `verified-complete` requires
+     the recorded Auth deletion, the stale-token READ **and** WRITE outcomes, and — if either
+     capability remained — the expiry windows passed, the probe object removed, the public check
+     re-run, and a founder attestation of the admin-side cross-check.
+   - **Public absence is three-valued** (absent / exposed / **unknown**), gated everywhere, and a
+     fresh contradiction outranks a stored `verified-complete`.
+   - **Fresh auth at every destructive boundary.** Startup auth is never reused; each boundary
+     re-validates the session against the bound uid.
+   - **Resuming never inherits a proof.** A published row, replacement row, unresolved inventory
+     entry, or missing confirmation stops the run; an object that regressed from verified-absent is
+     a regression, not a retry, and rolls the checkpoint back.
+   - **The lock's dead-holder recovery is itself atomic** — gated on a per-instance recovery token,
+     because plain unlink-and-recreate lets two live workers through. Everything ambiguous (corrupt
+     record, missing pid, no instance id, another host) fails closed to manual cleanup.
+   - **The inventory is a strict versioned schema** (format 2) validating path ownership on every
+     load and checkpoint/evidence consistency.
+   - **Enumeration ceilings are global** to the traversal, not per page loop.
+
+   - **Every destructive entry point re-checks the public surface**, and the completion check is
+     issued *after* the stale-token probes rather than reused from the top of the run.
+   - **Residual obligations are monotonic**: a later "no" cannot discharge a capability or a probe
+     cleanup an earlier run recorded.
+   - **Enumeration budgets are true hard maximums**, checked before each request.
+
+   - **A probe object is identified by generation, not by its key**, so a probe recreated at a key
+     that was already cleaned up is a new obligation rather than an inherited resolution.
+     Enumeration counts request *attempts*, so a failing backend cannot exceed `maxPages`.
+   - **The authoritative inventory is loaded inside the lock.** Only the lock key is derived before
+     acquisition, and a pre-lock snapshot is never merged over newer on-disk state — otherwise a run
+     that waited for the lock could write back a copy that predates the previous holder's work.
+
+   Tests: **352 passing** across 9 files — `orchestrator 108`, `checkpoints 70`, `store 58`,
+   `enumerate 36`, `binding 27`, `resumption 15`, `terminal 14`, `cli 13`, `reauth 11` — including
+   seven two-process lock cases (one repeating the dead-holder recovery race ten times) and five
+   serialised-run cases proving newer obligations, probe generations and checkpoints survive a waiting
+   second run. Next: independent review, then the §17 live acceptance matrix against disposable
+   fixtures.
+4. **5D.5 — deployment.** Vercel Pro and deployment are **deliberately deferred** until
    closer to real pilot athletes, to avoid recurring cost during pre-pilot work. Vercel
    remains the selected host. When resumed: project setup, Production-only environment
    values, apex and `www` domains, and the Supabase Site URL change, each separately
    authorized, with on-host redirects validated before launch.
-4. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
+5. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
    guardian-consent process, draft-clearing on shared devices, and minimum error visibility.
 
 ## Blocked on founder
