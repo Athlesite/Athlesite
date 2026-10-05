@@ -1,10 +1,11 @@
 # NOW — Athlesite current state
 
-Access-boundary checkpoint updated: 2026-09-30 · base `main` @ `0282c013623032e2297ba3fb0f6b3fddbc40a3d5`
+Checkpoint updated: 2026-10-05 · base `main` @ `4e70f6f` (PR #21, 5D.9 merged)
 
-Only the access-boundary status was refreshed for 5D.7/5D.8. The older branch table and
-Phase B follow-ups below are historical and need a separate reconciliation; do not
-treat them as a current inventory without checking the code.
+Refreshed for the **5D.9 closeout**. The access-boundary status (5D.7/5D.8) and the 5D.9
+status below are current. The older branch table and Phase B follow-ups are historical and
+still need a separate reconciliation; do not treat them as a current inventory without
+checking the code.
 
 **5D.7 IS MERGED AND LIVE.** The exact-slug RPC read path and the hero-only Storage
 boundary are applied to the Athlete project and verified against it. `anon` has no direct
@@ -12,7 +13,7 @@ table access; an unrelated signed-in athlete cannot read another athlete's row. 
 in this file about the *previous* column-grant model are historical unless explicitly
 labelled as current.
 
-**5D.8 IS MERGED AND APPLIED LIVE.** PR #20 merged; `main` is at `0282c01`. Its one forward
+**5D.8 IS MERGED AND APPLIED LIVE.** PR #20 merged as `0282c01`. Its one forward
 migration (`20260929000001`) is applied to the Athlete project and the remote migration history
 is aligned to the repo version. `public.set_updated_at()` now carries a function-local
 `search_path = ''`; SECURITY INVOKER behaviour and the trigger binding are unchanged. The
@@ -98,6 +99,34 @@ refreshed these docs. Merged branches have since been deleted.
   `new.updated_at = now(); return new;`.
 
 ## Known follow-ups
+
+### From 5D.9 live acceptance (2026-10-05) — these do NOT reopen 5D.9
+
+1. **Decide whether the Athlete access-token TTL should stay at 3600 s or be shortened.**
+   Founder decision, also listed under Blocked on founder. Acceptance measured, on six
+   independent fixtures, that a pre-deletion JWT can still **write** to Storage after the Auth
+   user is deleted: the owner policy keys on the `auth.uid()` claim and never consults
+   `auth.users`, so "deleted" is not write-sealed for up to one full token lifetime. Reads came
+   back accepted-but-empty, which is **not** read revocation. The lifecycle already refuses
+   `verified-complete` until the window elapses, so this is a configuration question, not a
+   defect. **No Supabase setting was changed during closeout.**
+2. **Windows: the refusal exit path can hit a libuv assertion and return a junk exit code**
+   (`!(handle->flags & UV_HANDLE_CLOSING)`, `0xC0000409`) *after* the correct refusal text has
+   printed. State is saved before it and is unaffected, but the exit code is unusable for
+   scripting refusals on Windows.
+3. **Add a runbook rule: prove Storage absence from authoritative metadata/enumeration, never
+   from a bare `GET` status.** A 200 from the authenticated object path does not mean bytes
+   exist; acceptance tooling that tested `status === 200` produced a false "still reachable"
+   reading and cost a diagnostic round trip.
+4. **Clarify that manually entered residual-token outcomes are operator attestations.** The
+   tool proves an outcome was *recorded*, never that it was independently *measured* — it asks
+   and stores the answer. Under manual probing the completion gate therefore rests on operator
+   honesty, and §16 should say so. Worth adding alongside it: the owner-credential window for
+   removing a probe object closes at the same `exp` as the capability being measured, after
+   which only dashboard removal remains.
+5. **Ctrl-C at the hidden-input prompt restores the terminal correctly but surfaces as
+   `INTERNAL_ERROR`** rather than a clean cancellation message. Verified that echo is restored;
+   this is a message-quality defect, not a terminal-state defect.
 
 - **Failed saves can still leave orphaned media objects, but they are no longer public.**
   Uploads go to fresh versioned paths before the database write, so a save that fails
@@ -370,13 +399,25 @@ a `typecheck` script, and the whole authentication path — all present.)*
    `public.set_updated_at()` has a function-local `search_path = ''`, SECURITY INVOKER behaviour
    and trigger binding unchanged, mutable-search-path advisor warning cleared, only the two
    expected SECURITY DEFINER RPC warnings remaining. Nothing outstanding.
-3. **5D.9 — account and data lifecycle readiness. On a branch; design + tooling only.** On
-   `claude/5d9-account-lifecycle`, based on `0282c01`. Adds `docs/ai/RUNBOOK-deletion.md`, an
-   owner-scoped founder-only local tool, and pure safety helpers. **No live deletion has been
-   performed, no fixtures created, no policy, migration or Storage rule changed, and no
-   service-role or admin capability introduced.** Locked pilot decision: **Option A —
-   founder-assisted permanent deletion**, with Auth-user deletion performed manually and
-   strictly last.
+3. **5D.9 — account and data lifecycle readiness. COMPLETE.** Merged as `4e70f6f` (PR #21).
+   Adds `docs/ai/RUNBOOK-deletion.md`, an owner-scoped founder-only local tool, and pure safety
+   helpers. **No policy, migration or Storage rule changed, and no service-role or admin
+   capability introduced.** Locked pilot decision: **Option A — founder-assisted permanent
+   deletion**, with Auth-user deletion performed manually and strictly last.
+
+   **Live acceptance: PASS.** Every §17 case has a valid PASS; 63 ledger rows; run once against
+   the live Athlete project on seven disposable fixtures. Final state: **Auth 0**, no fixture
+   profile rows, no fixture Storage namespaces, **no lifecycle locks**. The tracked repo stayed
+   clean at `4e70f6f` throughout. **T5** is the canonical end-to-end `verified-complete`
+   specimen. **T1R stays deliberately OPEN** (its own residual-token window elapsed unmeasured —
+   a correct outcome, not a task; do not "fix" it) and **T6 stays OPEN** on a genuine
+   `STILL_PUBLIC` refusal. The early contaminated T1 rows (23 PARTIAL, 22 NOT TESTED,
+   28/29/31/32/33 NOT CREDITED) are preserved as failures and were re-obtained cleanly on T1R.
+   **Finding:** a pre-deletion JWT can still **write** to Storage after Auth deletion, measured
+   on six fixtures — the lifecycle handles it correctly by refusing completion until expiry;
+   the TTL decision is a follow-up. Durable record: `DECISIONS.md` → "5D.9 live acceptance:
+   PASS". Detailed evidence archived outside the repo and outside Git. Five follow-ups are
+   tracked under **Known follow-ups** and **do not reopen 5D.9**.
 
    *Two repair passes applied, after two independent reviews returned NEEDS CHANGES.* The
    sequencing lives in `scripts/lifecycle/orchestrator.mjs` behind injected ports, so orderings and
@@ -435,6 +476,11 @@ a `typecheck` script, and the whole authentication path — all present.)*
 
 ## Blocked on founder
 
+- **Access-token TTL: keep 3600 s or shorten it?** 5D.9 acceptance measured that a pre-deletion
+  JWT can still write to Storage for up to one full token lifetime after the Auth user is
+  deleted (six fixtures). Shortening the TTL narrows that window and increases token-refresh
+  frequency; it does not by itself shorten authenticated sessions. Decision only — no Supabase
+  setting has been changed.
 - Pilot definition: how many athletes, by when, and what counts as success.
 - Whether `recruiting_status` should ever become publicly readable (deferred at 5D.3, so
   public profiles currently state no recruiting or NIL posture at all).

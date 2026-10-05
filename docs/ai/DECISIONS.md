@@ -670,9 +670,10 @@ not block athlete browsers.
 already-issued access JWT can remain signature-valid until expiry (measured in 5D.7: GoTrue 403,
 refresh 400, yet the same token still authenticated against PostgREST). Because the row and
 media are already gone it can read nothing of the athlete's — but deletion must **not** be
-described as instantly revoking every credential. Live acceptance tests reads *and writes* with a
-pre-deletion token after Auth deletion (§17 cases 36–37 of the runbook). The completion condition
-is stated there explicitly for the case where a stale **write** succeeds: the operation stays open
+described as instantly revoking every credential. Live acceptance **has now measured** reads
+*and writes* with a pre-deletion token after Auth deletion (§17 cases 36–37): **a stale write to
+Storage succeeds**, on six independent fixtures. See "5D.9 live acceptance: PASS" below. The
+completion condition for exactly that case is enforced as designed: the operation stays open
 until the token's `exp` has passed, a clean public verification is re-run, an admin-side
 cross-check confirms no `{uid}/` prefix and no row, and anything the probe created is removed.
 
@@ -694,11 +695,10 @@ delete acknowledgement as completion · resolving a deletion target by slug · d
 media by the three-segment path convention · reusing the replacement-cleanup helper for account
 deletion · claiming race-safety under current policies.
 
-**Status.** Implemented on `claude/5d9-account-lifecycle`, based on `0282c01`, and revised once
-after an independent review returned NEEDS CHANGES (see the sub-entry below). **No live deletion
-has been performed, no fixtures created, and no schema, RLS, or Storage policy changed.** A
-controlled live acceptance run against disposable fixtures is designed (runbook §16–§17) but not
-executed.
+**Status. COMPLETE.** Merged as `4e70f6f` (PR #21). The controlled live acceptance run against
+disposable fixtures (runbook §16–§17) **has been executed: PASS** — see "5D.9 live acceptance:
+PASS" below. **No schema, RLS, or Storage policy was changed**, and no `service_role` or admin
+capability was introduced; 5D.9 required none.
 
 ### The deletion workflow's sequencing lives behind injected ports
 **Active** · 2026-09-30 · Checkpoint 5D.9 repair pass
@@ -884,6 +884,80 @@ instead of stopping · completing an operation on an acknowledgement rather than
 completing on public evidence gathered before the stale-token probes · letting a later weaker
 observation discharge an earlier obligation · claiming the Auth user's deletion makes an
 already-issued token harmless.
+
+### 5D.9 live acceptance: PASS
+**Active** · 2026-10-05 · Checkpoint 5D.9 closeout
+
+**Result.** The §17 matrix was run once against the live **Athlete** project on disposable
+fixtures. **Every case has a valid PASS.** 63 ledger rows. Final fixture state: Auth **0**, no
+fixture profile rows, no fixture Storage namespaces, no lifecycle locks. The tracked repo was
+clean at `4e70f6f` throughout — acceptance changed no code, docs, migrations, RLS, Storage
+configuration or Auth settings. **Deployment remains deferred** (5D.5), and the **old
+Ops/shared Supabase project was never touched** at any point.
+
+**Fixtures.** Seven, not the four §17 anticipated: T1, T2 (byte-level control), T3, T1R, T4,
+T5, T6. T1R, T5 and T6 were added mid-run — T1R to redo a contaminated sequence, T5 and T6 to
+obtain residual-token and signed-URL evidence that could not legitimately be borrowed from
+another operation.
+
+**Canonical specimen.** **T5** is the reference end-to-end operation: it reached
+`verified-complete` through the merged lifecycle with every gate satisfied by real evidence and
+no hand-edited inventory.
+
+**Historical contaminated evidence is preserved, and must not be conflated with the clean
+evidence.** An early run on T1 overshot its approved bound and deleted a profile row that was
+meant to survive. Those rows stay recorded as failures — case 23 `PARTIAL - OVERSHOT`, case 22
+`NOT TESTED`, cases 28/29/31/32/33 `NOT CREDITED` — and all five were re-obtained cleanly on
+T1R and recorded separately as PASS. The failed rows were **not** rewritten.
+
+**T1R remains OPEN, deliberately.** Its own pre-deletion token window elapsed unmeasured, so
+its residual-token evidence is `INVALID / TOKEN ALREADY EXPIRED`. Its Auth user is gone, so no
+owner token can ever exist for it again. The operation therefore cannot honestly reach
+`verified-complete`, and is left at `profile-absent` with `residualTokenTest: null`. **This is a
+correct outcome, not an outstanding task** — it is what the §16 ordering requirement looks like
+when it is not met. Do not "fix" it.
+
+**T6 remains OPEN, also correctly.** Its final public check found its freed slug published by
+T4 (case 42), so the tool refused completion. The refusal is the evidence.
+
+**Finding: a pre-deletion access token can still WRITE to Storage after the Auth user is
+deleted.** Measured on **six independent fixtures** (T5, T6, T1, T2, T3, T4), every measurement
+inside a valid token window with before/after timestamps proving `now < exp`:
+
+- `GET /auth/v1/user` → **403 `user_not_found`**. GoTrue rejects the token outright.
+- `POST` an object under `{deleted-uid}/` → **200, object created**. Storage accepts it.
+- `POST athlete_profiles` → **409 `23503`** foreign-key violation. **Inconclusive**, not a
+  denial: the `auth.users` row is gone, so the insert can fail on the FK rather than on RLS.
+  Storage WRITE is the primary residual-write test.
+- READ probes returned **200 with zero rows** — accepted requests with nothing to return,
+  because the data was already gone. That is `OK_BUT_EMPTY`; it is **not** proof that read
+  access was revoked.
+
+**Mechanism.** The Storage owner policy is keyed on the `auth.uid()` claim in the JWT and its
+signature; it does not consult `auth.users`. Deletion does not revoke an already-issued token,
+so "deleted" is not write-sealed for up to the full access-token lifetime — **measured at
+3600 s** on this project.
+
+**What this is not.** Not a 5D.9 failure: the lifecycle handled it correctly, refusing
+`verified-complete` until the expiry window elapsed, the probe object's removal was proven, the
+admin cross-check was attested, and a fresh public-absence check passed. Nor is it a claim that
+deleted data can be read — the row and objects are gone. What remains is the ability to create
+*new* objects under a dead uid's prefix: a storage-hygiene problem plus a window in which
+"deleted" is not yet final. The access-token TTL decision is tracked as a follow-up.
+
+**Final cleanup.** All four remaining fixtures (T1, T2, T3, T4) were torn down through the
+**full merged lifecycle**, not by dashboard shortcut: execute to the Auth handoff, residual
+token minted through the ≥3000 s timing gate, founder-performed Auth deletion, residual probes
+inside a valid window, probe cleanup proven by fresh enumeration, one shared expiry wait,
+founder admin cross-check, then a final `verify-public` reaching `verified-complete` with
+`publicRecheckAt` stamped from a real request. T2 went last because it had been the byte-level
+control throughout; its baseline passed case 46 immediately beforehand. Two residue items the
+early T1 overshoot had left behind — one object and a case-26 replacement row — were found by a
+read-only guard and removed by the lifecycle during this cleanup.
+
+**Evidence.** The detailed 63-row ledger and per-case records are archived outside the repo and
+outside Git, at `Documents\Athlesite-Acceptance-Archive\5D.9-2026-10-05\` (160 files). This
+entry is the durable tracked summary.
 
 ### `is_published` is the only public-visibility switch
 **Active** · 2026-09-06
