@@ -525,6 +525,8 @@ access actually remains is what steps 2–3 measure.
 
 ## 17. Live acceptance matrix
 
+> **Executed 2026-10-05 — PASS.** Durable result: `DECISIONS.md` → "5D.9 live acceptance: PASS".
+
 Run once against the live Athlete project, on **disposable fixtures only**, before this workflow is
 used on a real athlete. Nothing here may be run against a real account.
 
