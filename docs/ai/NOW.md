@@ -102,14 +102,15 @@ refreshed these docs. Merged branches have since been deleted.
 
 ### From 5D.9 live acceptance (2026-10-05) — these do NOT reopen 5D.9
 
-1. **Decide whether the Athlete access-token TTL should stay at 3600 s or be shortened.**
-   Founder decision, also listed under Blocked on founder. Acceptance measured, on six
-   independent fixtures, that a pre-deletion JWT can still **write** to Storage after the Auth
-   user is deleted: the owner policy keys on the `auth.uid()` claim and never consults
-   `auth.users`, so "deleted" is not write-sealed for up to one full token lifetime. Reads came
-   back accepted-but-empty, which is **not** read revocation. The lifecycle already refuses
-   `verified-complete` until the window elapses, so this is a configuration question, not a
-   defect. **No Supabase setting was changed during closeout.**
+1. ~~Decide whether the Athlete access-token TTL should stay at 3600 s or be shortened.~~
+   **RESOLVED 2026-10-05 — Athlete access-token TTL is now 1800 s** (was 3600 s), changed by the
+   founder in the Supabase dashboard. Full record: `DECISIONS.md` → "Athlete access-token TTL is
+   1800 s for the pilot". In short: the six-fixture 5D.9 finding showed a pre-deletion JWT can
+   still **write** to Storage until it expires, so halving the TTL halves the worst-case residual
+   window from 60 to 30 minutes. **Access-token lifetime is not session lifetime** — athletes
+   stay signed in via refresh tokens, and rotation remains enabled. This is a **pilot
+   mitigation, not an immediate-revocation guarantee**; user-existence-aware Storage
+   authorization is **deferred to a separate security checkpoint**.
 2. **Windows: the refusal exit path can hit a libuv assertion and return a junk exit code**
    (`!(handle->flags & UV_HANDLE_CLOSING)`, `0xC0000409`) *after* the correct refusal text has
    printed. State is saved before it and is unaffected, but the exit code is unusable for
@@ -302,9 +303,13 @@ link in the email would be a navigation path, and navigating away from onboardin
 destroys the in-memory photo state. Template customization is gated behind custom SMTP,
 so SMTP must be configured before templates can be edited at all.
 
-**Auth settings on the Athlete project.** OTP length **8**, OTP expiry **3600s**, email
-rate limit **30/hour** (raised from the 2/hour default, which only becomes raisable once
-custom SMTP is on). Never hardcode an OTP length — it is a dashboard value.
+**Auth settings on the Athlete project.** OTP length **8**, OTP expiry **3600s**,
+**access-token (JWT) expiry 1800s** (reduced from 3600s on 2026-10-05), refresh-token
+rotation **enabled** with a **10s** reuse interval, session timebox and inactivity timeout
+both **unset**, email rate limit **30/hour** (raised from the 2/hour default, which only
+becomes raisable once custom SMTP is on). Never hardcode an OTP length — it is a dashboard
+value. **OTP expiry, access-token TTL and signed-URL TTL are three separate settings that
+all happen to involve 3600; changing one changes neither of the others.**
 
 **Domain — owned.** `athlesite.com` is registered through Porkbun. This unblocked Resend
 domain verification and therefore custom email.
@@ -476,11 +481,8 @@ a `typecheck` script, and the whole authentication path — all present.)*
 
 ## Blocked on founder
 
-- **Access-token TTL: keep 3600 s or shorten it?** 5D.9 acceptance measured that a pre-deletion
-  JWT can still write to Storage for up to one full token lifetime after the Auth user is
-  deleted (six fixtures). Shortening the TTL narrows that window and increases token-refresh
-  frequency; it does not by itself shorten authenticated sessions. Decision only — no Supabase
-  setting has been changed.
+- ~~Access-token TTL: keep 3600 s or shorten it?~~ **DECIDED 2026-10-05 — 1800 s.** See Known
+  follow-ups for the recorded decision and what remains deferred.
 - Pilot definition: how many athletes, by when, and what counts as success.
 - Whether `recruiting_status` should ever become publicly readable (deferred at 5D.3, so
   public profiles currently state no recruiting or NIL posture at all).
