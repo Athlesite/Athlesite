@@ -1115,10 +1115,85 @@ at localhost.
 **Live configuration set this way.** Custom SMTP via Resend (`smtp.resend.com:465`, user
 `resend`, sender `Athlesite <noreply@athlesite.com>`); *Confirm signup* and *Magic link*
 templates containing `{{ .Token }}` and **no** `{{ .ConfirmationURL }}`; OTP length 8;
-OTP expiry 3600s; `rate_limit_email_sent` raised from 2/hour to **30/hour**.
+OTP expiry 3600s; `rate_limit_email_sent` raised from 2/hour to **30/hour**; and
+**`jwt_exp` 1800s** as of 2026-10-05 (see "Athlete access-token TTL is 1800 s for the pilot").
 **Rules out.** Running `config push` without first reviewing `config diff`, and
 declaring a partial `[auth.email.smtp]` block in `config.toml` (the API masks
 `smtp_pass`, so it can never round-trip).
+
+### Athlete access-token TTL is 1800 s for the pilot
+**Active** · 2026-10-05 · founder decision · Checkpoint "access-token TTL"
+
+**Decision.** The Athlete project's access-token (JWT) expiry is **1800 seconds**, reduced from
+**3600 s**, changed by the founder in the Supabase dashboard on **2026-10-05**. Refresh-token
+rotation stays **enabled** with a **10 s** reuse interval; session **timebox** and **inactivity
+timeout** remain **unset**.
+
+**Why.** 5D.9 live acceptance measured, on **six independent fixtures**, that an already-issued
+athlete JWT can still **write** to Supabase Storage after its Auth user is deleted, for as long
+as the token remains unexpired — the owner policy compares a path segment to the `auth.uid()`
+*claim* and never consults `auth.users`. Halving the TTL **halves the worst-case residual
+window from 60 to 30 minutes**, and equally halves how long the deletion runbook must wait
+before an operation may be declared `verified-complete`.
+
+**Access-token lifetime is not session lifetime.** Athletes remain signed in through
+refresh-token rotation; a shorter access token increases **refresh frequency**, it does not log
+anyone out. `@supabase/auth-js` refreshes on a 30 s tick when under ~90 s remain — and because
+that tick granularity means a refresh can begin with just under ~120 s left, the margin is
+fixed rather than proportional, which is what bounds how far the TTL can sensibly be reduced.
+
+**What this is and is not.** A **pilot mitigation that shortens a window**, *not* an
+immediate-revocation guarantee. Supabase access tokens are stateless: there is no per-token
+revocation, so nothing makes an outstanding token invalid before its `exp`.
+
+**Why 1800 and not 900.** 900 s is not inherently unsafe; 1800 s was chosen as the more
+conservative first reduction while mobile and background-tab refresh behaviour is less tested.
+Shorter TTLs reduce tolerance for missed refresh opportunities — suspended tabs, flaky networks
+— and `updateSession` in `src/proxy.ts` helps only on matched server requests: it is not
+continuous refresh, and it does not cover direct browser-to-Storage calls.
+
+**Deferred, deliberately.** The stronger fix is to make the Storage owner policies require that
+the user still exists (equivalent to `exists (select 1 from auth.users where id = auth.uid())`),
+which would seal writes the instant the Auth row is deleted and remove the expiry wait entirely.
+That needs a `SECURITY DEFINER` helper — `authenticated` holds no `SELECT` on `auth.users` — and
+a migration touching the Storage boundary 5D.7 hardened and 5D.9 validated. **It belongs to a
+separate security checkpoint**, not to this setting change.
+
+**Transition.** Tokens issued before the change keep their original 3600 s lifetime until they
+expire naturally; the new value applies only to tokens minted afterwards. The Athlete project
+held **0 Auth users** when the setting changed, so no athlete token predated it and the
+transition concern is **materially reduced to the point of being theoretical here** — but the
+behaviour must not be described as instantly converting already-issued tokens.
+
+**Verified live, 2026-10-05, after the change.** A fresh disposable Athlete fixture signed in
+through the normal owner flow: the newly issued access token measured **`exp - iat = 1800`**.
+The refresh grant returned **200** with a new access token for the **same `sub`**, so session
+identity and continuity were preserved. An authenticated **profile save** (201, confirmed by an
+authorised read-back) and an authenticated **Storage upload** (200, confirmed by a fresh
+enumeration) both succeeded **using the post-refresh token**. The temporary row and object were
+then removed and their absence proven by fresh reads, the temporary Auth user was deleted, and
+the Athlete project returned to **Auth 0**. No auth was weakened or bypassed to pass the test;
+no `service_role` or admin API was involved.
+
+*Caveat, stated precisely.* The refresh was issued within seconds of the mint, so the refreshed
+token carried the **same `iat`/`exp` second** as the original. That demonstrates the refresh
+grant and the session-continuity path work; it does **not** by itself demonstrate that a later
+refresh extends the window by a fresh 1800 s measured from the later refresh moment. Proving
+that needs a refresh taken minutes after issue.
+
+**Historical note.** 5D.9 acceptance was executed and recorded against the **3600 s**
+configuration. Those measurements stand as made; they are not restated as though they occurred
+at 1800 s. One consequence: archived acceptance tooling gates on `MIN_REMAINING = 3000`, which
+a freshly minted 1800 s token can never satisfy, so that tooling cannot be reused unchanged.
+
+**Rules out.** Describing TTL reduction as revocation · changing Auth config with
+`supabase config push` · assuming the OTP expiry or `SIGNED_URL_TTL_SECONDS` changed with it.
+
+**Revisit when.** Deletion becomes self-service or frequent · a deletion carries a legal or
+guardian deadline where 30 minutes is insufficient · Storage policies are being changed for
+another reason, at which point fold the user-existence check in · public launch, where "deleted
+means deleted" becomes a published claim · Supabase ships per-session or per-token revocation ·
+or monitoring shows refresh failures after this change, in which case revert first.
 
 ### The athlete app deploys to Vercel Pro, serving the apex `athlesite.com`
 **Active** · 2026-09-24 · founder decision · supersedes "Deployment provider is
