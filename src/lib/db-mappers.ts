@@ -528,16 +528,23 @@ export type MediaPathUpdate = {
  * but keeping it out of the domain type means there is no field for a caller to
  * set hopefully in the first place.
  *
- * `is_published` is true here because this builds the row for a FIRST-TIME create,
- * whose only entry point is "Save & View My Profile" — a new profile is meant to go
- * live. It is not a statement that publication is permanent.
+ * `is_published` is **false** here, and is deliberately NOT a parameter.
  *
- * Unpublish controls have since arrived (`PublishSection`), and the concern they
- * raised is handled on the update side rather than here: `toAthleteProfileUpdateRow`
- * takes `is_published` as a parameter, and `EditProfileForm` seeds it from the stored
- * value, so editing an intentionally unpublished profile does not silently republish
- * it. Verified live during 5D.7 acceptance. Keep that split — a create publishes, an
- * update preserves whatever the athlete chose.
+ * Publication is an explicit act for every athlete: a create never publishes. This
+ * replaced an earlier model where this builder hardcoded `true`, so a first save
+ * silently made a profile public — which made consent-before-publication impossible
+ * and meant `is_published` changed as a side effect of saving.
+ *
+ * Why hardcoded rather than a parameter: a parameter is something a caller can pass
+ * `true` to, which is exactly how auto-publish would come back. There is no legitimate
+ * create-time publish, so the function offers no way to express one. Publication
+ * happens only through the update path, where `toAthleteProfileUpdateRow` takes
+ * `is_published` explicitly and `EditProfileForm` seeds it from the stored value — so
+ * an ordinary save preserves whatever the athlete chose, in either direction.
+ *
+ * This is an application-layer guarantee only. An owner's own session can still write
+ * `is_published` directly under RLS; database-boundary enforcement of publication
+ * eligibility is a later checkpoint.
  */
 export function toAthleteProfileRow(
   profile: AthleteProfileData,
@@ -582,7 +589,8 @@ export function toAthleteProfileRow(
     nil_contact: profile.nilContact,
     nil_interests: profile.nilInterests,
 
-    is_published: true,
+    // A create never publishes. See this function's docblock.
+    is_published: false,
   };
 
   // Only touch a media column when the caller actually has an instruction for

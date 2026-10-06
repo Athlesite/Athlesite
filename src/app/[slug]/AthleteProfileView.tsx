@@ -48,6 +48,21 @@ export function AthleteProfileView({
       {record.isPublished ? null : (
         <ExampleBadge variant="quiet" message="Private draft · only you can see this" />
       )}
+      {/*
+       * Publication is an explicit act, so a newly created profile lands here
+       * unpublished. Without this the athlete has no route to the Publish control,
+       * which lives in PublishSection on /edit-profile. Owner-only: a visitor who
+       * somehow reached an unpublished page has no use for it, and access control
+       * remains RLS's job rather than this flag's.
+       */}
+      {!record.isPublished && isOwner ? (
+        <div className="border-b border-border/60 px-6 py-2 text-center text-xs text-muted-foreground">
+          Ready to go live?{" "}
+          <Link href="/edit-profile" className="text-foreground underline-offset-4 hover:underline">
+            Publish your profile
+          </Link>
+        </div>
+      ) : null}
       <ProfileHero
         athlete={athlete}
         photoUrl={heroPhotoUrl}
