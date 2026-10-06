@@ -1,6 +1,6 @@
 # NOW — Athlesite current state
 
-Checkpoint updated: 2026-10-05 · base `main` @ `4e70f6f` (PR #21, 5D.9 merged)
+Checkpoint updated: 2026-10-06 · base `main` @ `4dad1a7` (PR #24, Explicit Publish merged)
 
 Refreshed for the **5D.9 closeout**. The access-boundary status (5D.7/5D.8) and the 5D.9
 status below are current. The older branch table and Phase B follow-ups are historical and
@@ -129,6 +129,16 @@ refreshed these docs. Merged branches have since been deleted.
    `INTERNAL_ERROR`** rather than a clean cancellation message. Verified that echo is restored;
    this is a message-quality defect, not a terminal-state defect.
 
+### From the privacy/consent policy record (2026-10-06)
+
+- **PILOT BLOCKER BEFORE REAL MINORS — pre-auth draft persistence.**
+  `src/lib/onboarding-storage.ts` caches the whole `AthleteProfileData` — name, school, city —
+  in `localStorage` **before any account exists**, indefinitely, with no clearing mechanism.
+  On a shared school device the next user can resume another athlete's draft. Previously
+  tracked only as the passing "draft-clearing on shared devices" line in the pilot-readiness
+  audit; under the approved minor policy it is a **blocker before real minors use Athlesite**,
+  because personal profile information can persist pre-auth on a shared device.
+
 - **Failed saves can still leave orphaned media objects, but they are no longer public.**
   Uploads go to fresh versioned paths before the database write, so a save that fails
   afterwards leaves an unreferenced object in the athlete's own folder. The versioning is
@@ -240,7 +250,9 @@ refreshed these docs. Merged branches have since been deleted.
   athlete passing back through any earlier step. Observed during checkpoint 4
   verification, where a resumed draft saved under an unintended slug. **Product
   follow-up, deliberately not fixed in Phase B** — it needs a design decision about
-  resume behavior, not a patch.
+  resume behavior, not a patch. **Historical finding: PR #24 removed creation-time
+  auto-publication; stale-draft restoration remains a follow-up.** The "create that
+  publishes by default" condition described above no longer exists.
 - **Slug collision cannot be pre-checked.** RLS hides unpublished rows from other users,
   so an availability lookup reports a taken-but-unpublished slug as free. The unique
   constraint is the only truthful answer, so collisions surface as a caught `23505`.
@@ -469,15 +481,71 @@ a `typecheck` script, and the whole authentication path — all present.)*
    `enumerate 36`, `binding 27`, `resumption 15`, `terminal 14`, `cli 13`, `reauth 11` — including
    seven two-process lock cases (one repeating the dead-holder recovery race ten times) and five
    serialised-run cases proving newer obligations, probe generations and checkpoints survive a waiting
-   second run. Next: independent review, then the §17 live acceptance matrix against disposable
-   fixtures.
+   second run. **Both of those have since happened:** independent review returned PASS, and the
+   §17 live acceptance matrix was run against disposable fixtures — see the Live acceptance
+   paragraph above. (This sentence previously still read "Next: independent review, then the
+   §17 live acceptance matrix", which the 5D.9 closeout missed; corrected 2026-10-06.)
 4. **5D.5 — deployment.** Vercel Pro and deployment are **deliberately deferred** until
    closer to real pilot athletes, to avoid recurring cost during pre-pilot work. Vercel
    remains the selected host. When resumed: project setup, Production-only environment
    values, apex and `www` domains, and the Supabase Site URL change, each separately
    authorized, with on-host redirects validated before launch.
-5. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
+5. **Explicit Publish for everyone — IMPLEMENTED.** Merged in **PR #24**, merge commit
+   **`4dad1a74ce88ca463c1bc60b3cf2006d9dcd758a`**. Creation-time auto-publish is removed
+   **globally**: `toAthleteProfileRow` creates profiles **unpublished**, so **create is
+   private**. An ordinary save **preserves** current visibility in both directions. Explicit
+   **Publish / Unpublish uses the existing Visibility toggle + Save** (`PublishSection`), and
+   the unpublished owner view now links to it. Public reads stay gated by `is_published =
+   true` inside `get_published_profile_by_slug`. **Still deferred: database/security-boundary
+   publication *eligibility* enforcement** — an owner's own session can still write
+   `is_published` directly under RLS, so this is an application-layer guarantee only.
+   **Guardian eligibility is not implemented**; nothing in the code consults a guardian
+   approval. Age-neutral by design.
+6. **Privacy / Terms + guardian consent — POLICY APPROVED / IMPLEMENTATION NOT STARTED.**
+   Founder-approved pilot policy recorded in `DECISIONS.md` (six entries, 2026-10-06):
+   **under-13 excluded** before OTP/account creation and before any profile data is retained,
+   with a blocked attempt persisting nothing; **13–17 guardian-first** — guardian
+   participation approval **before retention**, then a **second, profile-specific approval of
+   the exact public revision before publish**; **18+ self-consent**; **no persisted exact
+   DOB** (transient entry only, minimal eligibility state plus attestation history, and never
+   inferring adulthood from `class_year`); and a **reduced minor public projection** (first
+   name + last initial, athlete-chosen handle, no city, optional state/class year,
+   height/weight private by default, hero photo optional and guardian-reviewed, bio and link
+   restrictions). **Nothing below is built:** age gate, guardian participation approval,
+   guardian publication approval, reduced minor projection, revocation enforcement, legal
+   acceptance persistence, DB publication-eligibility enforcement. Several specifics are
+   **pending legal review** — see Blocked on legal review.
+7. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
    guardian-consent process, draft-clearing on shared devices, and minimum error visibility.
+
+## Blocked on legal review
+
+**Deliberately separate from Blocked on founder: these are not founder decisions.** Athlesite
+has **no legal conclusions** on any of the following — each is an open question for counsel,
+and the approved privacy/consent entries in `DECISIONS.md` carry a `Pending legal review`
+line pointing here wherever a decision's specifics depend on one. A founder-ready attorney
+packet has been prepared.
+
+- Whether **guardian-first-at-retention** is legally required, or merely conservative, in the
+  intended pilot jurisdictions.
+- **Adequacy and terminology** of email-based guardian approval for 13–17 — including what it
+  may be called in product copy.
+- The appropriate **self-consent age** for Terms, privacy practices and the publication
+  decision.
+- What **evidence of guardian authority** should be retained.
+- How to handle **custody disputes and conflicting guardian instructions**.
+- Which Terms/Privacy changes legally trigger **renewed guardian approval**.
+- **Post-revocation retention duration** for revoked minor accounts and approval evidence.
+- What **approval or legal evidence, if any, survives a full athlete account deletion**.
+- **State-specific minor and privacy rules** applying to the intended invited cohort.
+- **COPPA considerations** if under-13 users were ever permitted.
+- **FERPA / school-vendor implications** — **counsel to assess applicability**, including
+  before any school or club partnership.
+- **Content-licence review** — sufficiency and appropriateness of a narrow host-and-display
+  licence for a minor's content.
+- Concerns specific to **public athlete photographs, third-party video links, self-reported
+  recruiting data, and future NIL fields** (no payment or transaction functionality exists
+  today).
 
 ## Blocked on founder
 
@@ -485,4 +553,6 @@ a `typecheck` script, and the whole authentication path — all present.)*
   follow-ups for the recorded decision and what remains deferred.
 - Pilot definition: how many athletes, by when, and what counts as success.
 - Whether `recruiting_status` should ever become publicly readable (deferred at 5D.3, so
-  public profiles currently state no recruiting or NIL posture at all).
+  public profiles currently state no recruiting or NIL posture at all). **As of 2026-10-06
+  this is additionally gated on the guardian-approval model** — its "consent-shaped for
+  minors" condition is now a hard dependency, not an aspiration.

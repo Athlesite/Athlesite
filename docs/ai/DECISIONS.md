@@ -60,6 +60,17 @@ a stable key. `owner_user_id`, not `slug`, is the durable identifier for a profi
 deliberate migration path — a history table, redirects, or both — plus founder sign-off,
 since it changes live public URLs (`GUARDRAILS.md § Authority`).
 
+**Factually stale repo comment, recorded 2026-10-06.** This entry is correct and the code
+agrees with it — `EditProfileForm` handles `slugChangedThisSave`, so **slugs are editable
+after publication today**, and **no slug history exists**. But
+`supabase/migrations/20260825000001_create_athlete_profiles.sql` still comments that the slug
+is "Editable pre-publish, locked afterward at the application layer". **No such lock exists**;
+that comment predates this decision and contradicts both it and the code. The comment is
+corrected in code at the next checkpoint that touches slugs — **not** in this
+documentation-only checkpoint. Consequences run both ways: a mis-chosen minor handle *is*
+fixable, and a minor can also change their public URL freely with nothing recording the prior
+one.
+
 ### Slug format and reserved names are enforced in the domain layer
 **Active** · 2026-09-06
 **Decision.** `^[a-z][a-z0-9-]{2,29}$`, no consecutive hyphens, plus an explicit
@@ -356,6 +367,12 @@ passes in an access-boundary harness. And `anon` table denial surfaces as **HTTP
 `code=42501`**, not 403 — the assertion accepts either, and branches on the SQLSTATE rather
 than the status.
 
+**Constrained 2026-10-06 (privacy/consent policy record).** The approved minor public
+projection is strictly **smaller** than the 18-field projection described here. Implementing
+it will require an **age-aware** public read — either a conditional projection inside this
+function or a separate RPC — which touches this access boundary directly and **must receive
+its own review**. Nothing here has changed yet: the projection is currently age-neutral.
+
 ### Every function in `public` pins an empty `search_path`
 **Active** · 2026-09-29 · Checkpoint 5D.8
 
@@ -416,6 +433,77 @@ ones.
 security-mode, and volatility changes to ride along.
 
 ---
+
+### Minor participation is guardian-first, and under-13 athletes are excluded
+**Active** · 2026-10-06 · founder decision · Checkpoint "privacy/consent policy record"
+
+**Decision.** Three brackets, enforced before Athlesite retains anything:
+
+- **Under 13 — prohibited from the pilot.** Blocked **before** the OTP send, before account
+  creation, and before any personal profile data is retained. **A blocked attempt persists
+  nothing** — no account, no row, no draft.
+- **13–17 — guardian-first for the invited pilot.** Guardian **participation approval** is
+  required *before Athlesite retains the athlete's personal profile data*. A **second, separate**
+  guardian approval of the **exact proposed public revision** is required before publication.
+  Two approvals, two different questions.
+- **18+ — self-consent** via Terms and Privacy acceptance.
+
+**Age data is minimal.** An exact date of birth may be entered **transiently** to determine
+eligibility and is **never persisted**. Athlesite stores minimal eligibility state plus **enough
+attestation history to explain how an eligibility decision was reached and how a correction was
+handled**. **A DOB-equivalent is not stored merely to automate the transition at 18** — an 18th
+birthday date is reversible to the birth date, which would defeat the minimisation for a
+convenience the pilot does not need.
+
+**Adulthood is never inferred from `class_year`.** It is self-reported, unverified, routinely
+wrong, and a graduating senior may still be 17. A former minor claiming adulthood requires a
+**fresh adult attestation**; eligibility never flips on a stored date calculation.
+
+**Guardian-first-at-retention is a conservative pilot product choice, not a claim that every
+jurisdiction legally requires guardian consent before account creation.** Athlesite is an
+invited pilot handling minors' names, photographs and locations; taking the stricter posture
+while counsel reviews costs completion rate, not safety. The cost is real and accepted: a 13–17
+athlete cannot begin building until a guardian responds.
+
+**Status.** Policy only. **No age gate, guardian flow, or eligibility persistence exists yet.**
+
+**Pending legal review.** Whether guardian-first-at-retention is required or merely prudent in
+the pilot jurisdictions; the appropriate self-consent age; COPPA exposure were under-13 ever
+permitted. See `NOW.md` § Blocked on legal review.
+
+**Rules out.** Retaining profile data from a 13–17 athlete before guardian participation
+approval · persisting an exact DOB or a DOB-equivalent · inferring adulthood from class year ·
+treating one approval as covering both participation and publication.
+
+### Guardian approval binds to the reviewed public revision
+**Active** · 2026-10-06 · founder decision
+
+**Decision.** **No guardian account** is required for the initial pilot; approval is a future
+secure email-based flow. Approval **binds to the specific public revision the guardian
+reviewed**.
+
+- A **public-content edit unpublishes** the profile and requires **renewed** guardian approval.
+- **Private-only edits do not invalidate** an existing approval.
+
+**Terminology is binding.** Call it **guardian approval**. **Never "verified parental
+consent"**, and **never claim that possession of an email address proves guardianship.** Both
+would overstate what the mechanism establishes, in a context where overstating it is the
+specific risk.
+
+**Why revision-bound.** An open-ended approval would let a reviewed profile become an
+unreviewed one by edit. Distinguishing public from private edits keeps that meaningful without
+making the profile unusable — an athlete can keep private notes and contacts current without
+asking again.
+
+**Status.** Policy only. **No guardian approval mechanism exists yet.**
+
+**Pending legal review.** Adequacy of email-based approval for 13–17 and what it may be called;
+what evidence of guardian authority to retain; how to handle custody disputes and conflicting
+guardian instructions. See `NOW.md` § Blocked on legal review.
+
+**Rules out.** Guardian accounts in the initial pilot · open-ended approval surviving a public
+edit · describing email approval as verified parental consent · treating email possession as
+proof of guardianship.
 
 ## Data Model
 
@@ -968,8 +1056,23 @@ exactly one answer and one place to audit.
 **Rules out.** Any second visibility mechanism — unlisted links, per-section privacy,
 preview tokens — without redesigning both policies together.
 
+**Constrained 2026-10-06 (privacy/consent policy record).** `is_published` remains the
+technical visibility switch and the single column both policies check — that is unchanged.
+It is **not** the complete future publication-*eligibility* gate: the approved minor policy
+adds guardian approval as a second condition on whether publication is permitted at all.
+**That eligibility system does not exist yet** — no code consults it, and nothing enforces it
+at the database boundary. Read this entry as describing the switch, not the whole gate.
+
 ### Auto-publish on CREATE; updates preserve the chosen publication state
-**Superseded 2026-09-30** · originally "Auto-publish on every successful save", 2026-09-07
+**Superseded 2026-10-06 by policy AND by merged implementation** · see "Publication is an
+explicit act, for everyone" · previously superseded 2026-09-30, originally "Auto-publish on
+every successful save", 2026-09-07
+
+> **This entry is history, not current behaviour.** Creation-time auto-publish was removed
+> globally in PR #24 (merge commit `4dad1a74ce88ca463c1bc60b3cf2006d9dcd758a`), so the
+> `is_published: true` on create described below no longer exists in the code. The
+> *update* half described below is still accurate: an ordinary save preserves whatever
+> visibility the athlete chose. Git holds the full original reasoning.
 
 **Decision as it stands now.** A first-time create publishes: `buildCreateRow` sets
 `is_published: true`, because at that moment the athlete's goal is a shareable link and a separate
@@ -991,6 +1094,128 @@ Published off **and press Save**", and until that Save succeeds the profile is s
 
 **Rules out.** Assuming a saved profile is private · assuming an update republishes · telling an
 athlete that flipping the switch alone takes their profile down.
+
+### Publication is an explicit act, for everyone
+**Active** · 2026-10-06 · founder decision · **supersedes "Auto-publish on CREATE; updates
+preserve the chosen publication state"**
+
+**Decision.** Creation-time auto-publish is removed **globally, for every athlete regardless of
+age**. A profile becomes public only when the athlete explicitly publishes it. An ordinary save
+**preserves** current visibility, in both directions.
+
+**Implemented, not merely decided.** `toAthleteProfileRow` now creates profiles **unpublished**
+(`is_published: false`) and deliberately takes **no** publication parameter — a parameter is
+something a caller can pass `true` to, which is exactly how auto-publish would return. Publish
+and Unpublish continue to use the existing Visibility toggle plus **Save**. Merged in **PR #24**,
+merge commit **`4dad1a74ce88ca463c1bc60b3cf2006d9dcd758a`**.
+
+**What is implemented versus what is deferred — do not blur these.**
+
+- **Implemented now:** explicit publication at the **application layer**, for all ages.
+- **Still deferred:** **database/security-boundary publication eligibility enforcement.** An
+  owner's own session can still write `is_published` directly under RLS. The application-layer
+  gate is an interim measure and must be described as one.
+- **Not implemented at all:** guardian eligibility. Nothing in the code consults a guardian
+  approval, because no such approval exists yet. A minor's publication is currently gated by
+  nothing beyond the athlete's own explicit action.
+
+**Why global rather than minor-only.** Two publication paths would make the riskier path the
+less-tested one, and an age-bracket bug would default to publishing. One explicit path is
+simpler to audit and strictly safer. It also means `is_published` no longer changes as a side
+effect of saving, which is what made consent-before-publication impossible.
+
+**Rules out.** Setting `is_published = true` in the row-creating upsert · a minor-only publish
+gate · describing the application-layer gate as the final enforcement boundary · implying
+guardian eligibility is enforced today.
+
+### The minor public projection is reduced, athlete-named, and guardian-reviewed
+**Active** · 2026-10-06 · founder decision
+
+**Decision.** For the initial pilot, a minor's public profile differs from an adult's:
+
+- **Display name defaults to first name + last initial.** Full name only by **deliberate athlete
+  and guardian choice**.
+- **No auto-derived real-name slug for minors.** The minor chooses a **handle**;
+  `slugify("First Last")` is not offered to them as a default.
+- **`city` omitted** from the minor public projection.
+- **`state` optional.**
+- **`class_year` optional**, and **explicitly previewed** before approval.
+- **`height_in` / `weight_lb` private by default**, public only by deliberate choice.
+- **Hero photo optional**, and **included in the guardian review** when present.
+- **`bio` requires prohibited-content guidance and review** — no addresses, phone numbers,
+  personal email, or schedule/location detail.
+- **External links restricted to approved HTTPS/video destinations** for the initial pilot.
+
+**Why.** The adult projection's 18 fields are already minimised, but full name + city + state +
+class year + sport + photograph locates a specific child even with school withheld. Reducing the
+*set* is more durable than warning about the *contents*.
+
+**Architectural consequence, and it is not yet decided.** A smaller minor projection touches the
+**5D.7 public-read boundary** (§ Public profile reads go through an exact-slug RPC). It will
+require either a conditional, age-aware projection inside the existing RPC or a second function
+— **a reviewed architecture decision of its own**, not an implementation detail of this policy.
+
+**Status.** Policy only. **The public projection is currently age-neutral and unchanged.**
+
+**Rules out.** One projection for all ages · publishing a minor's city · auto-deriving a minor's
+slug from their legal name · unreviewed free-text bio or arbitrary outbound links · changing the
+5D.7 boundary without its own review.
+
+### Guardian revocation atomically removes publication eligibility; retention is windowed
+**Active** · 2026-10-06 · founder decision
+
+**Decision.** Guardian revocation **atomically** removes publication eligibility **and**
+unpublishes. The athlete **cannot republish without fresh approval**. Revocation does **not**
+itself delete the account — **deletion remains a separate act**.
+
+**Revoked minor data is not retained indefinitely by default.** A defined
+recovery-then-deletion window applies; **the exact duration is pending legal review.** "Keep it
+until someone asks" is not an acceptable default for a minor's data.
+
+**Why unpublish rather than delete.** Revocation must **atomically remove publication
+eligibility and unpublish**. Unpublishing is already self-service and needs no admin
+credential, whereas permanent deletion is founder-assisted by design (§ Athlete account
+deletion is founder-assisted, owner-scoped, and Auth-last) and therefore human-paced.
+**Revocation is not deletion**, and the two must not be conflated.
+
+**What revocation does not guarantee, stated honestly.** **Already-issued signed media URLs
+may remain usable until they expire.** Unpublishing removes the row from the public read path
+and stops fresh signing, but it does not invalidate a URL already handed out. **Immediate
+media revocation requires a separately reviewed implementation** and does not exist today.
+Nothing here may be described as byte-level media revocation on withdrawal.
+
+**Status.** Policy only. **No revocation mechanism exists yet.**
+
+**Pending legal review.** The retention-window duration; what approval or legal evidence, if
+any, must survive a full athlete account deletion. See `NOW.md` § Blocked on legal review.
+
+**Rules out.** Revocation that leaves a profile public · republication without fresh approval ·
+revocation silently deleting an account · indefinite retention of revoked minor records.
+
+### Material policy changes gate expanded data use before it takes effect
+**Active** · 2026-10-06 · founder decision
+
+**Decision.** Terms and Privacy changes are **classified** as material or not.
+
+- **Expanded data use or disclosure must not activate before the required new approval.**
+- Where prior authorization may **safely and lawfully remain valid**, a defined notice and
+  re-consent period applies, and the profile **unpublishes at the deadline** if the required
+  approval is missing.
+- Where prior behaviour **cannot** safely or lawfully continue, the profile **unpublishes
+  immediately**.
+
+**Approval and acceptance records must be versioned** — every acceptance and every guardian
+approval records the document version it was given against. An unversioned record cannot answer
+the only question that matters later: approved to *what*.
+
+**Status.** Policy only. **No acceptance or approval persistence exists yet.**
+
+**Pending legal review.** **Counsel determines which changes legally trigger renewed approval.**
+The classification is a legal judgement, not a product one. See `NOW.md` § Blocked on legal
+review.
+
+**Rules out.** Applying expanded data use to existing minors on notice alone · a blanket
+"continued use constitutes acceptance" for minors · unversioned acceptance or approval records.
 
 ### Search indexing is staged: marketing is indexable, athlete profiles are not
 **Active** · 2026-09-09 · founder decision
@@ -1031,6 +1256,11 @@ no directive, and that is now a recorded choice rather than an oversight.
 **Revisit when.** The pilot ends, or an athlete asks to be findable. The flip should
 become a deliberate per-athlete opt-in, consent-shaped for minors, not a global switch —
 and only after the canonical decision lands.
+
+**Constrained 2026-10-06 (privacy/consent policy record).** The "consent-shaped for minors"
+note above is now a **hard dependency on the guardian-approval model**, not an aspiration: a
+future indexing flip depends on the minor policy as well as on the canonical-URL decision.
+Both must land first.
 
 ---
 

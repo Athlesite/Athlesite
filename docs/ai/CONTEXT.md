@@ -25,6 +25,26 @@ not build the network yet.
 
 There is no coach or recruiter *account* in the product today.
 
+**Minors are a first-class product constraint, not an edge case.** The high-school focus
+means most athletes are expected to be under 18, so age eligibility and guardian approval
+gate the product's central act — publishing a person's name, photograph and location
+publicly.
+
+- **Under-13 athletes are excluded.**
+- The initial **13–17 pilot is guardian-first**: a guardian approves participation before
+  Athlesite retains the athlete's personal profile data.
+- **Guardian approval is required again for the exact public revision** before it is
+  published, and a later public-content edit needs renewed approval.
+- **Publication is an explicit act for everyone**, of any age: **creation is private,
+  ordinary saves preserve visibility, and publication requires an explicit choice** — the
+  Visibility toggle together with Save.
+- A **guardian** is therefore a party in the domain, but **not an account**: approval is
+  email-based, and no guardian signs in.
+
+Any work on onboarding, the public projection, or publication **must consult the
+privacy/consent decisions in `DECISIONS.md`** before changing behaviour. Which of these are
+built versus approved-but-unbuilt is tracked in `NOW.md`, not here.
+
 ## Domain vocabulary
 
 | Term | Meaning |
