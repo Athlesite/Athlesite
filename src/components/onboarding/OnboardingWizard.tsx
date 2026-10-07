@@ -17,7 +17,7 @@ import {
   createEmptyAthleteProfile,
   type AthleteProfileData,
 } from "@/lib/athlete-profile";
-import { loadDraft, saveDraft, loadDraftStep, saveDraftStep } from "@/lib/onboarding-storage";
+import { purgeOnboardingBrowserStorage } from "@/lib/onboarding-storage";
 import { createProfile, checkOwnershipStatus, type SaveProfileResult } from "@/lib/profile-save";
 
 const STEP_LABELS = ["Welcome", "Athlete Info", "Media", "Recruiting", "Brand & Links", "Preview"];
@@ -25,15 +25,12 @@ const STEP_LABELS = ["Welcome", "Athlete Info", "Media", "Recruiting", "Brand & 
 /** Where the username field lives, for sending an athlete back to fix a taken one. */
 const ATHLETE_INFO_STEP = STEP_LABELS.indexOf("Athlete Info");
 
-function clampStepIndex(value: unknown): number {
-  const numeric = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.min(Math.max(Math.trunc(numeric), 0), STEP_LABELS.length - 1);
-}
+// `clampStepIndex` lived here to sanitise a step index read back from
+// localStorage. Nothing restores a step any more — onboarding always starts at
+// Welcome — so the only untrusted source it guarded against is gone with it.
 
 export function OnboardingWizard() {
   const router = useRouter();
-  const [hydrated, setHydrated] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [profile, setProfile] = useState<AthleteProfileData>(createEmptyAthleteProfile);
 
@@ -112,30 +109,16 @@ export function OnboardingWizard() {
   }, [otp.authenticated, router, ownershipAttempt]);
 
   useEffect(() => {
-    // One-time hydration from a browser-only store (localStorage) on mount, gated
-    // behind `hydrated` so the server render and the initial client render both
-    // produce the same empty-draft/step-0 output before this runs.
-    const draft = loadDraft();
-    if (draft) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setProfile(draft);
-      // Only resume a saved step alongside an actual draft — a genuinely new
-      // session (no draft) always starts at Welcome, regardless of any stray
-      // step value left behind.
-      setStepIndex(clampStepIndex(loadDraftStep()));
-    }
-    setHydrated(true);
+    // Pre-auth onboarding state is memory-only: this wizard never restores a
+    // draft and never writes one. See onboarding-storage.ts for why.
+    //
+    // What this one-time mount effect does instead is REMOVE what earlier builds
+    // left behind — the old draft keys and the pre-Supabase per-slug profile keys
+    // — so a previous athlete's personal data cannot be restored into this form or
+    // left sitting in a shared browser. Onboarding entry is the right moment: it is
+    // the only route that ever wrote them.
+    purgeOnboardingBrowserStorage();
   }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveDraft(profile);
-  }, [profile, hydrated]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveDraftStep(stepIndex);
-  }, [stepIndex, hydrated]);
 
   // Revoke each object URL when it's replaced, and on unmount.
   useEffect(() => {
@@ -205,7 +188,10 @@ export function OnboardingWizard() {
     return result;
   }
 
-  if (!hydrated) return null;
+  // No mount gate: with nothing restored from the browser, the server render and
+  // the first client render are both the same empty-profile/step-0 output, so there
+  // is no hydration mismatch left to hide behind a null first paint. The previous
+  // `hydrated` flag existed only for that mismatch.
 
   return (
     <div>

@@ -29,11 +29,20 @@ describe("WELCOME_INTRO_COPY", () => {
     assert.equal(lower.includes("code makes your profile public"), false);
   });
 
-  test("says a draft is kept in the browser while building, truthfully scoped to that period", () => {
+  test("does NOT claim a draft is kept in the browser — pre-auth persistence was removed", () => {
     const lower = WELCOME_INTRO_COPY.toLowerCase();
-    assert.match(lower, /draft/);
-    assert.match(lower, /browser/);
+    // The round-2 wording this round's fix removes. Nothing is written to browser
+    // storage before authentication any more, so promising a kept draft would be
+    // a false reassurance an athlete could lose work to.
+    assert.equal(lower.includes("kept as a draft in this browser"), false);
+    assert.equal(lower.includes("saved in this browser"), false);
+  });
+
+  test("warns that nothing is saved yet and that refreshing starts over", () => {
+    const lower = WELCOME_INTRO_COPY.toLowerCase();
     assert.match(lower, /while you're building/);
+    assert.match(lower, /nothing is saved yet/);
+    assert.match(lower, /start you over/);
   });
 
   test("says nothing is public while building", () => {
