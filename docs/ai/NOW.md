@@ -1,6 +1,7 @@
 # NOW — Athlesite current state
 
-Checkpoint updated: 2026-10-06 · base `main` @ `4dad1a7` (PR #24, Explicit Publish merged)
+Checkpoint updated: 2026-10-07 · base `main` @ `f036ba6` (PR #26, pre-auth draft persistence
+removed, merged)
 
 Refreshed for the **5D.9 closeout**. The access-boundary status (5D.7/5D.8) and the 5D.9
 status below are current. The older branch table and Phase B follow-ups are historical and
@@ -131,13 +132,25 @@ refreshed these docs. Merged branches have since been deleted.
 
 ### From the privacy/consent policy record (2026-10-06)
 
-- **PILOT BLOCKER BEFORE REAL MINORS — pre-auth draft persistence.**
-  `src/lib/onboarding-storage.ts` caches the whole `AthleteProfileData` — name, school, city —
-  in `localStorage` **before any account exists**, indefinitely, with no clearing mechanism.
-  On a shared school device the next user can resume another athlete's draft. Previously
-  tracked only as the passing "draft-clearing on shared devices" line in the pilot-readiness
-  audit; under the approved minor policy it is a **blocker before real minors use Athlesite**,
-  because personal profile information can persist pre-auth on a shared device.
+- ~~PILOT BLOCKER BEFORE REAL MINORS — pre-auth draft persistence.~~ **RESOLVED 2026-10-07 —
+  PR #26, merge commit `f036ba60453fcdfa0506aa2a3b84a48e47f74309`.** `src/lib/onboarding-storage.ts`
+  previously cached the whole `AthleteProfileData` — name, school, city — in `localStorage`
+  **before any account exists**, indefinitely, with no clearing mechanism, so a shared school
+  device could resume another athlete's draft. **Pre-auth onboarding state is now memory-only**:
+  nothing is written to the browser before authentication. On onboarding entry, a one-time purge
+  removes `athlesite:onboarding:draft`, `athlesite:onboarding:step`, and every legacy
+  `athlesite:athlete:*` key (the pre-Supabase per-slug profile store, never previously cleaned
+  up) — scoped to exactly those three key shapes, so unrelated `localStorage` is preserved. No
+  replacement browser persistence (`sessionStorage`, IndexedDB, cookies, URL params) was
+  introduced; durable data still goes through the existing database save path.
+
+  **Nonblocking follow-up: sign-out-triggered legacy-key cleanup.** The purge above runs on
+  onboarding entry, the only route that ever wrote these keys. A browser that re-authenticates
+  without ever revisiting `/get-started` — e.g. going straight to `/edit-profile` after
+  sign-in — may still retain historical legacy keys from before this fix. Deferred during
+  review as **nonblocking**: narrower than the original blocker (requires a specific prior
+  browser history, not a fresh shared-device scenario) and addressable by a small follow-up
+  touching `sign-out.ts`/`EditProfileForm` rather than onboarding.
 
 - **Failed saves can still leave orphaned media objects, but they are no longer public.**
   Uploads go to fresh versioned paths before the database write, so a save that fails
@@ -176,15 +189,14 @@ refreshed these docs. Merged branches have since been deleted.
   behaviour specifically is the untested part — what it writes, and whether the shift is
   visible. Safari itself is validated: orientation and metadata stripping both passed on a
   real device, per the item above.
-- **Onboarding server-renders a blank `<main>` until hydration finishes.** The wizard is
-  gated behind a `hydrated` flag so the server and first client render agree before
-  `localStorage` is read, which means `/get-started` ships an essentially empty page —
-  header and footer only — until JavaScript loads and runs. Anything that delays or
-  prevents that (a slow phone connection, a failed chunk, a JS error) leaves an athlete
-  staring at a blank screen with no message. Observed for real when `next dev` 403'd its
-  own chunks over a LAN IP. **Replace with a useful static or welcome state before
-  pilot** — the Welcome step's copy is static and could be server-rendered, with the
-  hydration gate kept only for the draft-restored case.
+- ~~Onboarding server-renders a blank `<main>` until hydration finishes.~~ **RESOLVED/MOOT as of
+  PR #26 (`f036ba60453fcdfa0506aa2a3b84a48e47f74309`).** The `hydrated` mount gate this described
+  existed only to let the server and first client render agree before `localStorage` was read.
+  PR #26 removed pre-auth `localStorage` reads entirely (see the pre-auth draft persistence item
+  above), so the gate was removed with it: the server render and the first client render are now
+  the same empty-profile/step-0 output with nothing to reconcile, and `/get-started` renders the
+  real form immediately rather than a blank `<main>` first. The "replace with a useful static
+  state" follow-up this entry called for is moot — there is no blank state left to replace.
 - **The Welcome-step copy is stale and now untrue.** It still tells athletes their data
   is "stored only on this device and browser" with "no account or backend behind it".
   Both stopped being true at checkpoint 4: profiles are saved to Supabase under a real
@@ -242,17 +254,20 @@ refreshed these docs. Merged branches have since been deleted.
   the switch is **local component state until Save succeeds**, so "flip the switch" does
   not unpublish anything; and an update does not silently republish. See
   `DECISIONS.md § Publishing`.
-- **A stale draft can be republished in one click, without review.** `loadDraft()`
-  restores both the draft *and* the step the athlete last reached, so returning to
-  `/get-started` — or pressing browser Back after saving — can land straight on Preview
-  with older data and an enabled Save button. Combined with a create that publishes by default,
-  that means a half-finished profile from a previous session can go live without the
-  athlete passing back through any earlier step. Observed during checkpoint 4
-  verification, where a resumed draft saved under an unintended slug. **Product
-  follow-up, deliberately not fixed in Phase B** — it needs a design decision about
-  resume behavior, not a patch. **Historical finding: PR #24 removed creation-time
-  auto-publication; stale-draft restoration remains a follow-up.** The "create that
-  publishes by default" condition described above no longer exists.
+- ~~A stale draft can be republished in one click, without review.~~ **RESOLVED 2026-10-07 — PR
+  #26, merge commit `f036ba60453fcdfa0506aa2a3b84a48e47f74309`.** Historical observation,
+  preserved: `loadDraft()` used to restore both the draft *and* the step the athlete last
+  reached, so returning to `/get-started` — or pressing browser Back after saving — could land
+  straight on Preview with older data and an enabled Save button. Combined with a create that
+  published by default, that meant a half-finished profile from a previous session could go
+  live without the athlete passing back through any earlier step. Observed during checkpoint 4
+  verification, where a resumed draft saved under an unintended slug. (Interim note, also now
+  superseded: PR #24 removed creation-time auto-publication, which closed the "goes live
+  without review" half of this while the restoration itself remained.)
+  **Both restoration paths PR #24 left open are now removed by PR #26: `loadDraft()` and
+  `loadDraftStep()` no longer exist, and the wizard no longer restores a draft or a step from
+  browser storage at all** — pre-auth state is memory-only. **Stale-draft restoration is no
+  longer a follow-up**; nothing to resume behind a design decision.
 - **Slug collision cannot be pre-checked.** RLS hides unpublished rows from other users,
   so an availability lookup reports a taken-but-unpublished slug as free. The unique
   constraint is the only truthful answer, so collisions surface as a caught `23505`.
@@ -516,7 +531,9 @@ a `typecheck` script, and the whole authentication path — all present.)*
    acceptance persistence, DB publication-eligibility enforcement. Several specifics are
    **pending legal review** — see Blocked on legal review.
 7. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
-   guardian-consent process, draft-clearing on shared devices, and minimum error visibility.
+   guardian-consent process, **nonblocking sign-out-triggered legacy-key cleanup** (resolved
+   from "draft-clearing on shared devices" by PR #26 — see Known follow-ups), and minimum error
+   visibility.
 
 ## Blocked on legal review
 
