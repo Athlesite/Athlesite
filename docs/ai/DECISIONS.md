@@ -120,6 +120,16 @@ sign-in screen before they have seen any value.
 **Rules out.** Gating `/get-started` behind auth. Also means the wizard must handle a
 mid-flow sign-in without losing draft state.
 
+**Corrected 2026-10-07 (PR #26, merge commit `f036ba60453fcdfa0506aa2a3b84a48e47f74309`).** Auth
+still occurs at save, not at wizard entry — that part of this decision is unchanged. But "the
+pre-auth draft stays in browser `localStorage`" above is no longer true: **pre-auth onboarding
+state is now memory-only**. A refresh or closed tab loses unsaved progress rather than resuming
+it from storage. On onboarding entry, a one-time purge removes the old
+`athlesite:onboarding:draft` / `:step` keys and every legacy `athlesite:athlete:*` key (the
+pre-Supabase per-slug profile store). "Without losing draft state" in Rules out still holds for
+a mid-flow sign-in specifically, because the wizard stays mounted through the inline OTP
+exchange — that is in-memory React state surviving, not `localStorage`.
+
 ### Inline numeric email OTP, no callback route
 **Active** · 2026-09-07
 **Decision.** `signInWithOtp({ email })` → the athlete enters the emailed numeric code on

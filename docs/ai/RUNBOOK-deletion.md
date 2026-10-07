@@ -437,10 +437,21 @@ condition that applies when any capability remains.
 | Athlete's data | Retained | Removed |
 | Who performs it | Athlete, self-service (switch **plus Save**) | Founder-assisted |
 
-**Known-device cleanup.** Onboarding keeps a draft in the browser's `localStorage`, and the
-session lives in cookies. Neither is reachable by server-side deletion. Ask the athlete to sign
-out on every device they used, and — if they want the local draft gone — to clear site data for
-the Athlesite origin in each browser. Note this in the deletion confirmation.
+**Known-device cleanup.** The session lives in cookies, which is not reachable by server-side
+deletion — ask the athlete to sign out on every device they used, and note this in the deletion
+confirmation.
+
+Onboarding itself no longer keeps a draft in `localStorage` — **pre-auth onboarding state is
+memory-only**, and new onboarding activity writes nothing to the browser. Entering onboarding
+purges the known historical keys (`athlesite:onboarding:draft`, `athlesite:onboarding:step`, and
+the legacy per-slug `athlesite:athlete:*` profile keys), leaving unrelated browser storage
+untouched. One residue: a browser that signed up before this fix and has **not since returned to
+`/get-started`** may still be holding those old keys until it does, or until a future
+sign-out-triggered cleanup path lands. **Clearing all site data is therefore not the normal
+instruction for removing an onboarding draft any more** — if a device is a known special case
+still carrying the old keys, visiting `/get-started` once (even without completing onboarding)
+clears them; site-data clearing remains available as a manual fallback, not the default
+guidance.
 
 ## 15. Takedown (founder-initiated)
 

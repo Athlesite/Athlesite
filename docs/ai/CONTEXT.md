@@ -69,14 +69,18 @@ built versus approved-but-unbuilt is tracked in `NOW.md`, not here.
 Identity rules also live in that file: `slugify`, `isValidSlugFormat`
 (`^[a-z][a-z0-9-]{2,29}$`, no `--`), and `isReservedSlug`.
 
-**Persistence** — two layers, mid-transition:
+**Persistence** — one durable layer; no browser draft layer.
 
-- *Today:* `src/lib/onboarding-storage.ts` writes to browser `localStorage`.
-  `StoredAthleteProfile` is the envelope carrying `id` / `createdAt` / `updatedAt`
-  around the domain model.
-- *Phase A (schema exists):* `supabase/migrations/` — the `athlete_profiles` table and
-  the private `athlete-media` Storage bucket, both under RLS.
-- *Phase B (not built):* Supabase client, domain↔row mappers, authentication.
+- **Durable storage is Supabase/Postgres.** `supabase/migrations/` defines the
+  `athlete_profiles` table and the private `athlete-media` Storage bucket, both under
+  RLS. `StoredAthleteProfile` is the envelope carrying `id` / `createdAt` / `updatedAt`
+  around the domain model. The Supabase client, domain↔row mappers, and authentication
+  are all built.
+- **Before authentication, onboarding state is memory-only.** The wizard holds an
+  in-progress `AthleteProfileData` in React state and writes nothing to the browser —
+  no `localStorage`, `sessionStorage`, IndexedDB, or cookies. A refresh loses unsaved
+  progress; `src/lib/onboarding-storage.ts` now exists only to purge the keys an
+  earlier version of the product wrote there.
 
 **Routes** — `/` marketing · `/get-started` onboarding wizard ·
 `/athletes/[slug]` profile · `/athletes/jordan-bell` static example.
