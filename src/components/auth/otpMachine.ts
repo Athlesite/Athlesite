@@ -37,6 +37,16 @@ export type OtpState = {
   signedInEmail: string | null;
   /** When the last code was sent, for the resend cooldown. Epoch ms. */
   lastSentAt: number | null;
+  /**
+   * Whether a send has ever succeeded in this session, which means Supabase has
+   * created the Auth account.
+   *
+   * Sticky on purpose, and distinct from `lastSentAt`: the cooldown stamp is cleared
+   * whenever the athlete goes back to change the address, but changing the address does
+   * not un-create the account that the previous send already made. The age lock reads
+   * this, so it cannot be released by stepping back to the email field.
+   */
+  accountCreated: boolean;
 };
 
 export type OtpAction =
@@ -49,7 +59,13 @@ export type OtpAction =
   | { type: "VERIFY_STARTED" }
   | { type: "VERIFY_SUCCEEDED"; email: string | null }
   | { type: "VERIFY_FAILED"; message: string }
-  | { type: "CHANGE_EMAIL" };
+  | { type: "CHANGE_EMAIL" }
+  /**
+   * Discard local OTP input. Used when onboarding is abandoned mid-flow — notably
+   * when an age answer turns out to be blocked and every field collected in the
+   * session has to go.
+   */
+  | { type: "RESET" };
 
 export const initialOtpState: OtpState = {
   status: "checking",
@@ -58,6 +74,7 @@ export const initialOtpState: OtpState = {
   error: null,
   signedInEmail: null,
   lastSentAt: null,
+  accountCreated: false,
 };
 
 export function otpReducer(state: OtpState, action: OtpAction): OtpState {
@@ -65,7 +82,13 @@ export function otpReducer(state: OtpState, action: OtpAction): OtpState {
     case "SESSION_CHECKED":
       // An athlete who is already signed in never sees the OTP UI at all.
       return action.email
-        ? { ...state, status: "signedIn", signedInEmail: action.email, error: null }
+        ? {
+            ...state,
+            status: "signedIn",
+            signedInEmail: action.email,
+            error: null,
+            accountCreated: true,
+          }
         : { ...state, status: "collectingEmail" };
 
     case "EMAIL_CHANGED":
@@ -79,7 +102,15 @@ export function otpReducer(state: OtpState, action: OtpAction): OtpState {
       return { ...state, status: "sending", error: null };
 
     case "SEND_SUCCEEDED":
-      return { ...state, status: "collectingCode", code: "", error: null, lastSentAt: action.at };
+      return {
+        ...state,
+        status: "collectingCode",
+        code: "",
+        error: null,
+        lastSentAt: action.at,
+        // The send succeeded, so shouldCreateUser: true has created the account.
+        accountCreated: true,
+      };
 
     case "SEND_FAILED":
       // Stay on the email field so the address can be corrected in place.
@@ -105,6 +136,16 @@ export function otpReducer(state: OtpState, action: OtpAction): OtpState {
       // Abandon the outstanding code and go back to the address field.
       return { ...state, status: "collectingEmail", code: "", error: null, lastSentAt: null };
 
+    case "RESET":
+      // Local input only. This cannot revoke a Supabase session that already exists,
+      // so a signed-in state is preserved rather than faked away — the age lock
+      // (hasOtpSendStarted) is what stops a blocked answer being reachable once an
+      // account has been created. Clearing `code` and `error` still removes the
+      // typed input, which is what a discarded session requires.
+      return state.status === "signedIn"
+        ? { ...state, code: "", error: null }
+        : { ...initialOtpState, status: "collectingEmail" };
+
     default:
       return state;
   }
@@ -120,6 +161,33 @@ export function resendSecondsRemaining(state: OtpState, now: number): number {
 /** Whether the save/publish action should be allowed to proceed. */
 export function isAuthenticated(state: OtpState): boolean {
   return state.status === "signedIn";
+}
+
+/**
+ * Whether an OTP send has begun, or a session already exists.
+ *
+ * This is the age lock. `sendEmailOtp` calls `signInWithOtp({ shouldCreateUser: true })`,
+ * so **the Auth account is created at send time, not at verify** — which means once a
+ * send is under way, letting an athlete revisit the age gate would allow reclassifying
+ * themselves after account creation had already started.
+ *
+ * A *failed* send is deliberately not counted: the request errored, so Supabase created
+ * no user, and there is nothing yet to protect. `accountCreated` is only set on success,
+ * and `sending` covers the in-flight window.
+ *
+ * It reads `accountCreated` rather than `lastSentAt` because CHANGE_EMAIL clears the
+ * cooldown stamp so a new address can be sent immediately — correct for the cooldown,
+ * but it must not hand back an unlocked age gate on a session that already has an
+ * account behind it.
+ */
+export function hasOtpSendStarted(state: OtpState): boolean {
+  return (
+    state.accountCreated ||
+    state.status === "sending" ||
+    state.status === "collectingCode" ||
+    state.status === "verifying" ||
+    state.status === "signedIn"
+  );
 }
 
 /** True while a network call is in flight, for disabling inputs. */

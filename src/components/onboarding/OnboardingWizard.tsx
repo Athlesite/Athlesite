@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StepProgress } from "@/components/onboarding/StepProgress";
 import { WelcomeStep } from "@/components/onboarding/steps/WelcomeStep";
+import { AgeGateStep } from "@/components/onboarding/steps/AgeGateStep";
+import { AgeBlocked } from "@/components/onboarding/steps/AgeBlocked";
 import { AthleteInfoStep } from "@/components/onboarding/steps/AthleteInfoStep";
 import { MediaStep } from "@/components/onboarding/steps/MediaStep";
 import { RecruitingStep } from "@/components/onboarding/steps/RecruitingStep";
@@ -18,9 +20,26 @@ import {
   type AthleteProfileData,
 } from "@/lib/athlete-profile";
 import { purgeOnboardingBrowserStorage } from "@/lib/onboarding-storage";
+import {
+  isBlockedFromOnboarding,
+  mayContinueOnboarding,
+  type AgeEligibility,
+} from "@/lib/age-eligibility";
+import { rememberAgeBlock, rememberedAgeBlock } from "@/lib/age-gate-session";
 import { createProfile, checkOwnershipStatus, type SaveProfileResult } from "@/lib/profile-save";
 
-const STEP_LABELS = ["Welcome", "Athlete Info", "Media", "Recruiting", "Brand & Links", "Preview"];
+const STEP_LABELS = [
+  "Welcome",
+  // Asked before any profile field, so a blocked athlete has nothing retained
+  // anywhere: no profile row, no Auth user (created at OTP *send*, four steps
+  // later), and no browser draft. See lib/age-eligibility.ts.
+  "Age",
+  "Athlete Info",
+  "Media",
+  "Recruiting",
+  "Brand & Links",
+  "Preview",
+];
 
 /** Where the username field lives, for sending an athlete back to fix a taken one. */
 const ATHLETE_INFO_STEP = STEP_LABELS.indexOf("Athlete Info");
@@ -32,6 +51,17 @@ const ATHLETE_INFO_STEP = STEP_LABELS.indexOf("Athlete Info");
 export function OnboardingWizard() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
+
+  // Transient, memory-only, and never persisted — not the date of birth, and not
+  // this bracket either. Nothing downstream consumes it yet (Explicit Publish is
+  // global, not minor-scoped), so there is nothing to store it for; persistence
+  // lands with guardian approval, where an approval has to be recorded against it.
+  // Seeded from the document-lifetime block so a client-side navigation away and
+  // back (AgeBlocked links home, Home links here) mounts a fresh wizard that is
+  // still blocked. A full reload drops the module instance and resets it.
+  const [ageEligibility, setAgeEligibility] = useState<AgeEligibility | null>(
+    () => rememberedAgeBlock()
+  );
   const [profile, setProfile] = useState<AthleteProfileData>(createEmptyAthleteProfile);
 
   // Photo previews are session-only (blob: object URLs) and are never written to storage.
@@ -139,13 +169,96 @@ export function OnboardingWizard() {
     setter(file ? { file, fileName: file.name, objectUrl: URL.createObjectURL(file) } : null);
   }
 
+  /**
+   * Whether this wizard has an accepted adult answer. Blocked answers never get here —
+   * they return early from `handleAgeResolved` and render `AgeBlocked` instead — so
+   * this is specifically "answered, and allowed through".
+   */
+  const ageAnsweredAdult = mayContinueOnboarding(ageEligibility);
+
+  /**
+   * Once an accepted adult answer has been given *and* account creation has begun, the
+   * age answer is frozen for the rest of this wizard session.
+   *
+   * `sendEmailOtp` creates the Auth account at **send** time, so without this an
+   * athlete could reach Preview, request a code, step Back to Age, and reclassify
+   * themselves after the account already existed.
+   *
+   * Both halves are required, and the first half is the whole reason this is not just
+   * `otp.sendStarted`. An athlete who arrives with an existing Supabase session has
+   * `sendStarted` true from the very first render, because the account plainly exists
+   * already. Locking on that alone froze an age answer that had never been given: the
+   * gate rendered, Continue did nothing, and `goBack`'s floor let them step *into*
+   * Athlete Info without ever answering. A session proves an account exists; it proves
+   * nothing whatsoever about age. So a signed-in athlete still answers the gate, and
+   * the lock engages only once there is an accepted adult answer to protect.
+   */
+  const ageLocked = ageAnsweredAdult && otp.sendStarted;
+
+  /**
+   * Discards everything collected in this mounted session.
+   *
+   * Called when an age answer resolves to a blocked bracket. Without this, an athlete
+   * could answer as an adult, fill in their name, school and city, pick photos, then
+   * step Back and answer as a minor — and the blocked screen would render over a
+   * wizard still holding all of it in memory, with live blob URLs.
+   *
+   * Object URLs are released by the cleanup effects above, not revoked here directly.
+   * Those effects are keyed on the preview itself, so setting it to null runs the
+   * previous preview's cleanup and revokes its blob — that is the one and only place
+   * either URL is ever revoked. Revoking it again here as well would be a harmless
+   * no-op in practice, but it would also mean two call sites are each responsible for
+   * the same release, which is exactly the kind of duplication that makes "was this
+   * actually revoked once, not twice, not zero times" hard to verify by reading the
+   * code. Letting the effect own it keeps there being exactly one path to revocation.
+   */
+  function discardOnboardingSession() {
+    setProfilePhoto(null);
+    setActionPhoto(null);
+
+    // Replaces every profile field at once — identity, school, city, bio, highlight
+    // links, recruiting, socials and NIL all live on this one object.
+    setProfile(createEmptyAthleteProfile());
+    setSlugError(null);
+
+    // Local OTP input: typed email, typed code, any error. Not a Supabase session —
+    // see the RESET action, and `ageLocked`, which keeps this path unreachable once
+    // an account exists.
+    otp.reset();
+  }
+
+  function handleAgeResolved(eligibility: AgeEligibility) {
+    // Defence in depth: the Age step is unreachable while locked, but a stale handler
+    // must not be able to reclassify either.
+    if (ageLocked) return;
+
+    setAgeEligibility(eligibility);
+
+    // Blocked branch first, via the type predicate: it narrows `eligibility` to the two
+    // blocked brackets, which `!mayContinueOnboarding(...)` cannot do — TypeScript does
+    // not narrow a union through an ordinary function return.
+    if (isBlockedFromOnboarding(eligibility)) {
+      // Drop everything collected so far, and remember the block for this document so
+      // navigating away and back does not reopen the gate.
+      discardOnboardingSession();
+      rememberAgeBlock(eligibility);
+      return;
+    }
+
+    if (mayContinueOnboarding(eligibility)) goNext();
+  }
+
   function goNext() {
     setStepIndex((i) => Math.min(i + 1, STEP_LABELS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function goBack() {
-    setStepIndex((i) => Math.max(i - 1, 0));
+    // Once the age is locked, Athlete Info is the floor: profile fields stay
+    // editable, but the pre-profile steps (Welcome, Age) are closed for the rest of
+    // the session. Nothing is lost — Welcome collects nothing.
+    const floor = ageLocked ? ATHLETE_INFO_STEP : 0;
+    setStepIndex((i) => Math.max(i - 1, floor));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -188,6 +301,13 @@ export function OnboardingWizard() {
     return result;
   }
 
+  // Terminal. Rendered INSTEAD of the step machinery, so a blocked athlete has no
+  // Back button, no progress bar, and no control that leads onward. Placed before
+  // the main return rather than inside the step switch for exactly that reason.
+  if (isBlockedFromOnboarding(ageEligibility)) {
+    return <AgeBlocked reason={ageEligibility} />;
+  }
+
   // No mount gate: with nothing restored from the browser, the server render and
   // the first client render are both the same empty-profile/step-0 output, so there
   // is no hydration mismatch left to hide behind a null first paint. The previous
@@ -200,6 +320,10 @@ export function OnboardingWizard() {
       {stepIndex === 0 ? <WelcomeStep onNext={goNext} /> : null}
 
       {stepIndex === 1 ? (
+        <AgeGateStep onResolved={handleAgeResolved} onBack={goBack} />
+      ) : null}
+
+      {stepIndex === 2 ? (
         <AthleteInfoStep
           profile={profile}
           onChange={setProfile}
@@ -210,7 +334,7 @@ export function OnboardingWizard() {
         />
       ) : null}
 
-      {stepIndex === 2 ? (
+      {stepIndex === 3 ? (
         <MediaStep
           profile={profile}
           onChange={setProfile}
@@ -223,15 +347,15 @@ export function OnboardingWizard() {
         />
       ) : null}
 
-      {stepIndex === 3 ? (
+      {stepIndex === 4 ? (
         <RecruitingStep profile={profile} onChange={setProfile} onNext={goNext} onBack={goBack} />
       ) : null}
 
-      {stepIndex === 4 ? (
+      {stepIndex === 5 ? (
         <BrandLinksStep profile={profile} onChange={setProfile} onNext={goNext} onBack={goBack} />
       ) : null}
 
-      {stepIndex === 5 ? (
+      {stepIndex === 6 ? (
         <PreviewStep
           profile={profile}
           actionPhoto={actionPhoto}
