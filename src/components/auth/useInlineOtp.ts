@@ -8,6 +8,7 @@ import {
   resendSecondsRemaining,
   isAuthenticated,
   isBusy,
+  hasOtpSendStarted,
   RESEND_COOLDOWN_SECONDS,
   type OtpState,
 } from "@/components/auth/otpMachine";
@@ -34,6 +35,13 @@ export type InlineOtp = {
   sendCode: () => Promise<void>;
   verifyCode: () => Promise<void>;
   changeEmail: () => void;
+  /** Discards local OTP input. See the RESET action in otpMachine. */
+  reset: () => void;
+  /**
+   * Whether an OTP send has begun (or a session already exists). The age gate reads
+   * this to stop age being re-answered after Auth account creation has started.
+   */
+  sendStarted: boolean;
 };
 
 export function useInlineOtp(): InlineOtp {
@@ -130,6 +138,10 @@ export function useInlineOtp(): InlineOtp {
     dispatch({ type: "CHANGE_EMAIL" });
   }, []);
 
+  const reset = useCallback(() => {
+    dispatch({ type: "RESET" });
+  }, []);
+
   return {
     state,
     authenticated: isAuthenticated(state),
@@ -140,5 +152,7 @@ export function useInlineOtp(): InlineOtp {
     sendCode,
     verifyCode,
     changeEmail,
+    reset,
+    sendStarted: hasOtpSendStarted(state),
   };
 }

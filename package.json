@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --import ./scripts/register-alias-resolver.mjs --test",
+    "test": "node --import ./scripts/register-alias-resolver.mjs --test \"scripts/**/*.test.mjs\" \"src/**/*.test.ts\" && node --import ./scripts/register-alias-resolver-rendered.mjs --test \"src/**/*.test.tsx\"",
     "check:columns": "node scripts/check-public-projection-parity.mjs",
     "check:slugs": "node scripts/check-reserved-slugs.mjs",
     "check:redirects": "node scripts/check-redirects.mjs"
@@ -25,11 +25,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "jsdom": "^30.1.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
