@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { EditProfileForm } from "@/components/edit-profile/EditProfileForm";
 import { EditProfileSignIn } from "@/components/edit-profile/EditProfileSignIn";
+import { AdultAttestationGate } from "@/components/participation/AdultAttestationGate";
+import { ParticipationBlocked } from "@/components/participation/ParticipationBlocked";
 import { getOwnProfile, signMediaUrl } from "@/lib/profile-repository";
+import {
+  getOwnPublicationState,
+  getParticipationStatusServer,
+} from "@/lib/participation-repository.server";
+import { resolveEditProfileRoute } from "@/lib/participation";
 import { getUser } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -17,14 +24,24 @@ export const metadata: Metadata = {
 /**
  * Entry point for a returning athlete.
  *
- * Three states, resolved server-side in order:
- *  - no session            -> render the inline OTP sign-in gate in place
- *  - session, no profile   -> redirect to /get-started (nothing to manage yet)
- *  - session, has profile  -> load the full row and render the editable form
+ * Five states, resolved server-side in order (see resolveEditProfileRoute, the
+ * pure function this page defers the actual decision to):
+ *  - no session                        -> render the inline OTP sign-in gate in place
+ *  - session, participation absent     -> AdultAttestationGate (never auto-initialized)
+ *  - session, minor/*, revoked, expired -> ParticipationBlocked
+ *  - adult_approved, no profile        -> redirect to /get-started (nothing to manage yet)
+ *  - adult_approved, has profile       -> load the full row and render the editable form
  *
  * getUser() revalidates with the Auth server rather than trusting a cached
  * session (see docs/ai/GUARDRAILS.md § Ownership) — the same helper the
  * public profile page already uses to decide whether to show an edit link.
+ *
+ * The participation status read happens for every authenticated request, before
+ * anything else — an authenticated owner with no participation row must see the
+ * attestation gate, never the editor, no matter how they arrived here (fresh
+ * sign-in, a restored session, or a stale bookmark). Nothing on this page ever
+ * calls initialize_adult_participation itself; that call lives only inside
+ * AdultAcceptancePanel's own explicit button handler.
  *
  * EditProfileForm is seeded once, here, from the server-authoritative
  * record — never from localStorage. The now-unused EditProfileView (5A's
@@ -39,9 +56,44 @@ export default async function EditProfilePage() {
     return <EditProfileSignIn />;
   }
 
+  const [status, publicationState] = await Promise.all([
+    getParticipationStatusServer(),
+    getOwnPublicationState(user.id),
+  ]);
+
+  const route = resolveEditProfileRoute({
+    hasSession: true,
+    status,
+    hasProfile: publicationState.exists,
+  });
+
+  if (route === "attestation-gate") {
+    return <AdultAttestationGate publicationState={publicationState} />;
+  }
+
+  if (route === "blocked") {
+    // route === "blocked" guarantees status is neither "absent" nor
+    // "adult_approved" — resolveEditProfileRoute's own contract — so this
+    // narrowing is sound without a redundant runtime check.
+    return (
+      <ParticipationBlocked
+        status={status as Exclude<typeof status, "absent" | "adult_approved">}
+        publicationState={publicationState}
+      />
+    );
+  }
+
+  if (route === "onboarding-redirect") {
+    redirect("/get-started");
+  }
+
   const record = await getOwnProfile(user.id);
 
   if (!record) {
+    // route === "editor" implies publicationState.exists, which was read a moment
+    // ago — if it is somehow gone now (a race with a deletion elsewhere), fail
+    // the same way the pre-participation code always did rather than rendering a
+    // broken editor.
     redirect("/get-started");
   }
 

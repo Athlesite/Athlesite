@@ -27,6 +27,12 @@ import {
 } from "@/lib/age-eligibility";
 import { rememberAgeBlock, rememberedAgeBlock } from "@/lib/age-gate-session";
 import { createProfile, checkOwnershipStatus, type SaveProfileResult } from "@/lib/profile-save";
+import {
+  ATTESTATION_VERSION,
+  TERMS_VERSION,
+  PRIVACY_VERSION,
+} from "@/lib/participation";
+import { initializeAdultParticipation } from "@/lib/participation-repository";
 
 const STEP_LABELS = [
   "Welcome",
@@ -278,6 +284,31 @@ export function OnboardingWizard() {
    * remove on a row that does not exist until this call creates it.
    */
   async function handleSaveAndComplete(): Promise<SaveProfileResult> {
+    // Guardian-First Participation, Phase 1a: the explicit adult self-attestation,
+    // called only here — after PreviewStep's own checkbox has been checked and
+    // Save has been pressed — never earlier in the wizard and never from an
+    // effect. Having answered the Age step as "adult" several steps ago is not,
+    // by itself, treated as sufficient; this call is the actual attestation.
+    //
+    // "already_initialized" and "already_initialized_acceptance_outdated" both
+    // mean this athlete is adult/approved going forward, so both proceed to
+    // createProfile exactly like "initialized" — only "refused" stops here.
+    // "refused" also means createProfile itself would refuse (profile-save.ts's
+    // own pre-check), so failing early avoids an upload attempt that could not
+    // have succeeded anyway.
+    const participationResult = await initializeAdultParticipation(
+      ATTESTATION_VERSION,
+      TERMS_VERSION,
+      PRIVACY_VERSION
+    );
+
+    if (participationResult === "refused") {
+      return {
+        ok: false,
+        message: "Couldn't confirm your account. Try again in a moment.",
+      };
+    }
+
     const result = await createProfile(profile, {
       hero: actionPhoto?.file ?? null,
       profile: profilePhoto?.file ?? null,

@@ -63,12 +63,18 @@ export function PreviewStep({
 }: PreviewStepProps) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Guardian-First Participation, Phase 1a: the explicit adult self-attestation
+  // required before initialize_adult_participation is called. Having answered
+  // the Age step earlier in this same wizard session is deliberately NOT treated
+  // as sufficient on its own — see handleSaveAndComplete in OnboardingWizard,
+  // which calls the RPC only after this checkbox is checked and Save is pressed.
+  const [acceptedAdultTerms, setAcceptedAdultTerms] = useState(false);
   const athlete = toAthleteProfileView(profile);
 
   // Still resolving whether there is an existing session. Showing the sign-in
   // block here would flash it at an athlete who is already signed in.
   const checkingSession = otp.state.status === "checking";
-  const canSave = otp.authenticated && canCreate && !saving;
+  const canSave = otp.authenticated && canCreate && !saving && acceptedAdultTerms;
 
   async function handleSave() {
     setSaving(true);
@@ -158,6 +164,20 @@ export function PreviewStep({
                 {saveError}
               </p>
             ) : null}
+
+            <label className="mt-6 flex items-start gap-3 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={acceptedAdultTerms}
+                onChange={(event) => setAcceptedAdultTerms(event.target.checked)}
+                disabled={saving}
+              />
+              <span>
+                I confirm I&apos;m 18 or older and agree to Athlesite&apos;s Terms and Privacy
+                Policy.
+              </span>
+            </label>
 
             <div className="mt-6 flex items-center justify-between gap-4">
               <Button
