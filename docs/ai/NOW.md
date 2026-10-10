@@ -1,12 +1,16 @@
 # NOW — Athlesite current state
 
-Checkpoint updated: 2026-10-07 · base `main` @ `f036ba6` (PR #26, pre-auth draft persistence
-removed, merged)
+Checkpoint updated: 2026-10-10 · base `main` @ `e04f72c` (PR #29, Guardian-First
+Participation **Phase 1a**, merged)
 
-Refreshed for the **5D.9 closeout**. The access-boundary status (5D.7/5D.8) and the 5D.9
-status below are current. The older branch table and Phase B follow-ups are historical and
-still need a separate reconciliation; do not treat them as a current inventory without
-checking the code.
+Refreshed for the **Phase 1a post-merge reconciliation**. The access-boundary status
+(5D.7/5D.8), the 5D.9 status, and the age/participation status in item 6 below are current.
+The older branch table and Phase B follow-ups are historical and still need a separate
+reconciliation; do not treat them as a current inventory without checking the code.
+
+**Repository state is not live state.** Everything described below as "merged" is merged on
+`main`. The three Phase 1a migrations have **not** been confirmed applied to the live Athlete
+project — see item 6 and § Blocked on founder.
 
 **5D.7 IS MERGED AND LIVE.** The exact-slug RPC read path and the hero-only Storage
 boundary are applied to the Athlete project and verified against it. `anon` has no direct
@@ -292,6 +296,27 @@ refreshed these docs. Merged branches have since been deleted.
 
 ## Real external setup state
 
+### Migration deployment — manual, founder-operated, never automated
+
+Established by repository inspection, not assumption:
+
+- **Nothing deploys migrations.** `.github/workflows/ci.yml` is the only workflow. It is
+  **PR-triggered only**, declares `permissions: contents: read`, holds **no Supabase
+  secrets**, and runs exactly lint / typecheck / test / build / three parity checks. It
+  **validates** the repo; it never contacts Supabase.
+- **No script applies migrations.** `package.json` has no `db push`, `supabase` or
+  migration command, and neither does anything in `scripts/`.
+- **A Supabase CLI link exists, but only locally.** `supabase/config.toml` is tracked;
+  the link state (`supabase/.temp/`, including the project ref) is **gitignored**, so the
+  CLI workflow is a founder's local operation and leaves no trace in the repo.
+- **Consequence: applying a migration is a deliberate human act** — CLI push from a linked
+  machine, or the Supabase SQL Editor. Which of those was used historically is **not
+  recorded in the repo**; only the *outcome* is (the notes below).
+
+**Therefore: whether a migration is live can never be inferred from the repo.** It is known
+only from a founder-recorded note here or from a live read. Treat an unnoted migration as
+**not applied** until verified.
+
 **Supabase — the athlete product now runs on its own project.** Athlete and Ops are
 separated (`DECISIONS.md § Athlete and Ops are separate Supabase projects`):
 
@@ -308,6 +333,14 @@ The **first three** migrations are applied to the Athlete project and verified
 `local == remote`: the `athlete_profiles` table + slug index + `set_updated_at()` trigger,
 five table RLS policies, the column-scoped `anon` grant of exactly 18 columns, and the
 **private** `athlete-media` bucket with its four Storage policies.
+
+**The three Phase 1a participation migrations (`20261008000001`, `20261008000002`,
+`20261008000003`) are MERGED ON `main` BUT NOT CONFIRMED APPLIED.** No founder note records
+applying them, and nothing automated could have (see § Migration deployment). Until a live
+read or a founder note says otherwise, the live schema is assumed to be the 5D.8 state —
+**no `athlete_participation`, no `participation_events`, none of the six participation
+functions.** Confirming this, in either direction, is the first step of the Phase 1a live
+rollout.
 
 **The three 5D.7 migrations and the 5D.8 hardening migration ARE applied**, and the remote
 migration history matches the Git versions exactly (`20260825000001`, `20260825000002`,
@@ -516,7 +549,8 @@ a `typecheck` script, and the whole authentication path — all present.)*
    `is_published` directly under RLS, so this is an application-layer guarantee only.
    **Guardian eligibility is not implemented**; nothing in the code consults a guardian
    approval. Age-neutral by design.
-6. **Privacy / Terms + guardian consent — POLICY APPROVED / IMPLEMENTATION NOT STARTED.**
+6. **Privacy / Terms + guardian consent — POLICY APPROVED; AGE GATE AND ADULT
+   PARTICIPATION FOUNDATIONS MERGED; GUARDIAN FLOW NOT STARTED.**
    Founder-approved pilot policy recorded in `DECISIONS.md` (six entries, 2026-10-06):
    **under-13 excluded** before OTP/account creation and before any profile data is retained,
    with a blocked attempt persisting nothing; **13–17 guardian-first** — guardian
@@ -526,10 +560,73 @@ a `typecheck` script, and the whole authentication path — all present.)*
    inferring adulthood from `class_year`); and a **reduced minor public projection** (first
    name + last initial, athlete-chosen handle, no city, optional state/class year,
    height/weight private by default, hero photo optional and guardian-reviewed, bio and link
-   restrictions). **Nothing below is built:** age gate, guardian participation approval,
-   guardian publication approval, reduced minor projection, revocation enforcement, legal
-   acceptance persistence, DB publication-eligibility enforcement. Several specifics are
-   **pending legal review** — see Blocked on legal review.
+   restrictions). Several specifics are **pending legal review** — see Blocked on legal
+   review.
+
+   **BUILT AND MERGED — Age Gate (PR #28, `8ad68fc`).** DOB is asked before any profile
+   field, entered transiently and **never persisted**; only the resolved bracket leaves the
+   step. Under-13 and 13–17 are both **blocked**, terminally, before OTP send and therefore
+   before Auth-account creation. 18+ continues. A blocked re-answer discards everything
+   collected (profile fields, photo `File`s, blob URLs, typed OTP input), and the block
+   survives client-side navigation within the document via memory-only state. An existing
+   session is **not** treated as an age answer. This is a **product-path control, not age
+   assurance** — self-attested, and bypassable by a determined athlete.
+
+   **BUILT AND MERGED — Guardian-First Participation Phase 1a (PR #29, `635efc0`).**
+   - `public.athlete_participation` — current-state, one row per owner, with complete
+     per-state CHECK shapes for adult/minor-pending/minor-decided/revoked. **No grants to
+     `anon` or `authenticated`**; RLS enabled with no policies.
+   - `public.participation_events` — **append-only** evidence (no UPDATE/DELETE grant to any
+     role), with complete-bundle uniqueness over
+     `(owner_user_id, attestation_version, terms_version, privacy_version)` and
+     generation-bound uniqueness reserved for the later guardian lifecycle.
+   - `initialize_adult_participation()` — adult **self-attestation**, narrow and non-upsert:
+     creates `bracket='adult'`/`status='approved'` **only from complete absence**, refuses
+     every other pre-existing state, and appends exactly one `adult_attested` event
+     atomically. Never called from an effect or a session restore — only from an explicit
+     user action that displayed the attestation wording.
+   - `record_acceptance_bundle()` — explicit re-acceptance, idempotent against the owner's
+     **full evidence history**, and incapable of changing `bracket` or `status`.
+   - `participation_status()` — the **only** read surface onto `athlete_participation`.
+   - `unpublish_own_profile()` — narrow, **always available regardless of participation
+     state**, sets `is_published = false` and nothing else. Reducing public exposure never
+     requires passing the gate.
+   - Adult-attestation gate in onboarding (tied to the Preview/save action) and at
+     `/edit-profile` (five server-resolved states), plus a standalone visibility-only
+     unpublish control in every gated state.
+   - Advisory participation pre-checks in `profile-save.ts` before create/update.
+   - Read-only Phase 1b census tooling (`scripts/participation-census.sql` + wrapper).
+
+   **NOT built:** guardian participation **request/approval** flow, `guardian_issuer` role,
+   Edge Function, guardian email, guardian publication approval, reduced minor projection,
+   revocation enforcement, and **DB publication-eligibility enforcement**. **No code path
+   anywhere can create a `bracket='minor'` participation row**, so minors remain blocked
+   exactly as the Age Gate leaves them.
+
+   **`participation_allows_retention()` and `participation_allows_publication()` exist but
+   are NOT ENFORCED.** They are defined and granted to `authenticated` so Phase 1b's policy
+   migration needs no further grant change, and are referenced by **zero** RLS or Storage
+   policies today. Profile and Storage access behaviour is therefore **unchanged** by
+   Phase 1a.
+
+   **LIVE STATE UNKNOWN — the three Phase 1a migrations are not confirmed applied.**
+   `20261008000001_create_athlete_participation`,
+   `20261008000002_create_participation_events`, and
+   `20261008000003_create_participation_functions` are merged on `main` but **must not be
+   assumed live**: nothing in CI or any script applies migrations (see § Migration
+   deployment). They are **one-time, non-idempotent** forward migrations (bare
+   `create table` / `create index` / `create trigger`, no `IF NOT EXISTS`), so re-running an
+   already-applied migration fails loudly rather than silently diverging.
+
+   **The live owner/media census is still OUTSTANDING**, and is a **hard prerequisite for
+   Phase 1b**. **Phase 1b must not begin** until (a) the Phase 1a migrations are confirmed
+   applied live, and (b) the census confirms every profile and `athlete-media` owner is
+   covered by an approved participation state or separately resolved.
+
+   **Attestation / Terms / Privacy version strings are PLACEHOLDER date values**
+   (`src/lib/participation.ts`) and are **not** production-approved legal wording or a
+   production versioning scheme. They are pinned into evidence at attestation time, so
+   approving the real wording and scheme is a prerequisite to any real-athlete use.
 7. Remaining 5D items from the pilot-readiness audit: privacy/terms pages and the
    guardian-consent process, **nonblocking sign-out-triggered legacy-key cleanup** (resolved
    from "draft-clearing on shared devices" by PR #26 — see Known follow-ups), and minimum error
@@ -566,6 +663,20 @@ packet has been prepared.
 
 ## Blocked on founder
 
+- **Phase 1a live rollout — three founder-operated steps, in this order.** Nothing automated
+  can do any of them (§ Migration deployment):
+  1. **Confirm live migration state**, then apply `20261008000001`, `20261008000002`,
+     `20261008000003` to the **Athlete** project (never Ops). They are **one-time and
+     non-idempotent**; re-applying an already-applied one fails loudly.
+  2. **Run the owner/media census** (`scripts/participation-census.sql`, read-only) in the
+     SQL Editor. Still outstanding, and a **hard prerequisite for Phase 1b**.
+  3. **Approve production attestation / Terms / Privacy wording and versioning**, replacing
+     the placeholder date values in `src/lib/participation.ts`.
+
+  **Phase 1b must not begin until 1 and 2 are satisfied.** Known gap: the census SQL does
+  **not yet** include the two participation-coverage queries Phase 1b's go/no-go actually
+  depends on (owners with no participation row; owners whose participation does not allow
+  retention) — they must be added before the census can answer the Phase 1b question.
 - ~~Access-token TTL: keep 3600 s or shorten it?~~ **DECIDED 2026-10-05 — 1800 s.** See Known
   follow-ups for the recorded decision and what remains deferred.
 - Pilot definition: how many athletes, by when, and what counts as success.
