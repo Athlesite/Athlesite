@@ -60,6 +60,12 @@ export type UpdateProfileResult =
       message: string;
       field?: "slug";
       /**
+       * Guardian-First Participation, Phase 1a: set when this attempt was refused
+       * because the caller is not (yet) bracket='adult'/status='approved'. UX
+       * only — see SaveProfileResult's identical field for the full reasoning.
+       */
+      reason?: "participation_required";
+      /**
        * Present when this attempt has media whose fate is not fully
        * resolved — an ambiguous write that could not be confirmed, or a
        * failed cleanup attempt. Diagnostic only, exactly like

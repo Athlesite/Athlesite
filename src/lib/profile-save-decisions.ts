@@ -57,6 +57,14 @@ export type SaveProfileResult =
       message: string;
       field?: "slug";
       /**
+       * Guardian-First Participation, Phase 1a: set when this attempt was refused
+       * because the caller is not (yet) bracket='adult'/status='approved'. UX
+       * only — createProfile's pre-check surfaces this before attempting any
+       * upload or insert, but the restrictive RLS enforcement that actually
+       * guarantees this arrives in Phase 1b, not here.
+       */
+      reason?: "participation_required";
+      /**
        * Present when this create attempt has media whose fate is not fully
        * resolved: cleanup was attempted and failed, or cleanup was
        * deliberately not attempted because the path might still be

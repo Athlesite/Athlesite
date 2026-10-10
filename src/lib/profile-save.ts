@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { getCurrentUser } from "@/lib/supabase/auth";
+import { getParticipationStatus } from "@/lib/participation-repository";
 import {
   toAthleteProfileRow,
   toAthleteProfileUpdateRow,
@@ -275,6 +276,20 @@ export async function createProfile(
     userId = user.id;
   } catch {
     return { ok: false, message: "Couldn't confirm your account. Try again in a moment." };
+  }
+
+  // Guardian-First Participation, Phase 1a: UX pre-check only. Phase 1a adds no
+  // restrictive RLS yet, so this is advisory — it exists to fail fast and
+  // legibly, before any Storage upload is attempted, rather than to enforce
+  // anything. OnboardingWizard's own call to initialize_adult_participation
+  // (immediately before createProfile) is what makes this check normally pass
+  // for a freshly-onboarding athlete; this guards every other caller too.
+  if ((await getParticipationStatus()) !== "adult_approved") {
+    return {
+      ok: false,
+      message: "Couldn't confirm your account. Try again in a moment.",
+      reason: "participation_required",
+    };
   }
 
   // Preflight, before any Storage write. Advisory against the UI-level check
@@ -603,6 +618,19 @@ export async function updateProfile(
     userId = user.id;
   } catch {
     return { ok: false, message: "Couldn't confirm your account. Try again in a moment." };
+  }
+
+  // Guardian-First Participation, Phase 1a: UX pre-check only — see createProfile's
+  // identical check for the full reasoning. /edit-profile's own routing
+  // (resolveEditProfileRoute) already keeps a non-adult-approved owner off the
+  // editor entirely, so this should normally never trigger here; it guards
+  // against a stale client still holding the form open across a revocation.
+  if ((await getParticipationStatus()) !== "adult_approved") {
+    return {
+      ok: false,
+      message: "Couldn't confirm your account. Try again in a moment.",
+      reason: "participation_required",
+    };
   }
 
   // Defense in depth: `currentMedia` is a real caller-supplied input, not
