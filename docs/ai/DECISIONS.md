@@ -475,7 +475,16 @@ invited pilot handling minors' names, photographs and locations; taking the stri
 while counsel reviews costs completion rate, not safety. The cost is real and accepted: a 13–17
 athlete cannot begin building until a guardian responds.
 
-**Status.** Policy only. **No age gate, guardian flow, or eligibility persistence exists yet.**
+**Status (updated 2026-10-10).** **Partly implemented on `main`.** The **age gate is built**
+(PR #28, `8ad68fc`): transient DOB, never persisted, under-13 and 13–17 both blocked before
+OTP send and therefore before Auth-account creation. **Adult eligibility persistence is
+built** (Guardian-First Participation **Phase 1a**, PR #29, `635efc0`):
+`public.athlete_participation` plus append-only `public.participation_events`, written only
+by narrow SECURITY DEFINER RPCs. **Still unbuilt: the entire guardian flow** — participation
+request/approval, `guardian_issuer`, Edge Function, guardian email, publication approval,
+reduced minor projection, revocation enforcement. **No code path can create a
+`bracket='minor'` row**, so 13–17 remains blocked rather than guardian-gated. The Phase 1a
+migrations are **merged but not confirmed applied live** — see `NOW.md`.
 
 **Pending legal review.** Whether guardian-first-at-retention is required or merely prudent in
 the pilot jurisdictions; the appropriate self-consent age; COPPA exposure were under-13 ever
@@ -1218,7 +1227,14 @@ revocation silently deleting an account · indefinite retention of revoked minor
 approval records the document version it was given against. An unversioned record cannot answer
 the only question that matters later: approved to *what*.
 
-**Status.** Policy only. **No acceptance or approval persistence exists yet.**
+**Status (updated 2026-10-10).** **Versioned ADULT acceptance persistence is built** (Phase
+1a, PR #29, `635efc0`): every `adult_attested` / `acceptance_recorded` event in
+`public.participation_events` records the exact attestation, Terms and Privacy versions it
+was given against, and the complete-bundle unique index makes one event per distinct bundle
+structural rather than conventional. **Guardian** approval persistence does not exist yet.
+**The version strings themselves are placeholder date values** in
+`src/lib/participation.ts` — not production-approved wording or a production versioning
+scheme — so the mechanism is real but the values it pins are not yet meaningful.
 
 **Pending legal review.** **Counsel determines which changes legally trigger renewed approval.**
 The classification is a legal judgement, not a product one. See `NOW.md` § Blocked on legal
