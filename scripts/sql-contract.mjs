@@ -91,6 +91,25 @@ export const PINNED_MIGRATIONS = [
     sha256: "c1c3c4f2c1779b4f46b0170471df6641024a8505c50b8f6def4ccca585e75bab",
     bytes: 3049,
   },
+  {
+    label: "migration E (Phase 1b) — participation enforcement policies",
+    path: "supabase/migrations/20261012000001_phase1b_participation_enforcement.sql",
+    // Added 2026-10-12 (Guardian-First Participation Phase 1b). This migration is
+    // exactly six `create policy ... as restrictive` statements plus their comments:
+    // a retention gate on athlete_profiles INSERT/UPDATE, the interim
+    // minor-publication gate on the same two operations, and a bucket-scoped
+    // retention gate on storage.objects INSERT/UPDATE. It changes an access boundary,
+    // which is precisely what this set is for.
+    //
+    // What the digest does NOT tell you is which authorization properties the SQL
+    // asserts; scripts/phase1b-policy-contract.mjs does that, and will name the
+    // specific gate if one is weakened. The two layers are complementary: this one
+    // fails on any byte change at all, that one explains what changed in the model.
+    // Re-pinned during review for comment-only corrections to NULL semantics and
+    // UPDATE WITH CHECK inheritance. All six executable statements are unchanged.
+    sha256: "74dd681bb3003c95669028943d142c8bc97d51754f8583cb683affca74ca8f7a",
+    bytes: 15148,
+  },
 ];
 
 /**

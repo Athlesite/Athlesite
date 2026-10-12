@@ -74,7 +74,22 @@ describe("5D.7 migration hash contract — baseline", () => {
     assert.match(paths, /20260928000002_scope_media_reads_to_referenced_hero\.sql/);
     assert.match(paths, /20260928000003_restrict_profile_table_reads\.sql/);
     assert.match(paths, /20260929000001_harden_set_updated_at_search_path\.sql/);
-    assert.equal(PINNED_MIGRATIONS.length, 4);
+    assert.match(paths, /20261012000001_phase1b_participation_enforcement\.sql/);
+    assert.equal(PINNED_MIGRATIONS.length, 5);
+  });
+
+  test("the four pre-Phase-1b digests are unchanged by the Phase 1b addition", () => {
+    // Same guard as the 5D.8 one below, for the same reason: adding a pin must not
+    // silently re-pin an already-reviewed migration.
+    const byPath = Object.fromEntries(PINNED_MIGRATIONS.map((m) => [m.path, m]));
+    assert.equal(
+      byPath["supabase/migrations/20260929000001_harden_set_updated_at_search_path.sql"]?.sha256,
+      "c1c3c4f2c1779b4f46b0170471df6641024a8505c50b8f6def4ccca585e75bab"
+    );
+    assert.equal(
+      byPath["supabase/migrations/20261012000001_phase1b_participation_enforcement.sql"]?.sha256,
+      "74dd681bb3003c95669028943d142c8bc97d51754f8583cb683affca74ca8f7a"
+    );
   });
 
   test("the three 5D.7 digests are unchanged by the 5D.8 addition", () => {

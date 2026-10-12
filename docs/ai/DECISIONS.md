@@ -524,6 +524,64 @@ guardian instructions. See `NOW.md` § Blocked on legal review.
 edit · describing email approval as verified parental consent · treating email possession as
 proof of guardianship.
 
+### Phase 1b: participation gates retention through restrictive policies
+**Proposed / in review** · 2026-10-12 · uncommitted, **not merged or applied live**
+
+**Decision.** Recorded participation becomes a real authorization boundary by adding
+**six `AS RESTRICTIVE` policies** — and nothing else — in
+`20261012000001_phase1b_participation_enforcement.sql`. Retention is gated on
+`athlete_profiles` INSERT/UPDATE and on `athlete-media` INSERT/UPDATE via
+`participation_allows_retention()`. Publication is gated separately on
+`athlete_profiles` INSERT/UPDATE via `participation_allows_publication()`.
+
+**Why restrictive and purely additive.** PostgreSQL ANDs restrictive policies with the
+permissive ones, so the existing owner-identity policies keep working untouched and the
+gate is a second condition on top. Nothing is dropped or recreated, so there is no
+instant at which writes are *more* permissive than before — the failure mode of a
+drop-then-create cutover. All six land in one transaction, so there is no window where
+some gates are live and others are not, and a failure leaves the boundary unchanged.
+
+**Retention and publication are deliberately different questions.** Retention is
+`status = 'approved'` for **either** bracket, so an approved minor may keep data.
+Publication additionally requires `bracket = 'adult'`, so an approved minor is denied
+publication. That asymmetry already lived in the Phase 1a predicates; Phase 1b only
+enforces it, and it **is** the interim minor-publication restriction — it holds the line
+until the revision-bound guardian approval above exists.
+
+**SELECT and DELETE are not gated, on purpose.** A participation lapse must never trap
+an athlete's own data. An owner whose participation lapsed can still read what the
+system holds about them and delete it. Gating those would turn a participation problem
+into a data hostage situation, which is the opposite of the point.
+`unpublish_own_profile()` stays reachable in every state because it is SECURITY DEFINER
+and bypasses RLS — Phase 1a built it that way for exactly this migration.
+
+**Storage scoping uses `bucket_id <> 'athlete-media' or …`**, not `= … and …`. A
+restrictive policy applies to every row of the shared `storage.objects` table, so the
+`<>` form gates this bucket and leaves any other present or future bucket alone; the
+`and` form would have denied writes to every other bucket outright.
+
+**Why this binds a stale JWT.** The predicates read live database state on every write
+and additionally return false when the caller's uid no longer exists in `auth.users`. A
+direct Storage API call carrying a valid-but-stale token therefore fails on current
+participation state rather than succeeding on what the token asserted at mint time.
+
+**Reviewed decision left open.** The gates are scoped `TO authenticated`, matching the
+only role with a write path today (`anon` holds no grant on `athlete_profiles` and no
+permissive write policy on `storage.objects`). Scoping them to PUBLIC instead would be
+strictly stronger against a future permissive write policy added for another role, at
+the cost of an unknown interaction with the Storage service's own roles. Left as
+`TO authenticated` pending review rather than decided unilaterally.
+
+**Verification layers.** Byte-pinned digest in `scripts/sql-contract.mjs` (any edit
+fails CI) · structural contract in `scripts/phase1b-policy-contract.mjs` (names which
+gate changed) · `scripts/phase1b-authz-model.mjs` (pure-JS mirror of the decision
+matrix). Real RLS enforcement is **not** provable in CI — there is no local Postgres —
+so it requires the founder-run live acceptance matrix.
+
+**Rules out.** Gating SELECT or DELETE · dropping or recreating any existing policy in
+this migration · permissive policies for enforcement · a `service_role` bypass · a
+guardian request/redeem flow or revision-bound publication approval in this phase.
+
 ## Data Model
 
 ### The domain model is separate from its storage envelope
