@@ -1,16 +1,22 @@
 # NOW — Athlesite current state
 
-Checkpoint updated: 2026-10-10 · base `main` @ `e04f72c` (PR #29, Guardian-First
-Participation **Phase 1a**, merged)
+Checkpoint updated: 2026-10-12 · base `main` @
+`0b53355d22bcbd5af5c5376439dc392d4f4fa62f` (PR #32, Guardian-First Participation
+**Phase 1b**, merged)
 
-Refreshed for the **Phase 1a post-merge reconciliation**. The access-boundary status
-(5D.7/5D.8), the 5D.9 status, and the age/participation status in item 6 below are current.
+Refreshed for the **Phase 1b live checkpoint reconciliation**, using the founder's
+production handoff. **Phase 1a — LIVE + HEALTHY. Phase 1b — LIVE + STRUCTURALLY VERIFIED.**
+Runtime authenticated RLS acceptance remains pending until a legitimate pilot/test
+identity exists; do not manufacture production test users to close that checkbox.
+The access-boundary status (5D.7/5D.8), the 5D.9 status, and the age/participation status
+in item 6 below are current.
 The older branch table and Phase B follow-ups are historical and still need a separate
 reconciliation; do not treat them as a current inventory without checking the code.
 
 **Repository state is not live state.** Everything described below as "merged" is merged on
-`main`. The three Phase 1a migrations have **not** been confirmed applied to the live Athlete
-project — see item 6 and § Blocked on founder.
+`main`. The founder has confirmed all **11 migrations Local = Remote**, including the
+three Phase 1a migrations and Phase 1b migration `20261012000001`; a subsequent dry run
+reported the remote database up to date. See item 6 for the live verification limits.
 
 **5D.7 IS MERGED AND LIVE.** The exact-slug RPC read path and the hero-only Storage
 boundary are applied to the Athlete project and verified against it. `anon` has no direct
@@ -334,13 +340,23 @@ The **first three** migrations are applied to the Athlete project and verified
 five table RLS policies, the column-scoped `anon` grant of exactly 18 columns, and the
 **private** `athlete-media` bucket with its four Storage policies.
 
-**The three Phase 1a participation migrations (`20261008000001`, `20261008000002`,
-`20261008000003`) are MERGED ON `main` BUT NOT CONFIRMED APPLIED.** No founder note records
-applying them, and nothing automated could have (see § Migration deployment). Until a live
-read or a founder note says otherwise, the live schema is assumed to be the 5D.8 state —
-**no `athlete_participation`, no `participation_events`, none of the six participation
-functions.** Confirming this, in either direction, is the first step of the Phase 1a live
-rollout.
+**Phase 1a — LIVE + HEALTHY.** The three participation migrations (`20261008000001`,
+`20261008000002`, `20261008000003`) are applied, including `athlete_participation`,
+`participation_events`, and the six participation functions.
+
+**Phase 1b — LIVE + STRUCTURALLY VERIFIED.** PR #32 merged as
+`0b53355d22bcbd5af5c5376439dc392d4f4fa62f`. Migration #11,
+`20261012000001_phase1b_participation_enforcement.sql`, applied successfully; all 11
+migrations are **Local = Remote**, latest live migration **`20261012000001`**, and a
+subsequent dry run reported the remote database up to date. All six restrictive policies
+were independently inspected live and match the reviewed migration. Profile retention,
+adult publication, and athlete-media retention gates are live. Previous SELECT/DELETE
+and public-read boundaries remain unchanged.
+
+At cutover, live `athlete_profiles` rows = **0** and live `storage.objects` rows = **0**;
+no existing user data was affected. **Runtime authenticated RLS acceptance remains pending**
+because production has no actual athlete identities/data. Wait for a legitimate pilot/test
+identity; do not manufacture production test users merely to close that checkbox.
 
 **The three 5D.7 migrations and the 5D.8 hardening migration ARE applied**, and the remote
 migration history matches the Git versions exactly (`20260825000001`, `20260825000002`,
@@ -544,13 +560,15 @@ a `typecheck` script, and the whole authentication path — all present.)*
    private**. An ordinary save **preserves** current visibility in both directions. Explicit
    **Publish / Unpublish uses the existing Visibility toggle + Save** (`PublishSection`), and
    the unpublished owner view now links to it. Public reads stay gated by `is_published =
-   true` inside `get_published_profile_by_slug`. **Still deferred: database/security-boundary
-   publication *eligibility* enforcement** — an owner's own session can still write
-   `is_published` directly under RLS, so this is an application-layer guarantee only.
+   true` inside `get_published_profile_by_slug`. Explicit publication remains an
+   application-layer control. **Phase 1b now enforces publication eligibility in the
+   database:** profile INSERT/UPDATE with `is_published = true` requires adult, approved
+   participation. An owner's direct write under RLS must satisfy that interim gate.
    **Guardian eligibility is not implemented**; nothing in the code consults a guardian
-   approval. Age-neutral by design.
-6. **Privacy / Terms + guardian consent — POLICY APPROVED; AGE GATE AND ADULT
-   PARTICIPATION FOUNDATIONS MERGED; GUARDIAN FLOW NOT STARTED.**
+   approval. The explicit-action control is age-neutral; the interim database gate blocks
+   minors from publication.
+6. **Privacy / Terms + guardian consent — POLICY APPROVED; PHASE 1a LIVE + HEALTHY;
+   PHASE 1b LIVE + STRUCTURALLY VERIFIED; GUARDIAN FLOW NOT STARTED.**
    Founder-approved pilot policy recorded in `DECISIONS.md` (six entries, 2026-10-06):
    **under-13 excluded** before OTP/account creation and before any profile data is retained,
    with a blocked attempt persisting nothing; **13–17 guardian-first** — guardian
@@ -572,7 +590,7 @@ a `typecheck` script, and the whole authentication path — all present.)*
    session is **not** treated as an age answer. This is a **product-path control, not age
    assurance** — self-attested, and bypassable by a determined athlete.
 
-   **BUILT AND MERGED — Guardian-First Participation Phase 1a (PR #29, `635efc0`).**
+   **LIVE + HEALTHY — Guardian-First Participation Phase 1a (PR #29, `635efc0`).**
    - `public.athlete_participation` — current-state, one row per owner, with complete
      per-state CHECK shapes for adult/minor-pending/minor-decided/revoked. **No grants to
      `anon` or `authenticated`**; RLS enabled with no policies.
@@ -597,31 +615,29 @@ a `typecheck` script, and the whole authentication path — all present.)*
    - Advisory participation pre-checks in `profile-save.ts` before create/update.
    - Read-only Phase 1b census tooling (`scripts/participation-census.sql` + wrapper).
 
-   **NOT built:** guardian participation **request/approval** flow, `guardian_issuer` role,
-   Edge Function, guardian email, guardian publication approval, reduced minor projection,
-   revocation enforcement, and **DB publication-eligibility enforcement**. **No code path
-   anywhere can create a `bracket='minor'` participation row**, so minors remain blocked
-   exactly as the Age Gate leaves them.
+   **LIVE + STRUCTURALLY VERIFIED — Phase 1b (PR #32,
+   `0b53355d22bcbd5af5c5376439dc392d4f4fa62f`).** Migration #11,
+   `20261012000001_phase1b_participation_enforcement.sql`, adds six restrictive policies:
+   profile INSERT/UPDATE retention via `participation_allows_retention()`, profile
+   INSERT/UPDATE publication via `participation_allows_publication()`, and athlete-media
+   INSERT/UPDATE retention. All six were independently inspected live and match the
+   reviewed migration. Previous SELECT/DELETE and public-read boundaries are unchanged.
+   All 11 migrations are Local = Remote, latest live `20261012000001`; a subsequent
+   dry run reported the remote database up to date. With 0 live profile rows and 0 live
+   Storage objects, the cutover affected no existing user data.
 
-   **`participation_allows_retention()` and `participation_allows_publication()` exist but
-   are NOT ENFORCED.** They are defined and granted to `authenticated` so Phase 1b's policy
-   migration needs no further grant change, and are referenced by **zero** RLS or Storage
-   policies today. Profile and Storage access behaviour is therefore **unchanged** by
-   Phase 1a.
+   **Runtime authenticated RLS acceptance is still pending** until a legitimate pilot/test
+   identity exists. Structural inspection is not runtime acceptance; production currently
+   has zero actual athlete identities/data. Do not manufacture production test users to
+   close that checkbox.
 
-   **LIVE STATE UNKNOWN — the three Phase 1a migrations are not confirmed applied.**
-   `20261008000001_create_athlete_participation`,
-   `20261008000002_create_participation_events`, and
-   `20261008000003_create_participation_functions` are merged on `main` but **must not be
-   assumed live**: nothing in CI or any script applies migrations (see § Migration
-   deployment). They are **one-time, non-idempotent** forward migrations (bare
-   `create table` / `create index` / `create trigger`, no `IF NOT EXISTS`), so re-running an
-   already-applied migration fails loudly rather than silently diverging.
-
-   **The live owner/media census is still OUTSTANDING**, and is a **hard prerequisite for
-   Phase 1b**. **Phase 1b must not begin** until (a) the Phase 1a migrations are confirmed
-   applied live, and (b) the census confirms every profile and `athlete-media` owner is
-   covered by an approved participation state or separately resolved.
+   **NOT built:** guardian participation **request/redeem/approval** flow, `guardian_issuer`
+   role, Edge Function, guardian email, **exact-public-revision guardian approval**, reduced
+   minor projection, and guardian revocation lifecycle. **No code path can create a
+   `bracket='minor'` participation row.** Minors remain blocked in the product path and
+   **blocked from publication by the live interim database gate**, which requires adult,
+   approved participation even if an approved minor state were present. Phase 2
+   implementation has not begun.
 
    **Attestation / Terms / Privacy version strings are PLACEHOLDER date values**
    (`src/lib/participation.ts`) and are **not** production-approved legal wording or a
@@ -663,20 +679,13 @@ packet has been prepared.
 
 ## Blocked on founder
 
-- **Phase 1a live rollout — three founder-operated steps, in this order.** Nothing automated
-  can do any of them (§ Migration deployment):
-  1. **Confirm live migration state**, then apply `20261008000001`, `20261008000002`,
-     `20261008000003` to the **Athlete** project (never Ops). They are **one-time and
-     non-idempotent**; re-applying an already-applied one fails loudly.
-  2. **Run the owner/media census** (`scripts/participation-census.sql`, read-only) in the
-     SQL Editor. Still outstanding, and a **hard prerequisite for Phase 1b**.
-  3. **Approve production attestation / Terms / Privacy wording and versioning**, replacing
-     the placeholder date values in `src/lib/participation.ts`.
-
-  **Phase 1b must not begin until 1 and 2 are satisfied.** Known gap: the census SQL does
-  **not yet** include the two participation-coverage queries Phase 1b's go/no-go actually
-  depends on (owners with no participation row; owners whose participation does not allow
-  retention) — they must be added before the census can answer the Phase 1b question.
+- **Phase 1b runtime authenticated RLS acceptance — pending a legitimate pilot/test
+  identity.** Phase 1a is LIVE + HEALTHY and Phase 1b is LIVE + STRUCTURALLY VERIFIED;
+  migration application and structural inspection are complete. Production currently has
+  zero actual athlete identities/data. Do not manufacture production test users merely
+  to close the runtime acceptance checkbox.
+- **Approve production attestation / Terms / Privacy wording and versioning**, replacing
+  the placeholder date values in `src/lib/participation.ts`, before real-athlete use.
 - ~~Access-token TTL: keep 3600 s or shorten it?~~ **DECIDED 2026-10-05 — 1800 s.** See Known
   follow-ups for the recorded decision and what remains deferred.
 - Pilot definition: how many athletes, by when, and what counts as success.

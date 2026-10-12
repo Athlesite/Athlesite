@@ -475,16 +475,21 @@ invited pilot handling minors' names, photographs and locations; taking the stri
 while counsel reviews costs completion rate, not safety. The cost is real and accepted: a 13–17
 athlete cannot begin building until a guardian responds.
 
-**Status (updated 2026-10-10).** **Partly implemented on `main`.** The **age gate is built**
+**Status (updated 2026-10-12).** **Partly implemented on `main`.** The **age gate is built**
 (PR #28, `8ad68fc`): transient DOB, never persisted, under-13 and 13–17 both blocked before
 OTP send and therefore before Auth-account creation. **Adult eligibility persistence is
-built** (Guardian-First Participation **Phase 1a**, PR #29, `635efc0`):
+built and LIVE + HEALTHY** (Guardian-First Participation **Phase 1a**, PR #29, `635efc0`):
 `public.athlete_participation` plus append-only `public.participation_events`, written only
 by narrow SECURITY DEFINER RPCs. **Still unbuilt: the entire guardian flow** — participation
-request/approval, `guardian_issuer`, Edge Function, guardian email, publication approval,
-reduced minor projection, revocation enforcement. **No code path can create a
-`bracket='minor'` row**, so 13–17 remains blocked rather than guardian-gated. The Phase 1a
-migrations are **merged but not confirmed applied live** — see `NOW.md`.
+request/redeem/approval, `guardian_issuer`, Edge Function, guardian email,
+**exact-public-revision publication approval**, reduced minor projection, and guardian
+revocation lifecycle. **No code path can create a `bracket='minor'` row**, so 13–17 remains
+blocked rather than guardian-gated. **Phase 1b — LIVE + STRUCTURALLY VERIFIED** (PR #32,
+`0b53355d22bcbd5af5c5376439dc392d4f4fa62f`): retention gates and the interim adult-publication
+database gate are live. **Minors remain blocked from publication**, including an approved
+minor state. Runtime authenticated RLS acceptance remains pending until a legitimate
+pilot/test identity exists; no production test users are to be manufactured to close it.
+Phase 2 implementation has not begun. See `NOW.md` and the Phase 1b entry below.
 
 **Pending legal review.** Whether guardian-first-at-retention is required or merely prudent in
 the pilot jurisdictions; the appropriate self-consent age; COPPA exposure were under-13 ever
@@ -514,7 +519,10 @@ unreviewed one by edit. Distinguishing public from private edits keeps that mean
 making the profile unusable — an athlete can keep private notes and contacts current without
 asking again.
 
-**Status.** Policy only. **No guardian approval mechanism exists yet.**
+**Status (updated 2026-10-12).** Policy only. **No exact-public-revision guardian approval
+mechanism exists yet**, and no guardian participation request/redeem implementation exists.
+Phase 1b's live interim database gate blocks minor publication until this mechanism exists
+and the publication boundary receives its own reviewed change.
 
 **Pending legal review.** Adequacy of email-based approval for 13–17 and what it may be called;
 what evidence of guardian authority to retain; how to handle custody disputes and conflicting
@@ -525,7 +533,8 @@ edit · describing email approval as verified parental consent · treating email
 proof of guardianship.
 
 ### Phase 1b: participation gates retention through restrictive policies
-**Proposed / in review** · 2026-10-12 · uncommitted, **not merged or applied live**
+**Active** · 2026-10-12 · **LIVE + STRUCTURALLY VERIFIED** · PR #32 merged as
+`0b53355d22bcbd5af5c5376439dc392d4f4fa62f`
 
 **Decision.** Recorded participation becomes a real authorization boundary by adding
 **six `AS RESTRICTIVE` policies** — and nothing else — in
@@ -565,18 +574,35 @@ and additionally return false when the caller's uid no longer exists in `auth.us
 direct Storage API call carrying a valid-but-stale token therefore fails on current
 participation state rather than succeeding on what the token asserted at mint time.
 
-**Reviewed decision left open.** The gates are scoped `TO authenticated`, matching the
+**Reviewed scope, now live.** The gates are scoped `TO authenticated`, matching the
 only role with a write path today (`anon` holds no grant on `athlete_profiles` and no
 permissive write policy on `storage.objects`). Scoping them to PUBLIC instead would be
 strictly stronger against a future permissive write policy added for another role, at
 the cost of an unknown interaction with the Storage service's own roles. Left as
-`TO authenticated` pending review rather than decided unilaterally.
+`TO authenticated` in the reviewed, merged migration; changing that scope would require
+a separate review.
 
 **Verification layers.** Byte-pinned digest in `scripts/sql-contract.mjs` (any edit
 fails CI) · structural contract in `scripts/phase1b-policy-contract.mjs` (names which
 gate changed) · `scripts/phase1b-authz-model.mjs` (pure-JS mirror of the decision
-matrix). Real RLS enforcement is **not** provable in CI — there is no local Postgres —
-so it requires the founder-run live acceptance matrix.
+matrix). Real RLS enforcement is **not** provable in CI — there is no local Postgres.
+
+**Live checkpoint (founder production handoff, 2026-10-12).** Phase 1a is **LIVE + HEALTHY**.
+Phase 1b migration #11, `20261012000001_phase1b_participation_enforcement.sql`, applied
+successfully. All **11 migrations Local = Remote**, latest live migration
+**`20261012000001`**; a subsequent dry run reported the remote database up to date.
+All six restrictive policies were independently inspected live and match the reviewed
+migration. Profile retention, adult-publication, and athlete-media retention gates are
+live; previous SELECT/DELETE and public-read boundaries remain unchanged.
+Live `athlete_profiles` rows = **0** and live `storage.objects` rows = **0** at cutover,
+so no existing user data was affected.
+
+**Runtime authenticated RLS acceptance remains intentionally pending** because production
+currently has zero actual athlete identities/data. Complete the runtime acceptance matrix
+when a legitimate pilot/test identity exists; **do not manufacture production test users
+merely to close that checkbox**. Structural verification does not claim authenticated
+runtime acceptance. Guardian request/redeem and exact-public-revision guardian approval
+remain unimplemented; minors remain blocked from publication by the interim database gate.
 
 **Rules out.** Gating SELECT or DELETE · dropping or recreating any existing policy in
 this migration · permissive policies for enforcement · a `service_role` bypass · a
@@ -1189,12 +1215,14 @@ merge commit **`4dad1a74ce88ca463c1bc60b3cf2006d9dcd758a`**.
 **What is implemented versus what is deferred — do not blur these.**
 
 - **Implemented now:** explicit publication at the **application layer**, for all ages.
-- **Still deferred:** **database/security-boundary publication eligibility enforcement.** An
-  owner's own session can still write `is_published` directly under RLS. The application-layer
-  gate is an interim measure and must be described as one.
+- **Live as of Phase 1b (2026-10-12):** **database publication eligibility enforcement**
+  requires adult, approved participation for profile INSERT/UPDATE with `is_published = true`.
+  An owner's direct write under RLS must satisfy that interim gate. The explicit-action
+  control itself remains at the application layer; authenticated runtime acceptance of
+  the database gates remains pending as recorded in the Phase 1b entry.
 - **Not implemented at all:** guardian eligibility. Nothing in the code consults a guardian
-  approval, because no such approval exists yet. A minor's publication is currently gated by
-  nothing beyond the athlete's own explicit action.
+  approval, because no such approval exists yet. **Minors remain blocked from publication
+  by the live interim database gate**, even if an approved minor state were present.
 
 **Why global rather than minor-only.** Two publication paths would make the riskier path the
 less-tested one, and an age-bracket bug would default to publishing. One explicit path is
