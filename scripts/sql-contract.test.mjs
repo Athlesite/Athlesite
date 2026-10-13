@@ -32,6 +32,7 @@ const RPC = PINNED_MIGRATIONS[0];
 const MEDIA = PINNED_MIGRATIONS[1];
 const REVOKE = PINNED_MIGRATIONS[2];
 const SEARCH_PATH = PINNED_MIGRATIONS[3];
+const GUARDIAN = PINNED_MIGRATIONS[5];
 
 const realBytes = Object.fromEntries(PINNED_MIGRATIONS.map(({ path }) => [path, readFileSync(path)]));
 const REPOSITORY_SQL = readFileSync("src/lib/profile-repository.ts", "utf8");
@@ -75,7 +76,8 @@ describe("5D.7 migration hash contract — baseline", () => {
     assert.match(paths, /20260928000003_restrict_profile_table_reads\.sql/);
     assert.match(paths, /20260929000001_harden_set_updated_at_search_path\.sql/);
     assert.match(paths, /20261012000001_phase1b_participation_enforcement\.sql/);
-    assert.equal(PINNED_MIGRATIONS.length, 5);
+    assert.match(paths, /20261013000001_guardian_bearer_peek_redeem\.sql/);
+    assert.equal(PINNED_MIGRATIONS.length, 6);
   });
 
   test("the four pre-Phase-1b digests are unchanged by the Phase 1b addition", () => {
@@ -90,6 +92,27 @@ describe("5D.7 migration hash contract — baseline", () => {
       byPath["supabase/migrations/20261012000001_phase1b_participation_enforcement.sql"]?.sha256,
       "74dd681bb3003c95669028943d142c8bc97d51754f8583cb683affca74ca8f7a"
     );
+  });
+
+  test("the five pre-Phase-2 digests are unchanged by the Phase 2 (guardian bearer) addition", () => {
+    const byPath = Object.fromEntries(PINNED_MIGRATIONS.map((m) => [m.path, m]));
+    const expected = {
+      "supabase/migrations/20260928000001_add_published_profile_rpc.sql":
+        "2096aec79c699a3544f8a82152a080ea7a2139959c163ce603a0e5a0c433860b",
+      "supabase/migrations/20260928000002_scope_media_reads_to_referenced_hero.sql":
+        "fe622ce390e4d0d5378fadd998c19bf6b0e8b42f4ad3b9e389f93e70589910f5",
+      "supabase/migrations/20260928000003_restrict_profile_table_reads.sql":
+        "6903dc426408a41ef0d22ce410e392a97cca7fb6f571e236ccdef5178c3e5610",
+      "supabase/migrations/20260929000001_harden_set_updated_at_search_path.sql":
+        "c1c3c4f2c1779b4f46b0170471df6641024a8505c50b8f6def4ccca585e75bab",
+      "supabase/migrations/20261012000001_phase1b_participation_enforcement.sql":
+        "74dd681bb3003c95669028943d142c8bc97d51754f8583cb683affca74ca8f7a",
+    };
+    for (const [path, sha] of Object.entries(expected)) {
+      assert.equal(byPath[path]?.sha256, sha, `digest changed for ${path} after the Phase 2 addition`);
+    }
+    assert.equal(GUARDIAN.sha256, "4119fee5a154acbdd1ac6240a2b65140b314dd4ea443e0bd16433e9406157c0a");
+    assert.equal(GUARDIAN.bytes, 22467);
   });
 
   test("the three 5D.7 digests are unchanged by the 5D.8 addition", () => {
@@ -228,6 +251,30 @@ describe("5D.7 migration hash contract — Codex bypasses", () => {
       REVOKE,
       (sql) => `${sql}\ngrant select (slug, first_name) on table public.athlete_profiles to anon;\n`,
       "re-granted anon SELECT"
+    );
+  });
+
+  test("Phase 2 — appended direct SELECT grant on athlete_participation", () => {
+    expectDigestRejected(
+      GUARDIAN,
+      (sql) => `${sql}\ngrant select on table public.athlete_participation to anon;\n`,
+      "appended SELECT grant"
+    );
+  });
+
+  test("Phase 2 — redeem's token-hash-cleared WHERE weakened to true", () => {
+    expectDigestRejected(
+      GUARDIAN,
+      (sql) => sql.replace("where owner_user_id = v_owner\n    and token_hash = v_hash\n    and status = 'pending'", "where true"),
+      "weakened redeem UPDATE predicate"
+    );
+  });
+
+  test("Phase 2 — clock_timestamp() reverted to now() in redeem's post-lock expiry check", () => {
+    expectDigestRejected(
+      GUARDIAN,
+      (sql) => sql.replace("v_expires_at < clock_timestamp()", "v_expires_at < now()"),
+      "stale now() regression"
     );
   });
 });

@@ -110,6 +110,22 @@ export const PINNED_MIGRATIONS = [
     sha256: "74dd681bb3003c95669028943d142c8bc97d51754f8583cb683affca74ca8f7a",
     bytes: 15148,
   },
+  {
+    label: "migration F (Phase 2) — guardian bearer peek/redeem RPCs + partial unique index",
+    path: "supabase/migrations/20261013000001_guardian_bearer_peek_redeem.sql",
+    // Added 2026-10-13 (Guardian-First Participation Phase 2). Pinned only after an
+    // independent security review's required fixes were applied and re-verified:
+    // terms/privacy evidence versions copied from the request-pinned columns (not
+    // NULL), clock_timestamp() for the post-lock expiry re-check (not the stale
+    // transaction-start now()), canonical base64url validation on the 43rd character,
+    // and an explicit revoke from `public, authenticated` before granting `anon`
+    // EXECUTE. scripts/guardian-sql-contract.mjs independently proves the specific
+    // authorization properties (token-hash binding, row locking, decision allowlist,
+    // exhaustive grant/revoke enumeration); this pin is the belt-and-braces byte-level
+    // guard alongside it, exactly like migration E's own pair above.
+    sha256: "4119fee5a154acbdd1ac6240a2b65140b314dd4ea443e0bd16433e9406157c0a",
+    bytes: 22467,
+  },
 ];
 
 /**
