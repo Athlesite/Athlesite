@@ -78,9 +78,14 @@ describe("Phase 1a scope boundaries — nothing out-of-scope exists in src/", ()
     );
   });
 
-  test("no issuance/rotation/redemption/delivery RPC is referenced from app code", () => {
+  test("no issuance/rotation/delivery RPC is referenced from app code", () => {
+    // NARROWED for Phase 2 (Guardian-First Participation, bearer peek/redeem):
+    // peek_guardian_request and redeem_guardian_request are now a real, reviewed
+    // surface (src/lib/guardian/guardian-repository.ts calls them deliberately),
+    // so they are removed from this forbidden list. Issuance, rotation, and
+    // delivery-recording remain out of scope and stay forbidden here.
     const lines = gitGrep(
-      "issue_guardian_request|rotate_guardian_request|redeem_guardian_request|peek_guardian_request|record_guardian_delivery",
+      "issue_guardian_request|rotate_guardian_request|record_guardian_delivery",
       "src/*"
     );
     assert.deepEqual(excludingExplanatoryComments(lines), []);

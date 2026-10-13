@@ -48,6 +48,24 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 
   /**
+   * Route-scoped hardening for the guardian bearer approval surface
+   * (Guardian-First Participation Phase 2) — `Referrer-Policy`,
+   * `Cache-Control: no-store`, `X-Robots-Tag`, and a per-request-NONCE
+   * `Content-Security-Policy` — is set in `src/proxy.ts`, not here.
+   *
+   * It cannot be expressed through this file's `headers()` config at all: a
+   * nonce must be freshly random on every request, and `next.config.ts` is
+   * evaluated once, at build/start time, with no access to the request —
+   * anything declared here would necessarily be the SAME static string on
+   * every response, which is exactly what the independent Phase 2 security
+   * review flagged as insufficient for CSP script-src (Next's own inline
+   * bootstrap/RSC-payload scripts need `'nonce-<value>' 'strict-dynamic'`,
+   * not `'unsafe-inline'`, to execute under a strict policy — see
+   * node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md).
+   * Proxy runs per request and can generate one; this file cannot.
+   */
+
+  /**
    * Athlete profiles moved from the implementation-stage `/athletes/{slug}`
    * to the canonical root `/{slug}` (docs/ai/DECISIONS.md § The canonical
    * public athlete URL is athlesite.com/{slug}).

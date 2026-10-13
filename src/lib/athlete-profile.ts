@@ -351,6 +351,11 @@ const RESERVED_SLUGS = new Set([
   "signup",
   "onboarding",
 
+  // Guardian-First Participation: the bearer peek/redeem surface
+  // (/guardian/participation) and anything else under the guardian root in
+  // later phases. See docs/ai/ Phase 2 — Guardian bearer peek/redeem.
+  "guardian",
+
   // Legal and policy pages the pilot will need.
   "privacy",
   "terms",

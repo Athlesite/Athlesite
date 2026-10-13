@@ -5,7 +5,24 @@ import { Button } from "@/components/ui/Button";
 
 /**
  * The App Router's 404 surface, shown for any unmatched route and for every
- * `notFound()` call.
+ * `notFound()` call WITHIN THIS ROUTE GROUP — see the `(site)` placement
+ * note below.
+ *
+ * Lives in `(site)/` rather than the true `app/` root (moved there during
+ * the Phase 2 route-group refactor that gave `/guardian/*` its own
+ * chrome-free layout — see `src/app/layout.tsx`'s own comment). This is a
+ * FIX for a regression that refactor introduced and a live `npm start`
+ * check caught: a `not-found.tsx` at the true root is wrapped ONLY by the
+ * true root layout, never by `(site)/layout.tsx` — so an athlete-slug 404
+ * (`[slug]/page.tsx` calling `notFound()`) rendered with NO Header/Footer
+ * once Header/Footer moved out of the root layout, even though every other
+ * `(site)` page kept them. Living here instead makes this the NEAREST
+ * `not-found.tsx` for every route inside `(site)` (including `[slug]`), so
+ * it is wrapped by `(site)/layout.tsx` exactly like a normal page is.
+ * `/guardian/*` has no `not-found.tsx` of its own and intentionally falls
+ * back to Next's own generic, unbranded 404 rather than this one — showing
+ * athlete-facing marketing copy ("Create your Athlesite") on a mistyped
+ * guardian link would be more wrong than showing nothing branded at all.
  *
  * The wording is deliberately generic and identical in every case. `/[slug]`
  * calls `notFound()` for two different situations — no such slug, and a real

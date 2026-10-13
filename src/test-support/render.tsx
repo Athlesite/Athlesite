@@ -66,12 +66,32 @@ export type Harness = {
  * React reads `window`/`document` from globals at module scope, so these have to exist
  * before a root is created. Returns a disposer that restores whatever was there, so
  * tests do not leak a document into one another.
+ *
+ * `url` defaults to the plain root used by every existing caller; passing one lets a
+ * test control the document's initial `location` (path, query, AND fragment) before
+ * the first render — needed for a component whose first effect reads
+ * `window.location`/`window.history` itself (e.g. the guardian participation page's
+ * real fragment-capture path), where an `initialFragment`-style prop seam would only
+ * prove the component's OWN logic, never that it is wired to the real browser APIs.
  */
-function installDom(): () => void {
+function installDom(
+  url: string = "http://localhost/",
+  initialHistoryState: unknown = null
+): () => void {
   const dom = new JSDOM("<!doctype html><html><body></body></html>", {
-    url: "http://localhost/",
+    url,
     pretendToBeVisual: true,
   });
+
+  // Seeded BEFORE this window is assigned to the globals below, so a test can
+  // simulate "some other code on the page already populated history.state"
+  // ahead of the component's own mount effect — there is no later point at
+  // which a caller of `render()` could set this on the SAME window object,
+  // since jsdom's `history.state` has no public setter outside `pushState`/
+  // `replaceState` itself.
+  if (initialHistoryState !== null) {
+    dom.window.history.replaceState(initialHistoryState, "", dom.window.location.href);
+  }
 
   const globals = globalThis as unknown as Record<string, unknown>;
 
@@ -116,9 +136,20 @@ function installDom(): () => void {
   };
 }
 
-/** Renders `element` into a fresh jsdom document and returns handles for driving it. */
-export async function render(element: ReactElement): Promise<Harness> {
-  const dispose = installDom();
+/**
+ * Renders `element` into a fresh jsdom document and returns handles for driving it.
+ *
+ * `options.url` sets the document's initial location before the first render — see
+ * `installDom`'s own comment. `options.historyState` seeds `history.state` before
+ * that same first render, for a test proving a component preserves state some other
+ * code already put there. Omitting both preserves every existing caller's behavior
+ * exactly (`http://localhost/`, no history state, no change).
+ */
+export async function render(
+  element: ReactElement,
+  options: { url?: string; historyState?: unknown } = {}
+): Promise<Harness> {
+  const dispose = installDom(options.url, options.historyState ?? null);
   const { createRoot } = await loadReactDomClient();
   const container = document.createElement("div");
   document.body.appendChild(container);

@@ -7,7 +7,15 @@ import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 
 /**
- * The App Router's error boundary for everything below the root layout.
+ * The App Router's error boundary for everything inside the `(site)` route
+ * group — see `src/app/(site)/not-found.tsx`'s own comment for why this
+ * lives here rather than the true `app/` root: an error boundary at the
+ * true root is wrapped only by the true root layout, never by
+ * `(site)/layout.tsx`, so it would render with no Header/Footer for an
+ * error thrown anywhere inside `(site)` — the same regression the
+ * not-found move fixes, for the same structural reason. `/guardian/*` has
+ * no error boundary of its own and intentionally falls back to Next's
+ * generic one, for the same reasoning as its not-found case.
  *
  * Before this existed, an unhandled server render — a Supabase outage, a
  * missing environment variable, a schema drift — reached a visitor as the raw

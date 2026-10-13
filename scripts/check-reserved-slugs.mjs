@@ -24,26 +24,47 @@ const APP_DIR = "src/app";
 const DOMAIN = "src/lib/athlete-profile.ts";
 
 /**
- * Static root route segments — the directories directly under src/app that
- * produce a URL at `/<segment>`.
+ * Static root route segments — every directory that produces a URL at
+ * `/<segment>`, whether it sits directly under `src/app` or one level inside
+ * a route group.
  *
- * Excluded, because none of them occupies a literal root path:
+ * Route groups (`(site)`, `(guardian)`, …) are themselves excluded — they add
+ * no path segment of their own — but Next.js resolves everything ONE LEVEL
+ * INSIDE a route group at that group's own position in the URL tree, so a
+ * directory like `src/app/(site)/pricing/` serves `/pricing` exactly as if
+ * `(site)` were never there. Phase 2 (Guardian-First Participation) moved
+ * every existing route into `src/app/(site)/` specifically so `/guardian/*`
+ * could get its own chrome-free root layout (see `src/app/layout.tsx`'s own
+ * comment) — scanning only `APP_DIR`'s direct children would have made this
+ * check silently stop covering every one of those routes from that point on,
+ * which is exactly the kind of invisible gap this script exists to prevent.
+ *
+ * Excluded at any level, because none of them occupies a literal root path:
  *  - `[slug]` / `[...x]` — the dynamic segment itself, i.e. the athlete space.
- *  - `(group)` — route groups, which organise files without adding a segment.
+ *  - `(group)` — route groups, which organise files without adding a segment
+ *    (recursed into once, not treated as a segment themselves).
  *  - `_private` — folders Next excludes from routing entirely.
  *  - `@slot` — parallel route slots.
  */
 function staticRootSegments() {
-  return readdirSync(APP_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .filter(
-      (name) =>
-        !name.startsWith("[") &&
-        !name.startsWith("(") &&
-        !name.startsWith("_") &&
-        !name.startsWith("@")
+  const isRoutable = (name) =>
+    !name.startsWith("[") && !name.startsWith("_") && !name.startsWith("@");
+
+  const direct = readdirSync(APP_DIR, { withFileTypes: true }).filter(
+    (entry) => entry.isDirectory() && isRoutable(entry.name)
+  );
+
+  const ownSegments = direct.filter((entry) => !entry.name.startsWith("(")).map((entry) => entry.name);
+
+  const groupSegments = direct
+    .filter((entry) => entry.name.startsWith("("))
+    .flatMap((group) =>
+      readdirSync(`${APP_DIR}/${group.name}`, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && isRoutable(entry.name) && !entry.name.startsWith("("))
+        .map((entry) => entry.name)
     );
+
+  return [...ownSegments, ...groupSegments];
 }
 
 /**

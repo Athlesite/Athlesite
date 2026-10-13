@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Anton, Geist, Geist_Mono, Oswald } from "next/font/google";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { resolveSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -48,6 +46,18 @@ export const metadata: Metadata = {
     "Athlesite gives athletes one professional digital home for their identity, recruiting story, and brand.",
 };
 
+/**
+ * The true root layout: `<html>`/`<body>`, shared fonts, and the global
+ * metadata base. Deliberately holds no site chrome (Header/Footer) — those
+ * live in `(site)/layout.tsx` so a route outside that group (`/guardian/*`)
+ * shares fonts and the skip link but renders no public-site navigation.
+ *
+ * This is the fix for the thing a nested layout alone cannot do: Next renders
+ * every layout from the root down, so if Header/Footer lived here they would
+ * wrap `/guardian/*` too regardless of what any layout below this one does.
+ * Moving them into a sibling route group's own layout is what actually keeps
+ * them scoped to the routes that opt into that group.
+ */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -61,11 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
-        <Header />
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        {children}
       </body>
     </html>
   );
