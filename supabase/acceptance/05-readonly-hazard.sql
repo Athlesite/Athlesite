@@ -6,8 +6,8 @@
 -- ══════════════════════════════════════════════════════════════════════════
 --
 -- FOUNDER DECISION A6 rests on a claim about PostgREST: it picks a read-only
--- or a read/write transaction from the called function's VOLATILITY, not from
--- the HTTP method. GET and HEAD always run read-only; a POST to a STABLE or
+-- or a read/write transaction from BOTH method and function volatility.
+-- GET and HEAD always run read-only; a POST to a STABLE or
 -- IMMUTABLE function ALSO runs read-only; only a POST to a VOLATILE function
 -- runs read/write.
 --
@@ -33,8 +33,9 @@
 -- WHAT IT STILL CANNOT PROVE: that PostgREST actually opens a read/write
 -- transaction for a POST to a VOLATILE function on a deployed project. That is
 -- PostgREST's behaviour, not PostgreSQL's, and it is a live-only item
--- (RUNBOOK § A6). The catalog assertion plus this demonstration together are
--- the strongest statement this repository can make.
+-- (RUNBOOK § A6 / S2 scratch POST proof). A pre-arm GET peek 200 is legitimate;
+-- only the armed dispatcher supplies its GET/HEAD refusal. This SQL file
+-- simulates transaction modes; it does not prove hosted HTTP access modes.
 --
 -- Transaction control has to be at the top level — `set transaction read only`
 -- must be the first statement of a transaction — so the outcomes are captured

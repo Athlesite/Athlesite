@@ -967,13 +967,10 @@ describe("J — the arming migration", () => {
   });
 });
 
-describe("B — the method gate survives the VOLATILE change as defence in depth", () => {
-  test("the method gate is not removed just because PostgREST now refuses GET itself", () => {
-    // With peek VOLATILE, PostgREST refuses GET at the routing layer, so the
-    // gate looks redundant. It is not: if the volatility migration is reverted,
-    // or a future `create or replace` restates peek as STABLE, GET becomes
-    // servable again and this gate is what refuses it instead of silently
-    // admitting an unlimitable call.
+describe("B — the method gate is required even with VOLATILE guardian RPCs", () => {
+  test("removing the gate leaves read-only GET/HEAD calls unlimitable regardless of volatility", () => {
+    // GET/HEAD always run read-only, including for VOLATILE functions. Peek
+    // can succeed without a write, so only the armed method gate refuses it.
     expectRejected(
       sub(
         "  if v_method is distinct from 'POST' then\n    raise sqlstate 'PGRST' using",

@@ -232,8 +232,8 @@ the guardian page outright rather than rate-limit it.
 
 **This corrected a real defect in the first implementation, not a deferred nicety.**
 
-PostgREST chooses a read-only or a read/write transaction from the called function's
-**volatility**, not from the HTTP method:
+PostgREST chooses the transaction access mode from **both the HTTP method and the
+called function's volatility** ([PostgREST transactions documentation](https://docs.postgrest.org/en/stable/references/transactions.html#access-mode-on-functions)):
 
 | | transaction |
 | --- | --- |
@@ -276,45 +276,70 @@ side is asserted separately, against the catalog, by `01-acl.sql` A2.
 
 1. POST peek now runs read/write, so the limiter can record it. This is the reason for the
    change.
-2. **PostgREST will no longer serve peek over `GET` or `HEAD`** — a volatile function is not
-   GET-able, so it refuses at the routing layer before any transaction opens. The unlimited
-   `GET` path is closed at its root. Nothing in the product regresses: supabase-js `.rpc()`
-   issues POST unless explicitly asked for GET, and `guardian-repository.ts` never asks.
+2. GET and HEAD still run read-only, including for VOLATILE functions. Peek does no
+   writing itself, so pre-arm GET peek may legitimately return `200 []` for a
+   non-authorizing token. This cannot establish which volatility PostgREST cached.
+   Once armed, the dispatcher's method gate must refuse GET/HEAD guardian calls.
 
 Peek **remains logically read-only**: VOLATILE is a declaration about what the planner may
 assume, not a permission to write. Its body is unchanged and contains no INSERT/UPDATE/DELETE;
 harness part C asserts behaviourally that a peek consumes no token and writes no event.
 
-**The method gate is kept as defence in depth** and is no longer relied on alone — see
-§ A6b.
+**The method gate is the GET/HEAD refusal control** — see § A6b. Volatility makes POST
+write-capable; it does not replace the method gate.
+
+**Pinned-comment errata:** the routing-refusal/secondary-method-gate claims in
+`20261014000001_guardian_rate_limit_infrastructure.sql:978–990` and
+`20261014000002_peek_guardian_request_volatile.sql:93–100` are incorrect. Their
+access-mode introductions (`:958–959` and `:10–11`, respectively) also incorrectly
+say the HTTP method does not determine access mode, despite the correct tables below
+them. These applied, reviewed migrations remain byte-identical; the executable
+volatility change and method gate are still required. This section supersedes those
+comments, not migration SQL or hash pins.
+
+Correction audit (line numbers in the pre-correction checkout, `ae0993c`):
+
+| File | Incorrect or misleading assumptions corrected |
+| --- | --- |
+| `docs/ai/RUNBOOK-phase2-acceptance.md` | 235–236: method excluded from access-mode choice; 279–282, 288–289, 296, 301–317, 833: volatility treated as GET/HEAD refusal and method gate as secondary; 354, 375: incorrect intermediate GET state; 405–410, 500: GET 405 used as pre-arm cache proof/checklist |
+| `scripts/guardian-rate-limit-contract.mjs` | 10–11, 1307–1310: method excluded from access-mode choice; 510–513: method-gate diagnostic tied to STABLE peek rather than all volatility classes |
+| `scripts/guardian-rate-limit-contract.test.mjs` | 970–977: test title/comment call the method gate redundant after VOLATILE; assertion itself remains valid |
+| `supabase/acceptance/01-acl.sql` | 156–159: method excluded from access-mode choice; catalog assertions remain valid |
+| `supabase/acceptance/02-limiter-scope.sql` | 341–348: GET method-gate rationale tied to STABLE rather than all volatility classes |
+| `supabase/acceptance/04-hook-roles.sql` | 302–310: claims VOLATILE prevents GET/HEAD from reaching the database; direct gate assertions remain valid |
+| `supabase/acceptance/05-readonly-hazard.sql` | 8–12: method excluded from access-mode choice; 33–37: hosted-proof limit clarified; LOW erratum at current line 82: “defence in depth” framing is stale; the substantive claim that refusal works in a read-only transaction remains correct |
+| `supabase/migrations/20261014000001_guardian_rate_limit_infrastructure.sql` | 958–959, 978–990: pinned-comment errata above; 1143–1153: `COMMENT ON FUNCTION public.data_api_pre_request()` persists the stale claim that PostgREST refuses GET/HEAD on VOLATILE functions into the live database catalog. This is incorrect for a read-only VOLATILE RPC: GET/HEAD are READ ONLY regardless of volatility, and the dispatcher method gate is the primary GET/HEAD control once armed. Do not edit the pinned migration bytes |
+| `supabase/migrations/20261014000002_peek_guardian_request_volatile.sql` | 10–11, 93–100: pinned-comment errata above; bytes preserved |
+
+The runner, rollback POST smoke, SQL method-gate assertions, policy thresholds,
+ACL contracts and approved executable SQL contain no GET-routing inference requiring
+an implementation change. The gateway plan now checks dispatcher refusal only after
+arming; the SQL probes can still invoke the dispatcher directly in either phase.
 
 - [x] Decided and implemented: peek is VOLATILE via `20261014000002`
 - [ ] Deployed `provolatile` for peek is `v` (harness A2, or query the catalog): ______
 - [ ] Deployed `provolatile` for redeem is `v`: ______
 - [ ] A real `POST /rest/v1/rpc/peek_guardian_request` succeeds **and** creates a limiter
       row after arming: ______
-- [ ] A real `GET /rest/v1/rpc/peek_guardian_request?p_token=...` is refused: ______
+- [ ] Pre-arm hosted POST access-mode probe and scratch cleanup (S2): ______
+- [ ] After arming, GET and HEAD on both guardian RPCs are refused by the dispatcher
+      with 405, without limiter writes (Gate C / S6): ______
 - [ ] `20261013000001` digest unchanged (`check:columns`): ______
 
 ### A6b — The method gate, after the VOLATILE change
 
-The dispatcher still refuses non-`POST`, non-`OPTIONS` guardian traffic with 405, and still
-returns early for `OPTIONS`. With peek VOLATILE this is **redundant in the happy path** —
-PostgREST already refuses GET/HEAD — and it is kept anyway, deliberately:
+The dispatcher refuses non-`POST`, non-`OPTIONS` guardian traffic with 405, and
+returns early for `OPTIONS`. This is required for every volatility class:
 
-- if `20261014000002` is ever reverted, or a future `create or replace` restates peek as
-  STABLE, PostgREST starts serving `GET` again. The gate refuses it with 405 instead of
-  silently admitting a call the limiter cannot record.
+- GET/HEAD always run read-only, so the limiter cannot record these calls. The gate
+  refuses them even when peek is VOLATILE; an unset hook leaves read-only peek callable.
 - a refusal needs no write, so the gate is effective in exactly the transaction mode where
   the limiter is not. Harness part H3 proves this inside a genuinely read-only transaction.
 - it refuses a guardian path with **no** method metadata, which is the one place the
   dispatcher chooses refusal over admission.
 
-What it is **not** is the primary control any more. The primary control is the volatility
-declaration, because it acts before a transaction exists.
-
-- [ ] Both layers confirmed independently (PostgREST 405 on GET before arming; gate 405 when
-      reached): ______
+- [ ] Hosted POST access mode proved before arming (S2); dispatcher GET/HEAD 405
+      confirmed after arming (Gate C / S6): ______
 
 ### A7 — Registering the global prune — **LIVE-ONLY**
 
@@ -351,7 +376,7 @@ select cron.schedule(
 | --- | --- | --- |
 | 1 | `20261013000001_guardian_bearer_peek_redeem` | guardian RPCs exist; **not reachable** (no issuer, no token delivery) |
 | 2 | `20261014000001_guardian_rate_limit_infrastructure` | limiter built; **inert** — nothing calls the dispatcher |
-| 3 | `20261014000002_peek_guardian_request_volatile` | peek POST runs read/write, PostgREST stops serving peek over `GET` |
+| 3 | `20261014000002_peek_guardian_request_volatile` | peek POST runs read/write; GET/HEAD remain read-only and peek may succeed |
 | 4 | `20261014000003_arm_guardian_rate_limit_pre_request` | **the global change** — every Data API request now calls the hook |
 
 **The one hard constraint is that arming is strictly last**, and specifically *after* the
@@ -372,7 +397,7 @@ no safety gain would be churn.
 Every intermediate state is safe and leaves the product working:
 
 - after 2, nothing has changed for any caller;
-- after 3, peek POST is read/write and peek GET is refused by PostgREST. No limiter runs.
+- after 3, peek POST is read/write; GET/HEAD remain read-only and peek may succeed. No limiter runs.
   The product only ever issues POST, so nothing regresses;
 - only 4 changes behaviour project-wide, and it is one statement that reverts with one
   statement.
@@ -402,13 +427,114 @@ explicitly issue and commit:
 notify pgrst, 'reload schema';
 ```
 
-Require a **pre-arm hosted HTTP proof** that POST peek still works and GET peek is
-refused by PostgREST (405), no longer served as a read-style RPC. Record both statuses.
-The pre-arm GET-peek 405 specifically proves PostgREST observed the VOLATILE
-schema-cache change; after arming, 405 is ambiguous because the dispatcher method
-gate can also generate it.
-Relying only on Supabase/PostgREST DDL-watch behavior is insufficient for this
-checkpoint. This is an operator procedure; reviewed migration bytes are unchanged.
+Separately verify the guardian catalog: `peek_guardian_request(text)` and
+`redeem_guardian_request(text,text)` must have `provolatile = 'v'`, owner `postgres`,
+the reviewed signatures, empty `search_path`, and unchanged ACLs. POST peek with a
+non-authorizing synthetic token must return `200 []`. Record pre-arm GET peek too;
+`200 []` is acceptable and **is not evidence of a stale schema cache**. HEAD is also
+read-only. Neither method proves cached volatility, because peek itself does not write.
+
+#### S2 hosted POST access-mode proof — operator-only scratch objects
+
+This is a proposed replacement procedure to review before execution. It is **not**
+part of `scripts/phase2-acceptance.mjs`, not a migration, and not permission to resume
+runtime gates. On resumption, keep the existing migration-14 project; do not reset or
+replay migrations. Verify the isolated temporary target before every remote operation.
+Require exactly 14 ledger entries, the arming migration absent, hook unset (including
+role/database settings), empty auth/application tables and no acceptance fixtures.
+Refuse any existing scratch schema or either function name below; never replace or
+drop objects owned by a previous run. Arrange cleanup in an operator `finally` path
+before creating anything. No passwords, connection values, keys or tokens in evidence.
+
+Create and commit this scratch setup as the operator (`postgres`). Use a regular,
+short-lived scratch table: a PostgreSQL TEMP table is session-local and cannot be
+shared between operator and hosted HTTP sessions. No direct Data API table grants
+or policies are needed; only the fixed, argument-free writer bypasses RLS as owner.
+
+```sql
+begin;
+create schema phase2_volatility_probe;
+revoke all on schema phase2_volatility_probe from public, anon, authenticated, service_role;
+create table phase2_volatility_probe.marker (
+  singleton boolean primary key default true check (singleton)
+);
+alter table phase2_volatility_probe.marker enable row level security;
+revoke all on table phase2_volatility_probe.marker from public, anon, authenticated, service_role;
+
+create function public.phase2_probe_post_volatile()
+returns jsonb language plpgsql volatile security definer set search_path = ''
+as $$
+begin
+  insert into phase2_volatility_probe.marker default values;
+  return pg_catalog.jsonb_build_object(
+    'transaction_read_only', pg_catalog.current_setting('transaction_read_only'),
+    'wrote', true
+  );
+end;
+$$;
+
+create function public.phase2_probe_post_stable()
+returns jsonb language plpgsql stable security invoker set search_path = ''
+as $$
+begin
+  return pg_catalog.jsonb_build_object(
+    'transaction_read_only', pg_catalog.current_setting('transaction_read_only')
+  );
+end;
+$$;
+revoke all on function public.phase2_probe_post_volatile() from public, anon, authenticated, service_role;
+revoke all on function public.phase2_probe_post_stable() from public, anon, authenticated, service_role;
+grant execute on function public.phase2_probe_post_volatile() to anon;
+grant execute on function public.phase2_probe_post_stable() to anon;
+notify pgrst, 'reload schema';
+commit;
+```
+
+Verify scratch ownership, volatility (`v`/`s`), security mode, empty search paths,
+anon-only caller grants (plus owner), RLS/no policies and zero marker rows. Through
+the **same hosted REST gateway and anon/publishable client context** as the guardian
+probe, POST `{}` to each `/rpc/phase2_probe_post_*` endpoint. Do not send `Prefer:
+tx=rollback`, request headers that override transaction mode, or change any role,
+function or database transaction defaults. Record actual HTTP status and response:
+
+| Hosted request | Required result |
+| --- | --- |
+| POST `phase2_probe_post_stable` | 200, `transaction_read_only = "on"` |
+| POST `phase2_probe_post_volatile` | 200, `transaction_read_only = "off"`, `wrote = true` |
+| Independent operator SELECT on scratch marker after HTTP | Exactly 1 committed row |
+
+The STABLE observer reports ambient access mode without a write. A STABLE function
+that directly INSERTs can fail because PostgreSQL forbids DML in a non-volatile
+function, independently of PostgREST transaction mode; that error alone is not a
+valid negative control. Do not change a guardian body or its volatility for this test.
+Unknown-function/cache errors are not a pass; allow bounded schema-reload readiness
+retries before the writer call, without bypassing a mismatch. A writer retry after
+an ambiguous response can hit the singleton constraint: stop, inspect and clean up,
+rather than count that failure as evidence. Any mode/status/count mismatch blocks
+Gate B. GET/HEAD 405 is **not** a pre-arm pass condition.
+
+Immediately clean up on success **or failure**, as the same operator, using explicit
+drops (no CASCADE), and commit the schema reload:
+
+```sql
+begin;
+drop function public.phase2_probe_post_stable();
+drop function public.phase2_probe_post_volatile();
+drop table phase2_volatility_probe.marker;
+drop schema phase2_volatility_probe;
+notify pgrst, 'reload schema';
+commit;
+```
+
+Run those drops only for objects created by this run; after partial/rolled-back setup,
+check ownership and existence first. Independently confirm both `to_regprocedure`
+lookups return NULL and the scratch schema is absent. Recheck the ledger is still
+exactly 14, hook unset, auth users/identities zero, no fixtures or unexpected rows,
+and guardian migration hashes unchanged. Do not continue to the harness until cleanup
+is confirmed. This proves hosted POST access-mode semantics for the scratch RPCs;
+it does **not** directly inspect peek's cached metadata. Peek's catalog assertion
+remains separate; armed POST peek plus a limiter-row increment later proves the
+guardian path is write-capable. Relying solely on automatic DDL reload is insufficient.
 
 **S3 — kill-switch permission and pre-arm acceptance.** Verify the hook is unset.
 While still unset, execute and commit each statement:
@@ -467,6 +593,9 @@ success with no limiter row requires immediate disarm. Then close A1, A3, A4, A5
 and A6 with real HTTP calls and the trust matrix. Smoke-test ordinary paths under
 each Data API role (§ A9). Authenticated write/upload smoke needing test identities
 belongs after S5, with isolated fixtures; any failure requires rollback.
+Require GET and HEAD on **both** guardian RPCs to return dispatcher 405 with zero
+limiter-row delta here (Gate C / armed-hook expectation). VOLATILE alone does not
+provide that refusal; pre-arm GET peek 200 is acceptable.
 
 **S7 — logging and browser acceptance last.** Establish body-logging evidence (§ C)
 with the operator-generated non-authorizing canonical sentinel. Run browser acceptance
@@ -497,7 +626,9 @@ still registered leaves `authenticator` pointing at a function that does not exi
 project-wide Data API outage.
 
 - [ ] Infrastructure applied (step 1), Data API unchanged: ______
-- [ ] Volatility applied (step 2); POST peek works, GET peek refused: ______
+- [ ] Volatility applied (step 2); guardian catalog verified, POST peek works,
+      scratch hosted POST mode/write proof passes and cleanup confirmed: ______
+- [ ] After arming (Gate C), GET/HEAD guardian calls return dispatcher 405: ______
 - [ ] Harness run pre-arming: A6 `(unset)`, A2 `provolatile = v` for both: ______
 - [ ] Armed (step 4): ______
 - [ ] Unrelated-traffic smoke test passed for all three roles: ______
@@ -830,7 +961,7 @@ rendering, so this route must never become statically optimised.
 | A4 forwarding-header trust | live-only | **open — unresolved by design** |
 | A5 hook on `OPTIONS` | live-only | **open (safe either way)** |
 | A6 peek volatility | founder | **RESOLVED** — VOLATILE via `20261014000002`; deployed `provolatile` still to verify |
-| A6b method gate as defence in depth | automated | implemented and asserted |
+| A6b method gate required for GET/HEAD refusal | automated | implemented and asserted; hosted refusal verified only after arming |
 | A7 global prune schedule | live-only | **open** |
 | A8 migration order, arming, rollback | procedure | order decided and enforced by filename; **deployment not started** |
 | A9 per-role hook safety | automated + live | asserted in the harness; live smoke test open |
