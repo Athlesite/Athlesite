@@ -49,6 +49,40 @@ refreshed these docs. Merged branches have since been deleted.
 
 ## In flight
 
+- **Phase 2 production readiness — IN REVIEW, NOTHING DEPLOYED.** Branch
+  `claude/phase2-production-readiness`, from `main` @ `4979862` (PR #34, Phase 2 guardian
+  bearer peek/redeem, merged). Adds the repo-side package that has to exist before the
+  guardian bearer surface can be exposed: a PostgREST `db_pre_request` rate limiter scoped
+  to the two guardian RPCs (`20261014000001`, inert), the peek-volatility fix
+  (`20261014000002`), a separate one-statement migration that arms the global hook
+  (`20261014000003`), structural + byte-pinned contracts for all three, and a live
+  acceptance harness.
+  **Live state is unchanged:** production holds 11 migrations, through
+  `20261012000001_phase1b_participation_enforcement`. `20261013000001` is *not* live, and
+  none of the three readiness migrations is applied.
+  **Read [`RUNBOOK-phase2-acceptance.md`](RUNBOOK-phase2-acceptance.md) before touching
+  any of this.** It is the gate ledger. Founder decisions A1 (dispatcher EXECUTE granted
+  to `anon`/`authenticated`/`service_role`, **not** PUBLIC), A2 (pilot thresholds) and A6
+  (peek becomes VOLATILE) are **resolved**; four gates remain open before real guardians
+  see this surface — the observed `request.path` shape, which forwarding header is
+  actually trustworthy behind Supabase, whether the platform logs RPC bodies, and the
+  real-browser fragment/bfcache/CSP matrix.
+  Three things that are easy to misread as done. (1) The acceptance SQL has **never been
+  executed** — `psql` is blocked by an Application Control policy on the authoring
+  machine. (2) The per-network half of the rate limit is **best-effort** until the
+  forwarding-header question is answered; the global per-endpoint caps are the only
+  spoofing-resistant control. (3) `20261013000001` still *declares* peek `STABLE` and is
+  byte-pinned; the deployed catalog will say `VOLATILE` via the forward migration. That
+  divergence is deliberate — do not "fix" it by editing the pinned migration.
+  **Implementer repair (2026-10-13):** recovered Claude's uncommitted work; single-pass
+  path decoding and advisory-lock serialization were already present. Completed exact
+  `search_path=""` acceptance, a post-lock window clock, per-round completion signals,
+  read-only collision preflight, run-owned creation/cleanup for every synthetic identity,
+  and failure-reporting HTTP rollback smoke. Corrected the readiness pins; the Phase 2
+  bearer migration remains byte-identical. Static tests/build checks pass; PostgreSQL
+  acceptance is still unexecuted. No commit, push, deployment or Supabase contact.
+  **Migration order is load-bearing:** arming must be strictly last, after the volatility
+  change, or every legitimate POST peek fails with `25006`.
 - **Phase B — connecting onboarding/profile to Supabase.** (1) client and session
   plumbing ✅, (2) mappers + profile read path ✅, (3a) auth plumbing ✅, (3b) inline OTP
   UI in onboarding ✅, (4) save/publish upsert ✅, (5) media upload and signed URLs ✅.

@@ -2,9 +2,9 @@
  * Verifies that every reviewed security-sensitive migration is byte-for-byte unchanged, and
  * that the application's public select list still matches the intended 18-field projection.
  *
- * The pinned set is whatever PINNED_MIGRATIONS lists — currently the three 5D.7
- * access-boundary migrations plus the 5D.8 search-path hardening migration, four in total —
- * so this file needs no edit when another migration joins the contract.
+ * The pinned set is whatever PINNED_MIGRATIONS lists, so this file needs no edit when
+ * another migration joins the contract — and this comment deliberately states no count,
+ * because the previous one said "four" while the list held six.
  *
  * Replaces check-anon-column-parity.mjs, which compared the app's select list against
  * `anon`'s column grant — migration B revokes that grant, so the grant is no longer the

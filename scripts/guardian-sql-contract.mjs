@@ -267,7 +267,25 @@ export function sqlTokens(sql) {
       continue;
     }
 
-    const operator = rest.match(/^(:=|!~~|!~|~~|>=|<=|<>|!=|\|\||::|[().,;=<>+\-*/%])/);
+    // `[` and `]` are recognized so this lexer can also serve the Phase 2
+    // production-readiness migrations, whose pre-request dispatcher subscripts
+    // a text[] of path segments (scripts/guardian-rate-limit-contract.mjs
+    // imports this tokenizer rather than duplicating a security lexer).
+    //
+    // Purely additive, and it cannot weaken either contract: before this,
+    // a bare `[` reached the final `throw` and was reported as "could not be
+    // tokenized" — fail-closed, but fail-closed by refusing to look. Now it
+    // becomes an ordinary token which still has to survive the statement
+    // allowlists downstream.
+    //
+    // 20261013000001's token stream is unaffected, and the reason is worth
+    // stating precisely rather than waving at: that migration DOES contain
+    // brackets, in the canonical-token regex `'^[A-Za-z0-9_-]{42}…'` and in a
+    // line comment. Neither reaches this branch — a `--` comment is skipped
+    // whole, and a string literal is consumed whole by the `'` branch above,
+    // staying a single exact token. Verified empirically, not assumed: the
+    // migration tokenizes to the same 634 tokens before and after this edit.
+    const operator = rest.match(/^(:=|!~~|!~|~~|>=|<=|<>|!=|\|\||::|[[\]().,;=<>+\-*/%])/);
     if (operator) {
       tokens.push(operator[0]);
       i += operator[0].length;
@@ -1077,8 +1095,25 @@ export function validateGuardianFunctionHardening(bytesByPath = null) {
     if (header.includes("volatile")) {
       problems.push(`${name}: explicitly declared VOLATILE`);
     }
+    // This asserts the WORD `stable` in 20261013000001's own bytes, and it must
+    // keep doing so: that file is reviewed and byte-pinned, and nothing may
+    // quietly rewrite it.
+    //
+    // The DEPLOYED volatility is deliberately different. 20261014000002 runs
+    // `alter function public.peek_guardian_request(text) volatile`, because
+    // PostgREST picks a read-only or read/write transaction from volatility
+    // rather than from the HTTP method — so with peek STABLE even a legitimate
+    // POST runs read-only and the pre-request limiter's INSERT raises 25006.
+    // That divergence between "what the pinned migration says" and "what the
+    // catalog holds" is intended; supabase/acceptance/01-acl.sql asserts the
+    // catalog side. Do NOT resolve the apparent contradiction by editing
+    // 20261013000001.
     if (name === "peek_guardian_request" && findSeq(header, "stable") === -1) {
-      problems.push(`${name}: not declared STABLE — a read-only peek must not be volatile`);
+      problems.push(
+        `${name}: 20261013000001 no longer declares it STABLE. That file is byte-pinned and ` +
+          "must keep its reviewed text; the deployed function is made VOLATILE by the forward " +
+          "migration 20261014000002, which is where that change belongs."
+      );
     }
     if (spec.executeTo.join(",") !== "anon") {
       problems.push(`${name}: EXPECTED_FUNCTIONS declares a non-anon audience`);
