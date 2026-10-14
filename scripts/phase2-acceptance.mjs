@@ -67,6 +67,9 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import {
+  acceptanceExitCode, acceptanceSuccessSummary, mappedIpv6Observation, mappedIpv6Summary,
+} from "./phase2-acceptance-summary.mjs";
 
 const ACCEPTANCE_DIR = "supabase/acceptance";
 const runId = randomUUID();
@@ -118,7 +121,7 @@ function refuse(lines) {
   console.error(`\n  Refusing to run.\n`);
   for (const line of lines) console.error(`    ${line}`);
   console.error("");
-  process.exit(2);
+  process.exit(1);
 }
 
 if (process.env.ATHLESITE_PHASE2_ACCEPTANCE !== "1") {
@@ -227,6 +230,8 @@ const expectArmed = phase === "armed" ? "1" : "0";
 /** Opt-in HTTP smoke check for the disarmed window. Skipped unless both are set. */
 const restUrl = process.env.PHASE2_ACCEPTANCE_REST_URL;
 const anonKey = process.env.PHASE2_ACCEPTANCE_ANON_KEY;
+let rollbackHttpObserved = false;
+let mappedIpv6 = null;
 
 // ── psql invocation ───────────────────────────────────────────────────────
 
@@ -430,6 +435,8 @@ async function rollbackDrill(failures) {
           const afterSmoke = await runPsqlCommands(["select count(*) from private.guardian_rate_limits"], { label: "after HTTP smoke" });
           if (response.status !== 200 || afterSmoke.code !== 0 || beforeSmoke.output !== afterSmoke.output) {
             failures.push("rollback drill: HTTP did not prove successful peek with no limiter write; verify PostgREST reload timing");
+          } else {
+            rollbackHttpObserved = true;
           }
           console.log(`  HTTP smoke check while disarmed: status ${response.status}`);
         } catch {
@@ -495,13 +502,19 @@ for (const step of STEPS) {
       if (result.output) process.stdout.write(result.output);
     }
   } else {
-    results = [await runPsql(step.files[0])];
+    const captureObservation = step.files[0] === "02-limiter-scope.sql";
+    results = [await runPsql(step.files[0], { capture: captureObservation })];
+    if (captureObservation) {
+      // Preserve the mid-run SQL output and carry its observation to the end.
+      process.stdout.write(results[0].output);
+      mappedIpv6 = mappedIpv6Observation(results[0].output);
+    }
   }
 
   for (const result of results) {
     if (result.code !== 0) {
       failures.push(`${result.file} exited ${result.code}`);
-      if (result.output && !step.concurrent) process.stdout.write(result.output);
+      if (result.output && !step.concurrent && result.file !== "02-limiter-scope.sql") process.stdout.write(result.output);
     }
   }
 
@@ -553,6 +566,7 @@ if (!keepFixtures) {
 // produced failures, and that must not read as a pass.
 const allPass = report.output.includes("PHASE2-ACCEPTANCE: ALL PASS");
 const noAssertions = report.output.includes("PHASE2-ACCEPTANCE: NO ASSERTIONS RECORDED");
+const exitCode = acceptanceExitCode({ phase, rollbackHttpObserved, allPass, failureCount: failures.length });
 
 if (failures.length > 0) {
   console.error(`\n  SCRIPT FAILURES:`);
@@ -560,22 +574,15 @@ if (failures.length > 0) {
 }
 
 if (noAssertions) {
+  console.log(mappedIpv6Summary(mappedIpv6));
   console.error(`\n  FAIL — no assertions were recorded at all.\n`);
   process.exit(1);
 }
 if (!allPass || failures.length > 0) {
+  console.log(mappedIpv6Summary(mappedIpv6));
   console.error(`\n  FAIL — see the FAIL rows above.\n`);
   process.exit(1);
 }
 
-console.log(`\n  PASS — every recorded assertion matched.`);
-console.log(
-  `  This closes the ACL (including the exact dispatcher grantee set), peek/redeem\n` +
-    `  volatility, per-role hook execution, the method gate, concurrency, lock-wait,\n` +
-    `  replay, uniqueness, cleanup, and the rollback drill.\n` +
-    `  It does NOT close: the observed request.path shape, forwarding-header\n` +
-    `  trustworthiness, whether PostgREST really opens a read/write transaction for a\n` +
-    `  POST to a VOLATILE function on a deployed project, platform logging of RPC\n` +
-    `  bodies, proxy/CDN CSP behaviour, or browser bfcache behaviour.\n` +
-    `  See docs/ai/RUNBOOK-phase2-acceptance.md.\n`
-);
+console.log(acceptanceSuccessSummary({ phase, rollbackHttpObserved, mappedIpv6 }));
+process.exitCode = exitCode;

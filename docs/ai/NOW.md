@@ -1,8 +1,8 @@
 # NOW — Athlesite current state
 
-Checkpoint updated: 2026-10-12 · base `main` @
-`0b53355d22bcbd5af5c5376439dc392d4f4fa62f` (PR #32, Guardian-First Participation
-**Phase 1b**, merged)
+Checkpoint updated: 2026-10-14 · repository base `main` @
+`a2752f2e97bbd24b2409f0422767b3d77cec8bc7` (Phase 2 production readiness merged;
+runtime acceptance remains pending). Live Phase 1b checkpoint below is unchanged.
 
 Refreshed for the **Phase 1b live checkpoint reconciliation**, using the founder's
 production handoff. **Phase 1a — LIVE + HEALTHY. Phase 1b — LIVE + STRUCTURALLY VERIFIED.**
@@ -49,9 +49,11 @@ refreshed these docs. Merged branches have since been deleted.
 
 ## In flight
 
-- **Phase 2 production readiness — IN REVIEW, NOTHING DEPLOYED.** Branch
-  `claude/phase2-production-readiness`, from `main` @ `4979862` (PR #34, Phase 2 guardian
-  bearer peek/redeem, merged). Adds the repo-side package that has to exist before the
+- **Phase 2 production readiness — MERGED, NOTHING DEPLOYED.** Current repository
+  base is `main` @ `a2752f2`; runtime-gap acceptance patch is on
+  `codex/phase2-runtime-acceptance-gaps` from that exact commit. The readiness package,
+  originally developed on `claude/phase2-production-readiness` from `main` @ `4979862`
+  (PR #34, Phase 2 guardian bearer peek/redeem, merged), adds what must exist before the
   guardian bearer surface can be exposed: a PostgREST `db_pre_request` rate limiter scoped
   to the two guardian RPCs (`20261014000001`, inert), the peek-volatility fix
   (`20261014000002`), a separate one-statement migration that arms the global hook
