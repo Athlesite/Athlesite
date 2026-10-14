@@ -1,0 +1,98 @@
+-- Guardian-First Participation, Phase 2 production readiness — ARM the
+-- PostgREST pre-request hook.
+--
+-- ══════════════════════════════════════════════════════════════════════════
+-- THIS IS THE GLOBAL CHANGE. IT IS ALONE IN THIS FILE ON PURPOSE.
+-- ══════════════════════════════════════════════════════════════════════════
+--
+-- `pgrst.db_pre_request` on the `authenticator` role is PROJECT-WIDE. Once
+-- this is set, PostgREST calls `public.data_api_pre_request()` inside the
+-- transaction of EVERY Data API request — every profile read, every media
+-- write, every RPC, authenticated and anonymous alike, plus `service_role`
+-- traffic and the OpenAPI root. Nothing else in this repository has that blast
+-- radius.
+--
+-- Two consequences follow, and both shaped this file:
+--
+--   1. IF THE HOOK FUNCTION ERRORS, THE DATA API ERRORS. There is no partial
+--      failure and no degraded mode. A function that raises unconditionally,
+--      or that a calling role cannot execute, takes the whole Data API down
+--      for that role. 20261014000001 is written against exactly that risk: the
+--      function returns with zero I/O for any path that is not one of the two
+--      guardian RPCs, and it takes no caller-supplied argument at all.
+--
+--      It is executable by `anon`, `authenticated` and `service_role` — the
+--      three roles PostgREST switches into, enumerated rather than granted to
+--      PUBLIC (FOUNDER DECISION A1). That is least privilege, and it carries
+--      one operational obligation: ADDING A DATA API ROLE MEANS ADDING A GRANT
+--      ON `public.data_api_pre_request()` IN THE SAME MIGRATION, because a
+--      role PostgREST switches into without that grant loses its entire Data
+--      API. If a deployed project shows some other role erroring on every
+--      request, stop and report — do not widen the grant to PUBLIC. The
+--      reasoning is in 20261014000001; this file only turns the hook on.
+--
+--   2. ARMING MUST BE REVERSIBLE WITHOUT DROPPING ANYTHING. Keeping the
+--      `alter role` in its own migration means the rollback is the single
+--      statement in the ROLLBACK block below: the hook detaches, PostgREST
+--      returns to its previous behaviour immediately, and the limiter
+--      infrastructure stays in place for a second attempt. If arming and
+--      building shared one migration, reverting would mean either a
+--      hand-written corrective migration under incident pressure or dropping
+--      live infrastructure.
+--
+-- ══════════════════════════════════════════════════════════════════════════
+-- DO NOT APPLY THIS MIGRATION UNTIL THE GATES ARE CLOSED
+-- ══════════════════════════════════════════════════════════════════════════
+--
+-- docs/ai/RUNBOOK-phase2-acceptance.md is the procedure, and § A is
+-- specifically about this file. The thresholds in
+-- private.guardian_rate_limit_enforce require FOUNDER APPROVAL before they
+-- govern production traffic (GUARDRAILS § Authority), and § A3 (the observed
+-- `request.path` shape) and § A4 (which forwarding header is actually present
+-- and trustworthy) are unresolved by anything this repository can test.
+--
+-- Applying 20261014000001 alone is safe and changes no behaviour. Applying
+-- this file is the moment the project's Data API behaviour changes.
+--
+-- ══════════════════════════════════════════════════════════════════════════
+-- WHY `notify` IS IN THE SAME TRANSACTION
+-- ══════════════════════════════════════════════════════════════════════════
+--
+-- PostgREST caches its configuration, including this role setting, and reloads
+-- it on a `pgrst` notification. `notify` payloads are delivered at COMMIT, so
+-- the ordering is automatically correct: if this migration rolls back, no
+-- reload is signalled and PostgREST never sees a setting that no longer
+-- exists. Without the notify the setting would still take effect, but only
+-- whenever PostgREST next reloaded on its own — an indeterminate delay between
+-- "migration applied" and "hook live", which would make acceptance testing
+-- ambiguous.
+
+alter role authenticator set pgrst.db_pre_request = 'public.data_api_pre_request';
+
+notify pgrst, 'reload config';
+
+-- ══════════════════════════════════════════════════════════════════════════
+-- ROLLBACK — the kill switch
+-- ══════════════════════════════════════════════════════════════════════════
+--
+-- Disarm, as a forward corrective migration (GUARDRAILS § Migrations: never
+-- edit an applied migration). These two statements, in this order, in a file
+-- named for the incident:
+--
+--     alter role authenticator reset pgrst.db_pre_request;
+--     notify pgrst, 'reload config';
+--
+-- That restores the exact pre-Phase-2-readiness Data API behaviour. It drops
+-- nothing, so counters, salt, and functions survive and a second arming
+-- attempt needs only this file again. It requires no application deploy,
+-- because no application code depends on the hook.
+--
+-- `reset` rather than `set ... = ''`: an empty string is a value PostgREST
+-- would try to interpret, whereas `reset` removes the role setting entirely
+-- and returns to the unset default.
+--
+-- For a full teardown — dropping the limiter infrastructure as well — disarm
+-- first and verify the Data API is healthy BEFORE dropping anything. Dropping
+-- `public.data_api_pre_request` while it is still registered leaves
+-- `authenticator` pointing at a function that does not exist, which is a
+-- project-wide Data API outage. RUNBOOK § A8 is the ordered procedure.

@@ -77,7 +77,30 @@ describe("5D.7 migration hash contract — baseline", () => {
     assert.match(paths, /20260929000001_harden_set_updated_at_search_path\.sql/);
     assert.match(paths, /20261012000001_phase1b_participation_enforcement\.sql/);
     assert.match(paths, /20261013000001_guardian_bearer_peek_redeem\.sql/);
-    assert.equal(PINNED_MIGRATIONS.length, 6);
+    assert.match(paths, /20261014000001_guardian_rate_limit_infrastructure\.sql/);
+    assert.match(paths, /20261014000002_peek_guardian_request_volatile\.sql/);
+    assert.match(paths, /20261014000003_arm_guardian_rate_limit_pre_request\.sql/);
+    assert.equal(PINNED_MIGRATIONS.length, 9);
+  });
+
+  test("the readiness migrations are ordered so that arming is strictly last", () => {
+    // Order is the whole safety argument. The peek-volatility change is a PREREQUISITE
+    // for the limiter to be able to record a POST at all, so arming before it would
+    // break every peek with 25006. Filenames are what determine apply order, so this
+    // asserts on the filenames rather than on anyone's intent.
+    const readiness = PINNED_MIGRATIONS.map((m) => m.path).filter((p) => p.includes("/20261014"));
+    assert.deepEqual(readiness, [
+      "supabase/migrations/20261014000001_guardian_rate_limit_infrastructure.sql",
+      "supabase/migrations/20261014000002_peek_guardian_request_volatile.sql",
+      "supabase/migrations/20261014000003_arm_guardian_rate_limit_pre_request.sql",
+    ]);
+
+    const arming = readiness[readiness.length - 1];
+    assert.ok(
+      arming.includes("arm_guardian_rate_limit_pre_request"),
+      "the LAST readiness migration must be the arming one — the global hook must not be " +
+        "registered before the functions, ACLs and volatility it depends on exist"
+    );
   });
 
   test("the four pre-Phase-1b digests are unchanged by the Phase 1b addition", () => {
@@ -113,6 +136,89 @@ describe("5D.7 migration hash contract — baseline", () => {
     }
     assert.equal(GUARDIAN.sha256, "4119fee5a154acbdd1ac6240a2b65140b314dd4ea443e0bd16433e9406157c0a");
     assert.equal(GUARDIAN.bytes, 22467);
+  });
+
+  test("20261013000001 is byte-identical despite peek being made VOLATILE (A6)", () => {
+    // The required assertion for FOUNDER DECISION A6. The deployed peek becomes VOLATILE
+    // through the forward migration 20261014000002; the reviewed migration that DECLARED
+    // it STABLE must not be touched to achieve that. These two facts are supposed to
+    // disagree, and this test is what keeps the disagreement from being "resolved" by
+    // editing an approved, merged security artefact.
+    assert.equal(
+      GUARDIAN.sha256,
+      "4119fee5a154acbdd1ac6240a2b65140b314dd4ea443e0bd16433e9406157c0a",
+      "20261013000001 was edited. Peek's volatility change belongs in 20261014000002, not here."
+    );
+    assert.equal(GUARDIAN.bytes, 22467);
+
+    // And the forward migration really is the place it happens.
+    const byPath = Object.fromEntries(PINNED_MIGRATIONS.map((m) => [m.path, m]));
+    assert.ok(
+      byPath["supabase/migrations/20261014000002_peek_guardian_request_volatile.sql"],
+      "the peek-volatility forward migration is missing from the pinned set"
+    );
+  });
+
+  test("the six pre-readiness digests are unchanged by the Phase 2 readiness addition", () => {
+    // Same guard, same reason: the readiness pins must not silently re-pin anything
+    // already reviewed — above all 20261013000001, which the readiness migrations are
+    // explicitly built NOT to touch.
+    const byPath = Object.fromEntries(PINNED_MIGRATIONS.map((m) => [m.path, m]));
+    const expected = {
+      "supabase/migrations/20260928000001_add_published_profile_rpc.sql":
+        ["2096aec79c699a3544f8a82152a080ea7a2139959c163ce603a0e5a0c433860b", 5103],
+      "supabase/migrations/20260928000002_scope_media_reads_to_referenced_hero.sql":
+        ["fe622ce390e4d0d5378fadd998c19bf6b0e8b42f4ad3b9e389f93e70589910f5", 9334],
+      "supabase/migrations/20260928000003_restrict_profile_table_reads.sql":
+        ["6903dc426408a41ef0d22ce410e392a97cca7fb6f571e236ccdef5178c3e5610", 3966],
+      "supabase/migrations/20260929000001_harden_set_updated_at_search_path.sql":
+        ["c1c3c4f2c1779b4f46b0170471df6641024a8505c50b8f6def4ccca585e75bab", 3049],
+      "supabase/migrations/20261012000001_phase1b_participation_enforcement.sql":
+        ["74dd681bb3003c95669028943d142c8bc97d51754f8583cb683affca74ca8f7a", 15148],
+      "supabase/migrations/20261013000001_guardian_bearer_peek_redeem.sql":
+        ["4119fee5a154acbdd1ac6240a2b65140b314dd4ea443e0bd16433e9406157c0a", 22467],
+    };
+    for (const [path, [sha, bytes]] of Object.entries(expected)) {
+      assert.equal(byPath[path]?.sha256, sha, `digest changed for ${path} after the readiness addition`);
+      assert.equal(byPath[path]?.bytes, bytes, `byte length changed for ${path} after the readiness addition`);
+    }
+  });
+
+  test("the arming migration is pinned separately from the infrastructure it arms", () => {
+    // These two must never be collapsed into one pin. `alter role authenticator set
+    // pgrst.db_pre_request` is the project-wide change, and keeping it in its own
+    // migration is what makes arming a one-statement diff and disarming a one-statement
+    // forward correction. A single shared pin would not notice them being merged.
+    const byPath = Object.fromEntries(PINNED_MIGRATIONS.map((m) => [m.path, m]));
+    const infrastructure =
+      byPath["supabase/migrations/20261014000001_guardian_rate_limit_infrastructure.sql"];
+    const arming =
+      byPath["supabase/migrations/20261014000003_arm_guardian_rate_limit_pre_request.sql"];
+
+    const volatility =
+      byPath["supabase/migrations/20261014000002_peek_guardian_request_volatile.sql"];
+
+    assert.ok(infrastructure, "the readiness infrastructure migration is not pinned");
+    assert.ok(volatility, "the peek-volatility migration is not pinned");
+    assert.ok(arming, "the arming migration is not pinned");
+    assert.notEqual(infrastructure.sha256, arming.sha256);
+    assert.notEqual(infrastructure.sha256, volatility.sha256);
+
+    // The volatility file is one `alter function` plus its reasoning. If it grows past a
+    // few kilobytes, something other than that one attribute change has moved into it.
+    assert.ok(
+      volatility.bytes < 12000,
+      `the peek-volatility migration has grown to ${volatility.bytes} bytes — it should contain ` +
+        "exactly the alter function and its comment"
+    );
+
+    // The arming file is two statements plus its reasoning. If it ever grows past a few
+    // kilobytes, something other than the `alter role` has moved into it.
+    assert.ok(
+      arming.bytes < 12000,
+      `the arming migration has grown to ${arming.bytes} bytes — it should contain exactly ` +
+        "the alter role and the notify"
+    );
   });
 
   test("the three 5D.7 digests are unchanged by the 5D.8 addition", () => {

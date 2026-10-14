@@ -1,10 +1,11 @@
 /**
  * Byte-for-byte hash pinning for this project's reviewed security-sensitive migrations.
  *
- * Currently covers the three 5D.7 access-boundary migrations plus the 5D.8 search-path
- * hardening migration. The set is whatever PINNED_MIGRATIONS lists — not a fixed count —
- * and any migration that changes an access boundary, a grant, a policy, or a function's
- * execution context belongs in it.
+ * The set is whatever PINNED_MIGRATIONS lists — not a fixed count — and any migration that
+ * changes an access boundary, a grant, a policy, or a function's execution context belongs
+ * in it. It currently runs from the 5D.7 access-boundary migrations through the Phase 2
+ * guardian bearer RPCs and the Phase 2 readiness rate limiter; read the list, not this
+ * sentence, since prose about a count goes stale the moment one is added.
  *
  * ── WHY IT IS A HASH, AFTER THREE FAILED ATTEMPTS ────────────────────────────────
  *
@@ -125,6 +126,71 @@ export const PINNED_MIGRATIONS = [
     // guard alongside it, exactly like migration E's own pair above.
     sha256: "4119fee5a154acbdd1ac6240a2b65140b314dd4ea443e0bd16433e9406157c0a",
     bytes: 22467,
+  },
+  {
+    label: "migration G (Phase 2 readiness) — guardian rate-limit infrastructure + pre-request hook",
+    path: "supabase/migrations/20261014000001_guardian_rate_limit_infrastructure.sql",
+    // Added 2026-10-13 (Phase 2 production readiness). This migration introduces the
+    // function that PostgREST will call on EVERY Data API request, so it changes an
+    // execution context for the whole project and belongs in this set by the rule in
+    // the docblock above. It is INERT until 20261014000003 registers it.
+    //
+    // Infrastructure, private helpers and the public dispatcher, with EXECUTE
+    // enumerated to anon/authenticated/service_role and PUBLIC revoked.
+    //
+    // As with migration E, the digest says nothing about WHICH authorization properties
+    // the SQL asserts. scripts/guardian-rate-limit-contract.mjs does that — path scope,
+    // method gate, threshold values, fail-closed ordering, the truncate-before-hash IP
+    // model, the exhaustive ACL set, and prune scoping — and will name the specific
+    // property if one is weakened. This pin is the belt-and-braces byte-level guard
+    // beside it.
+    // Re-pinned 2026-10-13 for FOUNDER DECISION A1 (the dispatcher's EXECUTE grant is
+    // enumerated to anon/authenticated/service_role with PUBLIC explicitly revoked,
+    // replacing the rejected grant-to-PUBLIC design) and for the method-gate rationale
+    // rewritten around PostgREST choosing read-only vs read/write by VOLATILITY rather
+    // than by HTTP method. Re-pinned at implementer handoff for single-pass path
+    // decoding and atomic advisory locking, with the clock sampled AFTER waiting,
+    // and safe refusal of frozen transaction snapshots.
+    // The arming pin also incorporates Claude's already-present comment corrections.
+    sha256: "6c5d7e081e7a82f413dcb46ed56bbe3ee52e0ab78d079ca2baa37612b64cb964",
+    bytes: 61311,
+  },
+  {
+    label: "migration H (Phase 2 readiness) — peek_guardian_request STABLE -> VOLATILE",
+    path: "supabase/migrations/20261014000002_peek_guardian_request_volatile.sql",
+    // Added 2026-10-13 (FOUNDER DECISION A6). One `alter function ... volatile` plus a
+    // refreshed comment. It is pinned because it changes the EXECUTION CONTEXT of a
+    // reviewed SECURITY DEFINER function, which is exactly what this set is for.
+    //
+    // It is also a CORRECTNESS prerequisite for arming, not hardening: PostgREST picks a
+    // read-only or read/write transaction from the called function's volatility, not from
+    // the HTTP method, so with peek left STABLE a legitimate POST peek runs read-only and
+    // the pre-request limiter's INSERT raises 25006 — breaking every peek rather than
+    // merely leaving it unlimited.
+    //
+    // Note the DELIBERATE divergence this creates: 20261013000001 still says `stable` in
+    // its (byte-pinned) text, while the deployed catalog says `volatile`.
+    // scripts/guardian-sql-contract.mjs keeps asserting the word `stable` in that file's
+    // bytes and points here in its failure message, so nobody resolves the apparent
+    // contradiction by editing an applied, reviewed migration.
+    sha256: "817f14d9515f9d02cc0356751f7b6ad87289b6f3dcb296247cd921ee954efa90",
+    bytes: 8204,
+  },
+  {
+    label: "migration I (Phase 2 readiness) — ARM the global PostgREST pre-request hook",
+    path: "supabase/migrations/20261014000003_arm_guardian_rate_limit_pre_request.sql",
+    // Renumbered from ...0002 so that arming stays STRICTLY LAST, after the peek
+    // volatility change it depends on. Its bytes are unchanged by the renumbering.
+    // Added 2026-10-13. Two statements, and this is the highest-blast-radius file in the
+    // repository: `alter role authenticator set pgrst.db_pre_request` changes the
+    // behaviour of every Data API request in the project, and `notify pgrst` makes that
+    // take effect at commit. It is alone in its own migration precisely so that arming
+    // is a one-statement diff and disarming is a one-statement forward correction.
+    //
+    // A digest change here is never cosmetic. If this hash fails, the question is "who
+    // changed what the global hook points at, and was it re-reviewed?".
+    sha256: "bdde52bddb223cc686ab1d09783691e5e6b01c1bd4a2b9975130766104a5a04f",
+    bytes: 6686,
   },
 ];
 
