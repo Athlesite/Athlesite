@@ -245,6 +245,99 @@ end;
 $$;
 
 -- ══════════════════════════════════════════════════════════════════════════
+-- B3e. Encoded paths: assert each outcome AND its individual counter delta.
+-- Trailing slash is a dispatcher no-op today; this does not prove HTTP routing.
+do $$
+declare
+  v_case record;
+  v_before bigint;
+  v_outcome text;
+begin
+  delete from private.guardian_rate_limits;
+  for v_case in select * from (values
+    ('/rpc/%70eek_guardian_request', 'allowed', 1),
+    ('/%72pc/peek_guardian_request', 'allowed', 1),
+    ('/rpc/peek%5Fguardian_request', 'allowed', 1),
+    ('/rpc/peek%5fguardian_request', 'allowed', 1),
+    ('/rpc/%2570eek_guardian_request', 'allowed', 0),
+    ('/rpc/peek_guardian_request%', 'refused:400', 0),
+    ('/rp%c/peek_guardian_request', 'refused:400', 0),
+    ('/athlete%profiles', 'allowed', 0),
+    ('/rpc/get%5Fpublished_profile_by_slug', 'allowed', 0),
+    ('/rest/v1/rpc/peek_guardian_request/', 'allowed', 0)
+  ) as cases(path, outcome, delta) loop
+    v_before := phase2_acceptance.limiter_rows();
+    v_outcome := phase2_acceptance.simulate(
+      v_case.path, 'POST', phase2_acceptance.client('203.0.113.11')
+    );
+    perform phase2_acceptance.record('B3e', v_case.path || ' outcome', v_case.outcome, v_outcome);
+    perform phase2_acceptance.record(
+      'B3e', v_case.path || ' limiter row delta', v_case.delta::text,
+      (phase2_acceptance.limiter_rows() - v_before)::text
+    );
+  end loop;
+  perform phase2_acceptance.record(
+    'B3e', 'encoded guardian calls record only peek endpoint rows', '4',
+    (select pg_catalog.count(*)::text from private.guardian_rate_limits where endpoint = 'peek')
+  );
+end;
+$$;
+
+-- B3v6. /56 equivalence and separation, including the actual dispatcher writes.
+-- Digest expectations are calculated independently from the canonical network.
+-- Neither salt nor bucket digests are emitted: only booleans and counts.
+do $$
+declare
+  v_a inet := '2001:db8:1234:5601::1'::inet;
+  v_b inet := '2001:db8:1234:56ff::2'::inet;
+  v_c inet := '2001:db8:1234:5701::1'::inet;
+  v_expected bytea;
+  v_outcome text;
+  v_ip inet;
+begin
+  delete from private.guardian_rate_limits;
+  select pg_catalog.sha256(s.salt || pg_catalog.convert_to('2001:db8:1234:5600::', 'UTF8'))
+    into v_expected from private.guardian_rate_limit_salt s where s.id;
+  perform phase2_acceptance.record(
+    'B3v6', 'IPv6 truncation precedes hashing of canonical /56 network', 'true',
+    (private.guardian_rate_limit_bucket_key(v_a) = v_expected)::text
+  );
+  perform phase2_acceptance.record(
+    'B3v6', 'same /56 addresses share bucket', 'true',
+    (private.guardian_rate_limit_bucket_key(v_a) = private.guardian_rate_limit_bucket_key(v_b))::text
+  );
+  perform phase2_acceptance.record(
+    'B3v6', 'different /56 addresses have different buckets', 'true',
+    (private.guardian_rate_limit_bucket_key(v_a) <> private.guardian_rate_limit_bucket_key(v_c))::text
+  );
+  foreach v_ip in array array[v_a, v_b, v_c] loop
+    v_outcome := phase2_acceptance.simulate(
+      '/rpc/peek_guardian_request', 'POST', phase2_acceptance.client(pg_catalog.host(v_ip))
+    );
+    perform phase2_acceptance.record('B3v6', pg_catalog.host(v_ip) || ' POST outcome', 'allowed', v_outcome);
+  end loop;
+  perform phase2_acceptance.record('B3v6', 'IPv6 calls record three rows', '3', phase2_acceptance.limiter_rows()::text);
+  perform phase2_acceptance.record(
+    'B3v6', 'same /56 records two rows in expected bucket', '2',
+    (select pg_catalog.count(*)::text from private.guardian_rate_limits where bucket_key = v_expected)
+  );
+  perform phase2_acceptance.record(
+    'B3v6', 'different /56 records one row in separate bucket', '1',
+    (select pg_catalog.count(*)::text from private.guardian_rate_limits
+     where bucket_key = private.guardian_rate_limit_bucket_key(v_c))
+  );
+end;
+$$;
+
+-- B3mapped is an observation, never a PASS/FAIL assertion. Hosted address
+-- representation is the pre-arm Gate B decision (RUNBOOK S4), not this known
+-- source-level collision. Print only the state, never salt or bucket digests.
+select 'OBSERVATION: ipv4_mapped_ipv6_collapses_to_sentinel=' || coalesce(
+  (private.guardian_rate_limit_bucket_key('::ffff:203.0.113.9'::inet)
+    = private.guardian_rate_limit_bucket_key('::'::inet))::text,
+  'unknown'
+) as mapped_ipv6_observation;
+
 -- B4. THE METHOD GATE — closing the GET route onto the STABLE peek RPC
 -- ══════════════════════════════════════════════════════════════════════════
 --

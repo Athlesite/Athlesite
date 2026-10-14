@@ -3,9 +3,11 @@
 Everything that has to be true **on a real deployment** before the guardian bearer surface
 is exposed, and the procedure for establishing each one.
 
-**Phase 2 code is merged and deliberately undeployed.** `main` @ `4979862` contains
-`/guardian/participation` and the bearer peek/redeem RPCs; `claude/phase2-production-readiness`
-adds the pre-request rate limiter, the peek-volatility fix, and the arming migration.
+**Phase 2 code is merged and deliberately undeployed.** Current repository checkpoint:
+`main` @ `a2752f2e97bbd24b2409f0422767b3d77cec8bc7`, including
+`/guardian/participation`, the bearer peek/redeem RPCs, the pre-request rate limiter,
+the peek-volatility fix, and the arming migration. Runtime-gap patch base is that
+exact commit, on `codex/phase2-runtime-acceptance-gaps`.
 Production Supabase holds 11 migrations, through
 `20261012000001_phase1b_participation_enforcement`. Neither `20261013000001` nor any of the
 three readiness migrations is live.
@@ -20,7 +22,7 @@ Three kinds of item, and they are not interchangeable:
 
 | Kind | Meaning |
 | --- | --- |
-| **AUTOMATED** | `node scripts/phase2-acceptance.mjs` settles it against a non-production database. Run it, read the report. |
+| **AUTOMATED** | The explicitly phased SQL harness (§ B) checks it against an isolated non-production database. Read its assertions and observations. |
 | **LIVE-ONLY** | No repository artefact can establish it. It needs a deployed project, a real gateway, or a real browser. Someone has to do it and record the answer here. |
 | **FOUNDER DECISION** | A value or a design choice that AI may propose and implement but not approve. `docs/ai/GUARDRAILS.md § Authority`. |
 
@@ -135,7 +137,14 @@ identically, which is the right hedge.
 It is still a gate, because **the failure mode is silent**: a prefix shape the dispatcher does
 not recognise means the limiter never engages and nothing anywhere reports a problem.
 
-Procedure, after arming on a non-production project: call each guardian RPC once over HTTP,
+Procedure, after arming on an isolated throwaway project: **first probe POST
+`/rest/v1/rpc/peek_guardian_request/` with the trailing slash**, observing HTTP status
+and limiter-row delta. **404 + no limiter row is acceptable. Guardian RPC success
+with no limiter row is a blocker: disarm immediately (§ A8).** If it routes successfully,
+limiter activity is required. Record any other outcome and investigate before proceeding.
+Part B3e explicitly establishes the current SQL dispatcher no-op (allowed, delta 0)
+for this shape; it does **not** establish hosted PostgREST routing.
+Then call each canonical guardian RPC once over HTTP,
 then read the observed value out of a limiter row's existence, or temporarily record
 `current_setting('request.path', true)` from a scratch function. Do not infer it.
 
@@ -164,18 +173,48 @@ Procedure:
 1. From outside, call a guardian RPC with **no** forwarding headers set. Record which headers
    arrive (a scratch function returning `current_setting('request.headers', true)` on a
    non-production project, removed immediately afterwards).
-2. Repeat, this time **sending** `cf-connecting-ip: 192.0.2.1` and
-   `x-forwarded-for: 192.0.2.2` from the client. Record whether either value survives to
-   PostgREST.
-3. Confirm the address-less path is **not** reached in normal traffic: after real calls,
+2. Run every row of this trust matrix separately; record the values reaching PostgREST
+   and whether the platform **overwrites or ignores client-provided values**. Header
+   presence alone is not evidence of trust. Use synthetic documentation-range addresses.
+
+   | Probe | Record |
+   | --- | --- |
+   | Baseline / no spoofed headers | Platform-derived values |
+   | Fake `cf-connecting-ip` only | Supplied value survives, overwritten, or ignored |
+   | Fake `x-real-ip` only | Supplied value survives, overwritten, or ignored |
+   | Fake `x-forwarded-for` only | Supplied leftmost value survives, overwritten, or ignored |
+   | Combinations of all three, with distinct values | Each value's disposition and which wins preference |
+
+   Forwarding-header trust remains **live-only**; global caps remain the fallback
+   until trust is established.
+3. Establish mapped-address behavior first (part B3mapped and hosted observation).
+   B3mapped compares `::ffff:203.0.113.9` with `::` without printing salt or digests.
+   Source inspection predicts a collision: the mapped address takes the IPv6 /56
+   branch, whose canonical network is `::`, the same hash input as the sentinel.
+   This source-level property is reported as
+   `OBSERVATION: ipv4_mapped_ipv6_collapses_to_sentinel=true` when executed, not as
+   PASS or an unconditional harness failure. The actual hosted address representation
+   decides pre-arm Gate B (S4); no normalization is performed by this patch.
+   **Conditional availability risk:** if the gateway supplies ordinary IPv4 clients
+   as IPv4-mapped IPv6, all such clients can collapse into the same /56 bucket as
+   each other and the address-less sentinel. Per-network limits could then be shared
+   across many/all guardians: peek **10/min, 40/hour**; redeem **5/min, 15/hour**.
+   This can cause broad false rate limiting / cross-user denial of service. The
+   separate global limiter does not fix this availability issue.
+   Sentinel bucket count **alone is not meaningful** until this is known: IPv4-mapped
+   IPv6 can share the `::` bucket without an address actually being absent. Then examine:
    `select count(*) from private.guardian_rate_limits where bucket_key = private.guardian_rate_limit_bucket_key('::'::inet)`
-   must be `0`. Any non-zero result means the header was not derivable and only the global
-   cap was protecting the surface.
+   Expected `0` for normal traffic only after mapped-address ambiguity is resolved.
+   A non-zero count requires investigation of absent headers **and** mapped addresses;
+   it cannot alone prove missing address derivation. Hosted runtime observation decides
+   whether a separately reviewed forward normalization migration is necessary.
 
 - [ ] Headers actually present on a Data API request: ______
 - [ ] Client-supplied `cf-connecting-ip` survives to PostgREST? ______
+- [ ] Client-supplied `x-real-ip` survives to PostgREST? ______
 - [ ] Client-supplied `x-forwarded-for` leftmost element survives? ______
 - [ ] Address-less (sentinel) bucket count after real traffic — expected `0`: ______
+- [ ] Mapped IPv6 vs sentinel collision, founder decision, and hosted observation: ______
 - [ ] If spoofable: per-network limits are documented as best-effort, global caps re-approved
 
 ### A5 — Does PostgREST run the hook for `OPTIONS`? — **LIVE-ONLY**
@@ -274,7 +313,7 @@ PostgREST already refuses GET/HEAD — and it is kept anyway, deliberately:
 What it is **not** is the primary control any more. The primary control is the volatility
 declaration, because it acts before a transaction exists.
 
-- [ ] Both layers confirmed independently after arming (PostgREST 405 on GET; gate 405 when
+- [ ] Both layers confirmed independently (PostgREST 405 on GET before arming; gate 405 when
       reached): ______
 
 ### A7 — Registering the global prune — **LIVE-ONLY**
@@ -340,20 +379,104 @@ Every intermediate state is safe and leaves the product working:
 
 #### The procedure
 
-1. Apply `20261014000001`. Confirm the Data API is unchanged.
-2. Apply `20261014000002`. Confirm a `POST` to peek still works and a `GET` to peek is now
-   refused by PostgREST (405). Still no limiter.
-3. Run `node scripts/phase2-acceptance.mjs` against a non-production project. Part A6 should
-   show `pgrst.db_pre_request` as `(unset)` — the correct reading of an unarmed deployment,
-   and confirmation that steps 1–2 really were inert. Part A2 should already show
-   `provolatile = v` for both RPCs.
-4. Apply `20261014000003`. **This is the global change.**
-5. Immediately smoke-test traffic the limiter must not touch, **as each Data API role**: a
-   published profile read (`anon`), an authenticated profile write and a media upload
-   (`authenticated`), and any `service_role` path in use. Any failure here is a rollback, not
-   a debugging session. See § A9.
-6. Re-run the harness. Part A6 should now show the registered function.
-7. Close A1, A3, A4, A5 and A6 with real HTTP calls.
+**S0 — prerequisites.** Use an isolated throwaway, non-production database, with
+`auth.users` empty and no concurrent traffic. Run from the repository root using a
+native `psql` compatible with the target PostgreSQL environment on PATH (PG17 is
+the recommended operator client; the repository does not enforce a client version).
+On Windows the runner spawns `psql`
+directly without a shell: a `.cmd`/`.bat` shim is insufficient. The connection must
+be **direct Postgres or Supavisor session mode; never transaction-mode pooling**.
+The harness depends on session advisory locks, session/application metadata visible
+through `pg_stat_activity`, session GUC behavior, and role switching. Transaction
+pooling can create false failures. Configure operator-only database connection and
+host-confirmation environment values, plus REST URL and anon/publishable credential
+for the armed rollback HTTP proof (§ B). Never record those values in evidence.
+
+**S1 — infrastructure.** Apply `20261014000001` after the bearer migration exists.
+Confirm ordinary Data API behavior is unchanged.
+
+**S2 — volatility and schema cache.** After `20261014000002_peek_guardian_request_volatile`,
+explicitly issue and commit:
+
+```sql
+notify pgrst, 'reload schema';
+```
+
+Require a **pre-arm hosted HTTP proof** that POST peek still works and GET peek is
+refused by PostgREST (405), no longer served as a read-style RPC. Record both statuses.
+The pre-arm GET-peek 405 specifically proves PostgREST observed the VOLATILE
+schema-cache change; after arming, 405 is ambiguous because the dispatcher method
+gate can also generate it.
+Relying only on Supabase/PostgREST DDL-watch behavior is insufficient for this
+checkpoint. This is an operator procedure; reviewed migration bytes are unchanged.
+
+**S3 — kill-switch permission and pre-arm acceptance.** Verify the hook is unset.
+While still unset, execute and commit each statement:
+
+```sql
+alter role authenticator reset pgrst.db_pre_request;
+notify pgrst, 'reload config';
+```
+
+This should be operationally harmless while unset, and proves emergency permission
+exists before arming. Run the exact **pre-arm** command in § B. Part A6 expects
+`(unset)`; both RPCs must already have `provolatile = v`. Resolve every assertion
+failure and record B3mapped's observation. The observation alone does not fail
+the SQL harness or establish the hosted client-address format.
+
+**S4 — cleanliness, pre-arm hosted-address-format Gate B, and arming.** Require
+clean pre-arm SQL acceptance and complete teardown, without
+`--keep-fixtures`; verify fixture schema removed and `auth.users` remains empty.
+Do **not** run auth/signup/browser tests between pre-arm and armed SQL acceptance.
+While the hook remains unset, make a short hosted gateway request-header observation
+using ordinary client traffic with no spoofed forwarding headers. Record the actual
+platform-provided client-address representation reaching PostgREST.
+
+A temporary scratch echo RPC/function may be used **only after pre-arm teardown**,
+on the isolated branch. Never add it as a migration. Revoke default PUBLIC EXECUTE
+and grant only the minimum probe access needed; expose only the address-header
+fields needed for this observation, not credentials or other request headers.
+Drop it immediately after the probe and confirm its catalog entry is gone before
+arming. Record the representation and scratch-function removal evidence.
+
+| Gate B address-format outcome | Required action before arming |
+| --- | --- |
+| Ordinary client traffic arrives as dotted IPv4 (e.g. `203.0.113.9`) | Mapped collision is a known dormant compatibility risk; Gate B may continue subject to the remaining header-trust tests. |
+| Ordinary IPv4 traffic arrives as IPv4-mapped IPv6 (e.g. `::ffff:203.0.113.9`) | **Gate B FAILS. Do not arm. Stop for a reviewed forward normalization fix.** |
+| Representation cannot be determined | **Gate B INCOMPLETE. Do not arm.** |
+
+This pre-arm gate is additional to the later spoofing/trust matrix, not a replacement.
+Apply `20261014000003` only after this gate and pre-arm review permit it, with the
+scratch function confirmed gone. This is the global change.
+
+**S5 — armed SQL acceptance.** Run the exact **armed** command in § B, with rollback
+HTTP configuration present. Require complete teardown and record assertion outcomes.
+S5 and S6 must **never overlap**: both mutate limiter state/counters.
+
+**S6 — hosted gateway acceptance.** After S5 completes, before any gateway probe,
+clear counters and record the observed count, which must be exactly zero:
+
+```sql
+delete from private.guardian_rate_limits;
+select count(*) as limiter_rows_after_reset from private.guardian_rate_limits;
+```
+
+This reset is **only for the isolated throwaway branch**, never a production
+maintenance command. First probe the trailing-slash guardian RPC (§ A3); a guardian
+success with no limiter row requires immediate disarm. Then close A1, A3, A4, A5
+and A6 with real HTTP calls and the trust matrix. Smoke-test ordinary paths under
+each Data API role (§ A9). Authenticated write/upload smoke needing test identities
+belongs after S5, with isolated fixtures; any failure requires rollback.
+
+**S7 — logging and browser acceptance last.** Establish body-logging evidence (§ C)
+with the operator-generated non-authorizing canonical sentinel. Run browser acceptance
+(§ D) last, after SQL and gateway evidence has been recorded.
+
+**Gate D — rollback HTTP proof** (distinct from § D browser acceptance) stays open
+if the armed rollback drill lacks REST URL or anon/publishable credential in the
+operator environment. The committed disarm/rearm catalog test alone does not prove
+PostgREST observed the change. Record the successful disarmed HTTP smoke and exact
+restoration; never include credentials in docs or test output.
 
 **Rollback — the kill switch.** As a forward corrective migration, never an edit to an applied
 one (`GUARDRAILS § Migrations`):
@@ -421,13 +544,27 @@ no grant on either limiter table.
 
 ## § B — The automated harness
 
+Populate `PHASE2_ACCEPTANCE_DATABASE_URL` and `PHASE2_ACCEPTANCE_NONPROD_CONFIRM`
+privately in the operator environment (the confirmation must match the connection
+host). For armed acceptance also populate `PHASE2_ACCEPTANCE_REST_URL` and
+`PHASE2_ACCEPTANCE_ANON_KEY` privately. No URL or credential values belong here.
+
+Pre-arm (from repo root, with the hook unset):
+
 ```bash
-ATHLESITE_PHASE2_ACCEPTANCE=1 \
-PHASE2_ACCEPTANCE_DATABASE_URL='postgresql://...' \
-PHASE2_ACCEPTANCE_NONPROD_CONFIRM=<the host from that URL> \
-PHASE2_ACCEPTANCE_ISOLATED=1 \
-node scripts/phase2-acceptance.mjs
+ATHLESITE_PHASE2_ACCEPTANCE=1 PHASE2_ACCEPTANCE_ISOLATED=1 \
+node scripts/phase2-acceptance.mjs --phase=pre-arm
 ```
+
+Armed (from repo root, after full pre-arm teardown and arming):
+
+```bash
+ATHLESITE_PHASE2_ACCEPTANCE=1 PHASE2_ACCEPTANCE_ISOLATED=1 \
+node scripts/phase2-acceptance.mjs --phase=armed
+```
+
+These are POSIX shell commands. In PowerShell set `$env:ATHLESITE_PHASE2_ACCEPTANCE='1'`
+and `$env:PHASE2_ACCEPTANCE_ISOLATED='1'` before the corresponding `node` command.
 
 **It creates eight synthetic minor participation rows and eight `auth.users` rows.** They are
 fictional, on `example.invalid` (RFC 6761 — never resolvable, so nothing can be delivered to
@@ -443,14 +580,16 @@ forgotten, restating the host means someone looked.
 The harness clears shared limiter state and briefly unregisters the hook. A shared
 development branch is unsafe. Set `PHASE2_ACCEPTANCE_ISOLATED=1` explicitly.
 
-The harness needs `psql` on PATH. This project has no PostgreSQL client dependency and no
+The harness needs native `psql` compatible with the target PostgreSQL environment
+(PG17 recommended, no repository version check) on PATH and a session-mode
+connection as required in S0. This project has no PostgreSQL client dependency and no
 `service_role` key, and adding either to run an acceptance harness would introduce a
 credential or a vendor dependency whose only purpose is testing.
 
 | Part | File | Proves |
 | --- | --- | --- |
 | A | `01-acl.sql` | deployed effective ACLs: `anon` can execute both RPCs, `authenticated` and PUBLIC cannot, the **exhaustive** grantee set, owner, `SECURITY DEFINER`, empty `search_path`, no table or **column** grants, RLS on, the partial unique index, the limiter's own boundary, **both RPCs' volatility (A6)**, **the dispatcher's exact grantee set with PUBLIC absent (A1)**, the registered hook |
-| B | `02-limiter-scope.sql` | 9 unrelated paths × 7 methods never refused and never recorded; 19 malformed and near-miss paths inert; all 6 guardian path shapes in scope; the method gate; thresholds bind per endpoint class and per /24; nothing identifying stored; prune safety |
+| B | `02-limiter-scope.sql` | 9 unrelated paths × 7 methods never refused and never recorded; 19 malformed and near-miss paths inert; all 6 guardian path shapes in scope; encoded-path outcomes and row deltas; trailing-slash dispatcher no-op (not hosted routing); IPv6 /56 same/different buckets and truncate-before-hash; explicit mapped-IPv6/sentinel collision observation (not PASS/FAIL); method gate; thresholds; privacy; prune safety |
 | C | `03-replay-uniqueness-owner.sql` | replay, terminal decline, generic refusal for every malformed/non-canonical/unknown token, the decision allowlist, expiry, the partial unique index both ways, deleted owner |
 | G | `04-hook-roles.sql` | the hook under **`anon`, `authenticated`, `service_role`** by real `set local role` impersonation: a no-op on 9 non-guardian combinations, the limiter reached on all 6 guardian POST combinations, `anon` can still call the published-profile RPC through the hook, and the method gate named explicitly (GET/HEAD refused 405 on both RPCs; POST proceeds) |
 | H | `05-readonly-hazard.sql` | that a guardian POST **really does** fail `25006` inside a read-only transaction — the defect A6 removes — while unrelated traffic in the same mode is untouched, and that the method gate still refuses GET with no write |
@@ -502,9 +641,11 @@ be unset. The SQL uses simulated request GUCs; this phase cannot prove HTTP rout
 
 After pre-arm acceptance and gate review, apply the separate final arming migration
 on that isolated database. Run `node scripts/phase2-acceptance.mjs --phase=armed`.
-The registered hook must name the dispatcher. Teardown between runs is required;
-never reuse or adopt an existing fixture ledger. `--keep-fixtures` prints the run ID
-and a cleanup command that sets it on the teardown connection.
+The registered hook must name the dispatcher. Complete teardown between runs is
+required; never reuse or adopt an existing fixture ledger, and do not use
+`--keep-fixtures` in this procedure. Keep `auth.users` empty for the next run;
+auth/signup/browser testing waits until both SQL phases complete. Browser acceptance
+runs last. S5 armed SQL and S6 gateway probing never overlap.
 
 ### Rollback drill
 
@@ -518,9 +659,22 @@ Set `PHASE2_ACCEPTANCE_REST_URL` and `PHASE2_ACCEPTANCE_ANON_KEY` for HTTP smoke
 A configured smoke must return 200 with no new limiter row; errors fail acceptance.
 It uses a bounded timeout. An unobserved asynchronous PostgREST reload fails this
 probe and requires investigation; catalog checks alone never prove a reload.
-Without HTTP configuration the runner explicitly skips that proof. There is no
+Without HTTP configuration the runner explicitly skips that proof and **Gate D
+(rollback HTTP proof) cannot close**. There is no
 claim that PostgREST observed the disarmed state, nor runtime PostgreSQL acceptance
 until these files have actually been executed.
+For an otherwise successful armed SQL-only run, the final summary says
+`SQL ASSERTIONS PASS — rollback HTTP observation not configured; Gate D INCOMPLETE`.
+The runner uses exactly three exit codes: **0** means the requested acceptance
+phase completed successfully (clean pre-arm, or clean armed with successful rollback
+HTTP observation); **1** means an actual failure, including SQL assertions, runner
+steps, attempted HTTP smoke, or hook restoration; **2** means assertions and runner
+steps passed but required rollback HTTP evidence was unconfigured, leaving armed
+Gate D incomplete. Automation must treat **both 1 and 2 as “do not proceed”**;
+2 means incomplete rather than failed. This operator procedure requires configured,
+successful rollback HTTP evidence before proceeding.
+Both phases repeat the SQL-produced mapped-IPv6 boolean in the final summary as an
+**OBSERVATION**, never PASS/FAIL. Missing observation output is reported as unknown.
 
 ---
 
@@ -547,6 +701,11 @@ questions below are not rhetorical; each needs an answer recorded.
 
 For each, call `redeem_guardian_request` once on a **non-production** project with a
 recognisable sentinel token, then search the surface for that sentinel string.
+The sentinel must be a **canonical 43-character guardian-token form**, synthetic,
+generated only by the operator, and **not associated with any request row**; it is
+therefore non-authorizing. Do not put a literal sentinel into the repository or
+retained test output. The existing rollback smoke token may exercise only an early
+refusal path and is **insufficient for body-logging acceptance**.
 
 - [ ] **API edge / gateway logs** — does the Data API log request bodies? Search Supabase's
       Edge Logs for the sentinel. Expected: absent. Observed: ______
