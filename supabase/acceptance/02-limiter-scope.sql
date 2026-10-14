@@ -338,11 +338,11 @@ select 'OBSERVATION: ipv4_mapped_ipv6_collapses_to_sentinel=' || coalesce(
   'unknown'
 ) as mapped_ipv6_observation;
 
--- B4. THE METHOD GATE — closing the GET route onto the STABLE peek RPC
+-- B4. THE METHOD GATE — closing unlimitable GET/HEAD guardian requests
 -- ══════════════════════════════════════════════════════════════════════════
 --
--- `peek_guardian_request` is declared `stable`, so PostgREST will serve it
--- over GET as well as POST. A GET runs in a read-only transaction where the
+-- PostgREST can serve logically read-only peek over GET even when its deployed
+-- volatility is VOLATILE. GET/HEAD run in read-only transactions where the
 -- limiter cannot record anything, so a GET that was merely ignored would be an
 -- unlimited path onto a privileged function. It is refused instead, with 405 —
 -- a refusal needs no write and so works in a read-only transaction too.

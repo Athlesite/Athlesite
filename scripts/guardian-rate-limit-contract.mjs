@@ -8,7 +8,7 @@
  *
  * The middle one is one `alter function` and is a CORRECTNESS prerequisite, not
  * hardening: PostgREST picks a read-only or read/write transaction from the
- * called function's volatility, not from the HTTP method, so with
+ * HTTP method and called function's volatility, so with
  * `peek_guardian_request` left STABLE a legitimate POST peek would run
  * read-only and the limiter's INSERT would raise 25006 — breaking every peek.
  * Its contract (property K) is the one that keeps arming from ever shipping
@@ -507,8 +507,8 @@ function validateMethodGate(dispatcher, problems) {
   }
   if (!has(dispatcher, "if v_method is distinct from 'POST' then raise")) {
     problems.push(
-      "B: non-POST guardian traffic is no longer refused. `peek_guardian_request` is STABLE, so " +
-        "PostgREST serves it over GET, and a GET runs in a read-only transaction where the limiter " +
+      "B: non-POST guardian traffic is no longer refused. GET/HEAD run read-only regardless of " +
+        "volatility; logically read-only peek can succeed, but the limiter " +
         "cannot record anything — ignoring non-POST leaves an unlimited path onto the peek RPC. " +
         "The comparison must also be `is distinct from`, so a NULL method is refused rather than admitted."
     );
@@ -1305,7 +1305,7 @@ function validateVolatilityMigration(sql, problems) {
   if (!has(tokens, "alter function public . peek_guardian_request ( text ) volatile")) {
     problems.push(
       "K: peek_guardian_request is not made VOLATILE. PostgREST picks a read-only or read/write " +
-        "transaction from volatility, not from the HTTP method, so leaving peek STABLE means a " +
+        "transaction from both HTTP method and volatility, so leaving peek STABLE means a " +
         "legitimate POST peek runs read-only and the limiter's INSERT raises 25006 — every peek " +
         "fails, rather than merely going unlimited."
     );

@@ -299,15 +299,14 @@ end;
 $$;
 
 -- ══════════════════════════════════════════════════════════════════════════
--- G3. THE METHOD GATE, NAMED EXPLICITLY (defence in depth after VOLATILE)
+-- G3. THE METHOD GATE, NAMED EXPLICITLY (required even with VOLATILE)
 -- ══════════════════════════════════════════════════════════════════════════
 --
--- With both RPCs VOLATILE, PostgREST itself refuses GET and HEAD at the
--- routing layer, so these cases should never reach the database in production.
--- The gate is kept, and asserted here, for the case that matters: if
--- 20261014000002 is ever reverted — or a future `create or replace` restates
--- peek as STABLE — GET becomes servable again, and this is what refuses it
--- instead of silently admitting a call the limiter cannot record.
+-- GET/HEAD remain read-only for all volatility classes. Logically read-only
+-- peek can succeed before arming, so VOLATILE does not close that route.
+-- The dispatcher must refuse these calls once armed, because a read-only
+-- transaction cannot record a limiter write. These SQL probes call the gate
+-- directly in both phases; hosted 405 is an armed-hook expectation.
 do $$
 declare
   v_cases text[][] := array[

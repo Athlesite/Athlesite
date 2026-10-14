@@ -153,13 +153,17 @@ select phase2_acceptance.record(
 -- BOTH guardian RPCs must be VOLATILE ('v') in the deployed catalog, and this
 -- is a correctness assertion rather than a hardening one.
 --
--- PostgREST chooses a read-only or a read/write transaction from the called
--- function's volatility, NOT from the HTTP method: GET and HEAD always run
+-- PostgREST chooses access mode from BOTH method and function volatility:
+-- GET and HEAD always run
 -- read-only, a POST to a STABLE or IMMUTABLE function ALSO runs read-only, and
 -- only a POST to a VOLATILE function runs read/write. The pre-request limiter
 -- INSERTs, so if peek is STABLE here then every legitimate POST peek raises
 -- 25006 once the hook is armed — the peek surface breaks outright rather than
 -- going unlimited.
+-- VOLATILE does not refuse GET/HEAD routing. Pre-arm GET peek may return 200;
+-- the armed dispatcher's method gate must supply the GET/HEAD 405 refusal.
+-- Catalog checks do not prove hosted transaction mode; RUNBOOK S2 specifies
+-- the separate scratch POST mode/write proof without changing guardian bodies.
 --
 -- 20261013000001 declared peek STABLE and is byte-pinned; 20261014000002
 -- changes it with one `alter function`. So this assertion deliberately
