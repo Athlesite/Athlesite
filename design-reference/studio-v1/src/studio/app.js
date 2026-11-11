@@ -172,6 +172,7 @@
     get: () => store.get(),
     setSlug: (slug) => store.commit((d) => { d.data.slug = slug; }, { kind: 'content', key: 'slug' }),
     visit: () => { mode.set('visitor'); showMode('visitor'); },
+    subscribe: store.subscribe,
   });
 
   // — File: save the page to a file, open one, start a new page (files.js, firstrun.js) —

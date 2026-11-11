@@ -77,3 +77,20 @@ have to complete this part".
 18. **New `tools/studio-account.js`** (21 checks, desktop and phone): the age paths, email and code,
     terms, visitor view, and every Publish case. The four setup tests now pass the account screens first
     (`tools/account-steps.js`).
+
+## CFul's answers to the four questions (2026-11-10), and what changed
+19. **Contact: hidden at launch.** No personal contact details on public pages. Later, a built-in
+    "Contact Athlete" feature routes inquiries to the athlete or an approved guardian without revealing
+    their details. Nothing to change in the lab: the "Published today" and visitor views already hide
+    Contact.
+20. **Order agreed:** account → guided setup → Studio → Publish, no question asked twice, and a private
+    draft that autosaves once there's an account. That's what's built.
+21. **"Publish changes", built.** After publishing, edits stay private until the athlete presses it. The
+    button turns back into a dark "Publish changes" pill; on phones it reads "Publish" with an amber dot.
+    - The dialog explains the changes are private until published, and offers "See the changes as a
+      visitor", Publish changes, Not yet and Unpublish.
+    - Only what visitors would see counts as a change (the public fields and the design). Adding stats
+      or a gallery photo doesn't ask to be published, because those never go public today.
+22. **Launch shows only today's public fields; the Studio keeps the rest, privately.** The editor now
+    tags the six sections a published page can't show yet as **Private**: Stats, Results, Your section,
+    Milestones, Gallery and NIL. Athletes aren't surprised when a visitor doesn't see them.

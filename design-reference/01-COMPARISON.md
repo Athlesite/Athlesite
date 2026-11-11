@@ -105,11 +105,22 @@ it isn't compared here. Reconcile it before integration starts.
   - layouts tested against worst-case data (`break.html`).
 - **The 15 examples:** fixtures for tests and for the homepage. They're labelled as examples.
 
-## 5. Next decisions (CFul's list, unchanged)
+## 5. Decisions
 
-1. Early account creation before autosave (vs device saving).
-2. Adult-only first integration, extra fields private by default.
-3. v1 exposes only today's public fields, or waits for a new reviewed matrix (CFul favours current
-   fields first).
-4. Gallery, recruiting and NIL as phase two (CFul favours deferral).
-5. Link name (handle) UX, and whether minors can export their page file.
+**Decided by CFul and Willy (2026-11-10):**
+
+1. **Contact:** no personal contact details on public pages. Eventually there'll be a built-in "Contact
+   Athlete" feature that routes inquiries to the athlete (or an approved guardian) without revealing
+   their details. Until that's ready and approved, **the Contact button is hidden at launch**. This
+   doesn't hold up the Studio port.
+2. **Order:** account first → guided setup → Studio → Publish. No question is asked twice, and once
+   there's an account, progress autosaves as a private draft.
+3. **Edits after publishing:** a **"Publish changes"** button. Edits, design experiments and previews stay
+   private until then. For minors, changes to the public profile go through guardian approval first.
+4. **Public fields at launch:** only the fields today's rules allow. The Studio keeps the other sections
+   (stats, number, socials, recruiting, achievements, NIL), and they stay **private** until visibility
+   controls and approvals exist.
+
+**Still open:** adult-only first integration (implied by 4; confirm), link-name timing in the schema
+(drafts before a final slug), whether minors can export their page file, and the renderer (TS port of the
+templates vs React components).

@@ -24,7 +24,7 @@
 *{box-sizing:border-box}
 /* The scrollbar's room is kept while an opened example locks the page: otherwise the whole page behind the
    glass widens by the scrollbar, lays out again and jumps sideways as a card opens and closes. */
-html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable;scroll-padding-top:88px} /* focus and links never land under the fixed nav */
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:clip}
 img{display:block;max-width:100%}
 a{color:inherit}
@@ -34,6 +34,10 @@ a,button,input,label{-webkit-tap-highlight-color:transparent}
 a,button{touch-action:manipulation}
 .btn,.qa button,.modal-nav,.modal-close{user-select:none;-webkit-user-select:none}
 h2,h3{text-wrap:balance}
+/* Keyboard users jump past the nav; hidden until it has focus. */
+.skip-link{position:fixed;z-index:100;left:16px;top:16px;padding:12px 18px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;text-decoration:none;transform:translateY(-200%)}
+.skip-link:focus{transform:none}
+main:focus,section:focus{outline:none} /* link targets: focus moves on from here with the next Tab */
 :focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .eyebrow{margin:0;font:500 12px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 @media(max-width:480px){.eyebrow{letter-spacing:.14em}} /* keeps the hero's eyebrow on one line at 12px */
@@ -59,8 +63,10 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 
 /* ---------- Nav ---------- */
 .nav{position:fixed;inset:0 0 auto;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:24px;height:76px;padding:0 var(--gutter);color:#fff;transition:color .35s,background .35s,box-shadow .35s}
-/* Solid, no backdrop blur: a blur under the nav is redrawn on every scrolled frame, the biggest cost on Willy's Iris Xe. */
-.nav.is-light{color:var(--ink);background:var(--bg);box-shadow:0 1px 0 #0000000f}
+/* Frosted: content blurs as it passes under the nav instead of being cut off at its edge. Measured on this page
+   (60Hz, Iris Xe, 2026-11-10) the blur cost no frames; a solid bar made no difference. Solid for reduced transparency. */
+.nav.is-light{color:var(--ink);background:#f3f1ecd9;box-shadow:0 1px 0 #0000000f;-webkit-backdrop-filter:blur(12px) saturate(1.2);backdrop-filter:blur(12px) saturate(1.2)}
+@media(prefers-reduced-transparency:reduce){.nav.is-light{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}}
 .brand{position:relative;display:flex;align-items:center;gap:12px;text-decoration:none}
 .brand .mark{height:34px;width:auto}
 .brand .word{height:10px;width:auto}
@@ -148,7 +154,10 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 @media(max-width:1023px){.carousel{--cw:290px;--ch:400px}}
 @media(max-width:639px){.carousel{--cw:250px;--ch:350px;perspective:800px}}
 .card{position:absolute;left:50%;top:30px;width:var(--cw);height:var(--ch);margin-left:calc(var(--cw) / -2);will-change:transform,opacity;transform-style:flat}
-.card-inner{position:absolute;inset:0;clip-path:inset(0 round 18px);container-type:inline-size;transition:box-shadow .3s}
+.card-inner{position:absolute;inset:0;clip-path:inset(0 round 18px);container-type:inline-size;transition:box-shadow .3s,transform .25s var(--ease)}
+/* The card answers the moment it is pressed; the press lets go as soon as the touch turns into a drag. */
+.card-shine{transition:transform .25s var(--ease)}
+.card.is-press :is(.card-inner,.card-shine){transform:scale(.97);transition-duration:.1s}
 .card-shadow{position:absolute;inset:6% 4% -2%;border-radius:18px;box-shadow:0 30px 50px -18px #0b0b0f66;z-index:-1}
 /* A fixed sheen that brightens as a card nears the middle. Only its opacity changes (on the graphics chip):
    a sheen that moved across the card, or a blend mode, repainted all fifteen cards every frame. */
@@ -157,6 +166,9 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 .card-tag{position:absolute;top:calc(100% + 14px);left:50%;translate:-50% 0;white-space:nowrap;padding:6px 11px;border-radius:99px;background:#ffffffa6;border:1px solid #0000000f;color:var(--ink-2);font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .carousel-foot{display:flex;justify-content:center;gap:28px;margin-top:6px;color:var(--muted);font:500 12px var(--mono);letter-spacing:.18em;text-transform:uppercase}
+/* Stops the drift for good (it otherwise resumes after a pause): motion that runs on by itself needs a way to stop it. */
+.carousel-pause{position:relative;padding:0;border:0;background:none;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--ink-2);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.carousel-pause::after{content:"";position:absolute;inset:-14px -10px}
 
 /* The cards are the example pages' own cover cards: ../studio-v1/src/card.css, built by card.js. */
 
@@ -275,8 +287,15 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 .claim-input input{flex:1;min-width:0;height:100%;border:0;background:none;color:#fff;font:inherit;outline:none}
 .claim-input:focus-within{box-shadow:inset 0 0 0 1.5px var(--blue-light)}
 .claim-note{margin-top:16px;min-height:1.5em;color:#ffffff80;font-size:13px}
-.footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;padding:28px var(--gutter);background:var(--night);color:#ffffff73;font-size:13px;border-top:1px solid #ffffff14}
+@media(max-width:640px){.claim-form .btn{flex:1 1 100%;justify-content:center}} /* full width under the full-width field */
+/* The page closes on the wordmark at full width, with plain links above it and the fine print under it. */
+.footer{padding:clamp(40px,7vh,72px) var(--gutter) 28px;background:var(--night);color:#ffffffc2;font-size:15px;border-top:1px solid #ffffff14}
+.footer-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 32px}
+.footer-links{display:flex;flex-wrap:wrap;gap:4px 28px}
 .footer a{margin:-12px 0;padding:12px 0;text-decoration:none} /* a 44px tap target without moving the line */
+.footer-word{width:100%;height:auto;margin:clamp(40px,8vh,88px) 0 clamp(20px,3vh,32px)}
+.footer-fine{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;color:#ffffff73;font-size:13px}
+@media(max-width:640px){.footer-row{flex-direction:column;align-items:flex-start}.footer-links{gap:4px 22px}}
 
 /* ---------- Entrance ---------- */
 .js .rise{opacity:0;transform:translateY(28px)}
@@ -301,6 +320,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 </head>
 <body>
 <script>document.documentElement.classList.add('js')</script>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <header class="nav" id="nav">
   <a class="brand" href="#top" aria-label="Athlesite home">
@@ -312,14 +332,14 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
   <a class="btn btn-blue" href="../studio-v1/studio.html?start=1">Create your Athlesite</a>
 </header>
 
-<main>
+<main id="main" tabindex="-1">
 <!-- Scene 1: the athlete becomes the website -->
 <section class="hero-scene" id="top" aria-labelledby="hero-title">
   <div class="hero-sticky" id="heroSticky">
     <div class="hero-media" id="heroMedia"><img src="assets/img/athlete-towel.png" alt="Football athlete on the sideline after a night game" width="1536" height="1024" fetchpriority="high"></div>
     <div class="hero-shade" id="heroShade"></div>
     <div class="hero-copy" id="heroCopy">
-      <p class="eyebrow">Athlesite · The athlete's own website</p>
+      <p class="eyebrow">Athlesite · The athlete’s own website</p>
       <h1 class="hero-title" id="hero-title"><span><b>Your story</b></span><span class="accent"><b>One home</b></span></h1>
       <div class="hero-row">
         <p>A website that looks like you went pro. One link for coaches, scouts, brands and everyone who should know your name.</p>
@@ -330,7 +350,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 
     <div class="endstate">
     <div class="reveal-head" id="revealHead">
-      <p class="eyebrow">This is Jordan's</p>
+      <p class="eyebrow">This is Jordan’s</p>
       <h2>One link. <span class="serif-i">Everything</span> they need to see.</h2>
     </div>
     <div class="win" id="win" aria-hidden="true">
@@ -357,7 +377,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
   </div>
   <div class="carousel" id="carousel" role="list" aria-label="Example athlete websites"></div>
   <p class="sr-only" id="carouselHelp">Left and right arrow keys move through the examples. Enter opens one.</p>
-  <div class="carousel-foot"><span>Drag · Swipe</span><span>Click to open</span></div>
+  <div class="carousel-foot"><span>Drag · Swipe</span><span>Click to open</span><button class="carousel-pause" id="carouselPause" type="button">Pause</button></div>
 </section>
 
 <!-- Scene 3: how it works -->
@@ -368,7 +388,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
       <div class="step is-active"><span>01</span><h3>Create</h3><p>Your name, your sport, your story. Guided, not a blank page.</p></div>
       <div class="step"><span>02</span><h3>Personalize</h3><p>Pick a style, your colors, your photos. It stays premium whatever you choose.</p></div>
       <div class="step"><span>03</span><h3>Publish</h3><p>You decide when it goes live and what is public.</p></div>
-      <div class="step"><span>04</span><h3>Share</h3><p>One link in your bio, your emails, your film. That's the whole pitch.</p></div>
+      <div class="step"><span>04</span><h3>Share</h3><p>One link in your bio, your emails, your film. That’s the whole pitch.</p></div>
       <div class="how-progress"><i id="howBar"></i></div>
     </div>
     <div class="phone" aria-hidden="true"><div class="phone-screen" id="howScreen"></div></div>
@@ -383,7 +403,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
       <div class="qa"><button aria-expanded="false">What is an Athlesite?<i></i></button><div class="qa-body"><div><p>A professional website for an athlete: your story, film, stats, recruiting information and socials in one place, at one link you own.</p></div></div></div>
       <div class="qa"><button aria-expanded="false">Do I need to know how to build a website?<i></i></button><div class="qa-body"><div><p>No. A guided setup asks for your information and media, and the studio handles the design. You choose the style; it always looks finished.</p></div></div></div>
       <div class="qa"><button aria-expanded="false">Do I need to be recruited or have an NIL deal?<i></i></button><div class="qa-body"><div><p>No. Start where you are today. Your site can introduce you before a recruiting conversation or business opportunity exists.</p></div></div></div>
-      <div class="qa"><button aria-expanded="false">Who controls what's public?<i></i></button><div class="qa-body"><div><p>You do. You decide when your site goes live and what it shows, and you can take it private again at any time.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Who controls what’s public?<i></i></button><div class="qa-body"><div><p>You do. You decide when your site goes live and what it shows, and you can take it private again at any time.</p></div></div></div>
       <div class="qa"><button aria-expanded="false">Are the athletes shown here real customers?<i></i></button><div class="qa-body"><div><p>No. The athletes and sites on this page are fictional demonstrations, and the images are illustrative. No endorsements or recruiting outcomes are implied.</p></div></div></div>
     </div>
   </div>
@@ -394,14 +414,21 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
   <p class="eyebrow">05 · Your name belongs out there</p>
   <h2 class="claim-line" id="claim-title" aria-label="Claim your Athlesite link"><span class="dom">athlesite.com/</span><span class="slug" id="claimSlug">yourname</span><i class="caret" aria-hidden="true"></i></h2>
   <form class="claim-form" id="claimForm">
-    <label class="claim-input"><span>athlesite.com/</span><input id="claimInput" name="slug" autocomplete="off" spellcheck="false" placeholder="yourname" aria-label="Your link name" maxlength="30"></label>
+    <label class="claim-input"><span>athlesite.com/</span><input id="claimInput" name="slug" autocomplete="off" spellcheck="false" placeholder="yourname" aria-label="Your link name" aria-describedby="claimNote" maxlength="30"></label>
     <button class="btn btn-blue" type="submit">Claim it <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </form>
   <p class="claim-note" id="claimNote" aria-live="polite"></p>
 </section>
 </main>
 
-<footer class="footer"><span>© 2026 Athlesite</span><span>Design preview · fictional athletes · illustrative imagery</span><a href="#top">Back to top ↑</a></footer>
+<footer class="footer">
+  <div class="footer-row">
+    <nav class="footer-links" aria-label="Footer"><a href="#styles">Examples</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="../studio-v1/studio.html?start=1">Create your Athlesite</a></nav>
+    <a href="#top">Back to top ↑</a>
+  </div>
+  <img class="footer-word" src="assets/brand/athlesite-wordmark-on-dark-2400.webp" alt="Athlesite" width="2400" height="183" loading="lazy" decoding="async">
+  <div class="footer-fine"><span>© 2026 Athlesite</span><span>Design preview · fictional athletes · illustrative imagery</span></div>
+</footer>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-scrim" id="modalScrim"></div>
@@ -479,6 +506,9 @@ if (!reduced) {
     const a = e.target.closest('a[href^="#"]'); if (!a) return;
     const el = document.querySelector(a.getAttribute('href')); if (!el) return;
     e.preventDefault();
+    // Focus follows the link, as it does without the smooth scroll: the skip link and keyboard users need it.
+    if (!el.matches('a[href],button,input,[tabindex]')) el.setAttribute('tabindex', '-1');
+    el.focus({ preventScroll: true });
     driving = true; current = scrollY;
     target = clamp(el.getBoundingClientRect().top + scrollY - (a.getAttribute('href') === '#top' ? 0 : 0), 0, max());
     if (!raf) raf = requestAnimationFrame(frame);
@@ -698,6 +728,19 @@ let settle = null; // { to, tau }
 let wheelAt = 0; // last sideways wheel input; the carousel settles once it stops
 let laidX = NaN, settled = false; // skip frames where nothing moved (e.g. while a card is open)
 let kbHold = false; // keyboard focus is on a card: no drifting away from under it
+// The drift also holds while a mouse is over the cards, and stops for good with the Pause button.
+let hoverHold = false, userPaused = false;
+const pauseBtn = $('#carouselPause');
+if (reduced) pauseBtn.hidden = true; // nothing drifts with reduced motion
+pauseBtn.addEventListener('click', () => {
+  userPaused = !userPaused;
+  pauseBtn.textContent = userPaused ? 'Play' : 'Pause';
+  if (!userPaused) lastInput = performance.now() - AUTO_DELAY; // Play starts the drift straight away
+});
+if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
+  carousel.addEventListener('mouseenter', () => { hoverHold = true; });
+  carousel.addEventListener('mouseleave', () => { hoverHold = false; lastInput = performance.now(); });
+}
 // Read once per resize, not every frame (a computed-style read each frame forces a style pass).
 let CW = 0, WIDTH = 0;
 const measureCarousel = () => { CW = parseFloat(getComputedStyle(carousel).getPropertyValue('--cw')); WIDTH = carousel.clientWidth; laidX = NaN; };
@@ -743,7 +786,7 @@ function carouselTick(now) {
     if (Math.abs(settle.to - scrollX) < .3) { scrollX = settle.to; settle = null; }
   } else if (!dragging && !paused && !kbHold && !reduced) {
     if (wheelAt && now - wheelAt > 140) { wheelAt = 0; settleFrom(0); }
-    else if (!wheelAt && now - lastInput >= AUTO_DELAY) scrollX += AUTO_SPEED * dt;
+    else if (!wheelAt && !userPaused && !hoverHold && now - lastInput >= AUTO_DELAY) scrollX += AUTO_SPEED * dt;
   }
   if (scrollX !== laidX || !settled) layoutCards(now);
   requestAnimationFrame(carouselTick);
@@ -773,7 +816,7 @@ const releaseSpeed = d => {
 };
 const moveDrag = (x, y) => {
   if (!drag) return false;
-  if (!drag.axis) { const dx = Math.abs(x - drag.x0), dy = Math.abs(y - drag.y0); if (dx + dy < 8) return false; drag.axis = dx > dy * 1.2 ? 'h' : 'v'; if (drag.axis === 'h') { dragging = true; carousel.classList.add('is-dragging'); } }
+  if (!drag.axis) { const dx = Math.abs(x - drag.x0), dy = Math.abs(y - drag.y0); if (dx + dy < 8) return false; pressOff(); drag.axis = dx > dy * 1.2 ? 'h' : 'v'; if (drag.axis === 'h') { dragging = true; carousel.classList.add('is-dragging'); } }
   if (drag.axis !== 'h') return false;
   const now = performance.now(), dx = x - drag.x;
   scrollX -= dx; drag.x = x; drag.dist += Math.abs(dx); lastInput = now;
@@ -782,13 +825,18 @@ const moveDrag = (x, y) => {
   return true;
 };
 // Every release ends on a card: a fling glides on and lands, a press that stopped a glide finishes it.
-const endDrag = () => { if (!drag) return; settleFrom(dragging ? releaseSpeed(drag) : 0); suppressClick = drag.dist > 5 || drag.caught; dragging = false; carousel.classList.remove('is-dragging'); drag = null; lastInput = performance.now(); };
+const endDrag = () => { pressOff(); if (!drag) return; settleFrom(dragging ? releaseSpeed(drag) : 0); suppressClick = drag.dist > 5 || drag.caught; dragging = false; carousel.classList.remove('is-dragging'); drag = null; lastInput = performance.now(); };
 // The cards hold real <img> photos: a drag starting on one would otherwise become the browser's image drag.
 carousel.addEventListener('dragstart', e => e.preventDefault());
-carousel.addEventListener('mousedown', e => { if (e.button === 0) startDrag(e.clientX, e.clientY); });
+// Pressed look on the card under the finger, unless the press only stopped a glide (that is not a click).
+let pressed = null;
+const pressOn = t => { if (drag && !drag.caught) { pressed = t.closest && t.closest('.card'); if (pressed) pressed.classList.add('is-press'); } };
+function pressOff() { if (pressed) pressed.classList.remove('is-press'); pressed = null; }
+carousel.addEventListener('mousedown', e => { if (e.button === 0) { startDrag(e.clientX, e.clientY); pressOn(e.target); } });
 addEventListener('mousemove', e => { if (drag) moveDrag(e.clientX, e.clientY); });
 addEventListener('mouseup', endDrag);
-carousel.addEventListener('touchstart', e => startDrag(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+carousel.addEventListener('touchstart', e => { startDrag(e.touches[0].clientX, e.touches[0].clientY); pressOn(e.target); }, { passive: true });
+carousel.addEventListener('touchcancel', endDrag);
 carousel.addEventListener('touchmove', e => { if (moveDrag(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false });
 carousel.addEventListener('touchend', endDrag);
 carousel.addEventListener('wheel', e => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * .5) { e.preventDefault(); scrollX += e.deltaX; settle = null; wheelAt = lastInput = performance.now(); } }, { passive: false });
@@ -824,6 +872,7 @@ const navBtns = [$('#modalPrev'), $('#modalNext'), $('#modalClose')];
 const outside = [$('#nav'), $('main'), $('footer')];
 const EASE = 'cubic-bezier(.65,0,.35,1)', EASE_OUT = 'cubic-bezier(.16,1,.3,1)';
 const anim = (el, kf, o) => reduced ? null : el.animate(kf, { fill: 'both', ...o });
+let openFlight = null; // the card's flight into the phone, so a close during it can turn back from mid-air
 let activeCard = null, closing = false, lastFocus = null, liveToken = 0, liveTimer = 0, stepToken = 0;
 const activeSite = () => SITES[cards[activeCard].site];
 function fill(s) {
@@ -833,7 +882,7 @@ function fill(s) {
   $('#modalList').innerHTML = s.list.map(t => `<li>${esc(t)}</li>`).join('');
   $('#modalStart').href = `${STUDIO}studio.html?start=1&from=${encodeURIComponent(s.slug)}`;
   $('#modalFull').href = `${STUDIO}site.html?ex=${encodeURIComponent(s.slug)}`;
-  $('#modalNote').textContent = `Your own words and photos, in ${s.first}'s design.`;
+  $('#modalNote').textContent = `Your own words and photos, in ${s.first}’s design.`;
   phone.style.setProperty('--m-bg', s.bg);
   frame.title = `${s.name}'s page, live preview`;
 }
@@ -888,7 +937,7 @@ function openModal(card) {
   ghost.style.transform = ghostRest();
   card.el.style.visibility = 'hidden';
   centerOn(activeCard); // the carousel brings this card to the middle behind the glass
-  const flight = anim(ghost, [{ transform: ghostOver(from) }, { transform: ghostRest() }], { duration: 620, easing: EASE });
+  const flight = openFlight = anim(ghost, [{ transform: ghostOver(from) }, { transform: ghostRest() }], { duration: 620, easing: EASE });
   anim(shell, [{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 520, delay: 140, easing: EASE_OUT });
   anim(scrim, [{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'ease-out' });
   anim(info, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 320, easing: EASE_OUT });
@@ -919,15 +968,20 @@ function closeModal() {
   if (settle) { scrollX = settle.to; settle = null; layoutCards(performance.now()); }
   if (reduced) return done();
   const to = card.el.getBoundingClientRect();
+  // Everything leaves from where it is on screen now: closed during the opening flight, the card turns
+  // back from mid-air and the half-faded parts fade out from there, instead of jumping to "open" first.
+  const midOpen = !!openFlight && openFlight.playState === 'running', wait = midOpen ? 0 : 1;
+  const now = el => getComputedStyle(el), op = el => +now(el).opacity;
+  const ghostAt = now(ghost).transform, shellAt = now(shell).transform;
   ghost.getAnimations().forEach(a => a.cancel());
   ghost.style.transform = ghostRest();
   // The live page fades back to the card, the phone dissolves, and the card flies home.
-  screenBox.animate([{ opacity: +getComputedStyle(screenBox).opacity }, { opacity: 0 }], { duration: 180, fill: 'both' });
-  info.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'both' });
-  navBtns.forEach(b => b.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'both' }));
-  shell.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.96)' }], { duration: 320, delay: 120, easing: 'ease-in', fill: 'both' });
-  scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, delay: 150, fill: 'both' });
-  ghost.animate([{ transform: ghostRest() }, { transform: ghostOver(to) }], { duration: 560, delay: 140, easing: EASE, fill: 'both' }).finished.then(done, done);
+  screenBox.animate([{ opacity: op(screenBox) }, { opacity: 0 }], { duration: 180, fill: 'both' });
+  info.animate([{ opacity: op(info) }, { opacity: 0 }], { duration: 200, fill: 'both' });
+  navBtns.forEach(b => b.animate([{ opacity: op(b) }, { opacity: 0 }], { duration: 150, fill: 'both' }));
+  shell.animate([{ opacity: op(shell), transform: shellAt }, { opacity: 0, transform: 'scale(.96)' }], { duration: 320, delay: 120 * wait, easing: 'ease-in', fill: 'both' });
+  scrim.animate([{ opacity: op(scrim) }, { opacity: 0 }], { duration: 450, delay: 150 * wait, fill: 'both' });
+  ghost.animate([{ transform: ghostAt === 'none' ? ghostRest() : ghostAt }, { transform: ghostOver(to) }], { duration: midOpen ? 460 : 560, delay: 140 * wait, easing: midOpen ? EASE_OUT : EASE, fill: 'both' }).finished.then(done, done);
 }
 function step(dir) {
   if (activeCard === null || closing) return;
@@ -1025,7 +1079,7 @@ claimInput.addEventListener('input', () => {
   if (claimInput.value !== v) claimInput.value = v;
   clearTimeout(demoTimer);
   claimSlug.textContent = v || 'yourname';
-  claimNote.textContent = '';
+  claimNote.textContent = ''; claimInput.removeAttribute('aria-invalid');
   if (!v) demoTimer = setTimeout(demoType, 1200);
 });
 $('#claimForm').addEventListener('submit', e => {
@@ -1033,7 +1087,7 @@ $('#claimForm').addEventListener('submit', e => {
   const v = slugify(claimInput.value);
   if (v !== claimInput.value) { claimInput.value = v; claimSlug.textContent = v || 'yourname'; }
   const problem = slugProblem(v);
-  if (problem) { claimNote.textContent = problem; return; }
+  if (problem) { claimNote.textContent = problem; claimInput.setAttribute('aria-invalid', 'true'); claimInput.focus(); return; }
   // Into the Studio setup; the link name they claimed goes with them onto their new page.
   location.href = `../studio-v1/studio.html?start=1&slug=${encodeURIComponent(v)}`;
 });

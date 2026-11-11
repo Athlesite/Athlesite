@@ -37,6 +37,11 @@
     return A.normalizeProfile(out);
   }
 
+  // Sections built only from fields outside the public list: they never reach a published page today, so
+  // the editor marks them "Private" (CFul, 2026-11-10: the Studio supports them now, public later).
+  const PRIVATE_SECTIONS = ['stats', 'results', 'custom', 'milestones', 'gallery', 'nil'];
+
   A.publicView = publicView;
   A.PUBLIC_FIELDS = PUBLIC_FIELDS;
+  A.PRIVATE_SECTIONS = PRIVATE_SECTIONS;
 })();

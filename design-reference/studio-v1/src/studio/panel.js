@@ -322,7 +322,9 @@
         const d = p.data, hidden = p.design.hidden.includes(key), has = key === 'cover' || A.sectionHasContent(key, d);
         // Their own section shows its title only once they've written one (the page's fallback is just "More").
         const name = SECTION_NAMES[key], title = key === 'custom' ? d.custom.title : titles[key];
-        row.querySelector('.sec-name').innerHTML = `${esc(name)}${title && key !== 'cover' && !name.toLowerCase().includes(title.toLowerCase()) ? `<em>“${esc(title)}”</em>` : ''}`;
+        // Sections a published page can't show yet say so, so nothing they add there surprises them later.
+        const lock = (A.PRIVATE_SECTIONS || []).includes(key) ? '<span class="sec-lock" title="Only you can see this section for now. It isn’t on published pages yet.">Private</span>' : '';
+        row.querySelector('.sec-name').innerHTML = `${esc(name)}${title && key !== 'cover' && !name.toLowerCase().includes(title.toLowerCase()) ? `<em>“${esc(title)}”</em>` : ''}${lock}`;
         row.querySelector('.sec-status').textContent = key === 'cover'
           ? (d.heroPhotoUrl ? 'Photo, name and headline' : 'Name and headline, no photo yet')
           : hidden ? 'Hidden from visitors' : has ? sectionStatus(key, d) : 'Empty';

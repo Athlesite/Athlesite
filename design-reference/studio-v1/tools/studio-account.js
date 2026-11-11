@@ -3,8 +3,9 @@
 //   product's own messages with no way round; the date isn't left anywhere on the page.
 // - Email, then code + terms: Verify waits for both; then the setup's first question.
 // - Visitor view shows only what a published page may show (no Stats, no Contact).
-// - Publish: a reserved name, a taken name and a bad name are refused; an available one publishes, and
-//   Unpublish takes it back.
+// - Publish: a reserved name, a taken name and a bad name are refused; an available one publishes. After
+//   that a private edit (stats) changes nothing public, a public edit (bio) waits for "Publish changes",
+//   the editor marks the six private sections, and Unpublish takes it all back.
 // Run at 1440x900 and 390x844. Must print PROBLEMS none.
 module.exports = async (t) => {
   const P = [];
@@ -68,6 +69,19 @@ module.exports = async (t) => {
   const live = await t.ev(`return { title: document.querySelector('#pub-title').textContent, url: document.querySelector('.pub-url').textContent, bar: document.querySelector('#publish-btn').textContent, slug: Athlesite.studio.store.get().data.slug }`);
   expect('publishing goes live at the chosen link', live.title === 'Your page is live' && live.url === 'athlesite.com/aaliyah-grant-11' && live.bar === 'Published' && live.slug === 'aaliyah-grant-11', live);
   await t.shot('live-' + W);
+  // After publishing, edits stay private until "Publish changes"; only what visitors see counts.
+  await t.clickSel('.pub-done'); await t.sleep(400);
+  const bar = () => t.ev(`const b = document.querySelector('#publish-btn'); return b.getAttribute('aria-label') || b.textContent`); // its accessible name
+  await t.ev(`Athlesite.studio.store.commit((p) => { p.data.stats = [...p.data.stats, { label: 'Steals', value: '2.1' }]; }, { kind: 'content' }); return 1`); await t.sleep(300);
+  expect('a private edit (stats) leaves the page published as is', (await bar()) === 'Published', await bar());
+  await t.ev(`Athlesite.studio.store.commit((p) => { p.data.bio = 'New bio for the test.'; }, { kind: 'content' }); return 1`); await t.sleep(300);
+  expect('a public edit (bio) waits for “Publish changes”', (await bar()) === 'Publish changes', await bar());
+  await t.clickSel('#publish-btn'); await t.sleep(600);
+  expect('…which explains the changes are private until published', (await t.ev(`return document.querySelector('#pub-title').textContent`)) === 'Publish your changes?', await t.ev(`return document.querySelector('#pub-title').textContent`));
+  await t.shot('changes-' + W);
+  await t.clickSel('.pub-go'); await t.sleep(500);
+  expect('publishing the changes brings it up to date', (await bar()) === 'Published' && (await t.ev(`return document.querySelector('#pub-title').textContent`)) === 'Your changes are live', await bar());
+  expect('the editor marks the six private sections', (await t.ev(`return document.querySelectorAll('.sec-row .sec-lock').length`)) === 6, await t.ev(`return document.querySelectorAll('.sec-row .sec-lock').length`));
   await t.clickSel('.pub-unpub'); await t.sleep(500);
   expect('unpublish takes it back', (await t.ev(`return document.querySelector('#publish-btn').textContent`)) === 'Publish' && !(await t.ev(`return document.querySelector('dialog.pub').open`)), 'still live');
   expect('no sideways scroll', !(await t.ev('return document.documentElement.scrollWidth > innerWidth')), 'scrolls');

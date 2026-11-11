@@ -3,7 +3,9 @@
 Every field the Studio collects, and who can see it. CFul asked for it with five columns: adult,
 minor, owner preview, guardian review, public.
 
-**Status: a proposal for the two founders, not approved policy.** Facts marked "on `main`" were
+**Status: a proposal for the two founders, not approved policy.** The founders have since agreed on the
+principle (2026-11-10): launch shows only today's public fields, and everything else stays private until
+reviewed (see `01-COMPARISON.md` §5). Facts marked "on `main`" were
 checked in code at `ef04553`. Everything else follows CFul's porting responses (2026-11-10) or is
 marked as needing a decision.
 
@@ -81,7 +83,9 @@ page itself.
 
 ## Notes for the founders
 
-**A. Contact.** Every Studio look has a **Contact** button: in the nav, the About card, and now the
+**A. Contact. Decided (2026-11-10): hidden at launch,** and later a built-in "Contact Athlete" relay that
+routes inquiries to the athlete or an approved guardian without revealing their details. Background:
+every Studio look has a **Contact** button: in the nav, the About card, and now the
 footer. It uses `recruitingContact`, which is private today. Under today's contract, published pages
 would have **no contact at all**, and a coach couldn't reach the athlete. This is probably the most
 important field to decide first. One option is a contact-only public field (a relay form or a
