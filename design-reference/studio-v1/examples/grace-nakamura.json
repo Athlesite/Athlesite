@@ -1,0 +1,123 @@
+{
+  "data": {
+    "slug": "gracenakamura",
+    "firstName": "Grace",
+    "lastName": "Nakamura",
+    "sport": "swimming",
+    "position": "Freestyle / IM",
+    "level": "college",
+    "academicYear": "Sophomore",
+    "eligibility": "3 years",
+    "division": "NCAA Division I",
+    "schoolOrTeam": "Bayview University",
+    "city": "Seattle",
+    "state": "WA",
+    "heightIn": 69,
+    "tagline": "Count the strokes. Trust the walls.",
+    "bio": "Middle-distance freestyle and the 400 IM. I like the races long enough to need a plan and short enough that the plan has to work.\n\nI’ve been in the water at 5 a.m. since I was eleven. It’s still my favorite part of the day.",
+    "highlightLinks": [
+      {
+        "label": "Conference meet, 400 IM final",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "200 Free",
+        "value": "1:46.92",
+        "context": "SCY, conference meet"
+      },
+      {
+        "label": "500 Free",
+        "value": "4:41.30",
+        "context": "SCY, conference meet"
+      },
+      {
+        "label": "400 IM",
+        "value": "4:12.05",
+        "context": "SCY, conference meet"
+      }
+    ],
+    "results": [
+      {
+        "a": "200 Free",
+        "b": "1:46.92",
+        "c": "SCY",
+        "d": "Conference Championships",
+        "e": "Feb 2026",
+        "pb": true
+      },
+      {
+        "a": "500 Free",
+        "b": "4:41.30",
+        "c": "SCY",
+        "d": "Conference Championships",
+        "e": "Feb 2026",
+        "pb": true
+      },
+      {
+        "a": "400 IM",
+        "b": "4:12.05",
+        "c": "SCY",
+        "d": "Conference Championships",
+        "e": "Feb 2026",
+        "pb": true
+      },
+      {
+        "a": "400 Free",
+        "b": "4:16.88",
+        "c": "LCM",
+        "d": "Summer Nationals",
+        "e": "Jul 2025",
+        "pb": false
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "Conference finalist in three events",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Summer nationals qualifier",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Academic all-conference",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "club": "Puget Sound Aquatics"
+    },
+    "recruitingContact": "grace.nakamura@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/grace-nakamura-photo-1.webp",
+        "alt": "Grace gliding underwater after the start",
+        "caption": "Off the blocks"
+      },
+      {
+        "src": "assets/img/examples/grace-nakamura-photo-2.webp",
+        "alt": "Grace breathing to the side mid-freestyle",
+        "caption": "Distance set"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/grace-nakamura-cover.webp",
+    "heroPhotoAlt": "Grace swimming backstroke between the lane ropes",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.18,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "portrait",
+    "palette": "gallery",
+    "type": "gallery",
+    "photo": "color",
+    "layout": {
+      "cover": "photo"
+    }
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "data": {
+    "slug": "sofialindqvist",
+    "firstName": "Sofia",
+    "lastName": "Lindqvist",
+    "sport": "volleyball",
+    "position": "Outside hitter",
+    "jerseyNumber": "7",
+    "level": "college",
+    "academicYear": "Senior",
+    "eligibility": "1 year",
+    "division": "NCAA Division I",
+    "schoolOrTeam": "Pacific Crest University",
+    "city": "San Diego",
+    "state": "CA",
+    "heightIn": 73,
+    "tagline": "Six rotations. One mindset.",
+    "bio": "I grew up in a family of swimmers and found volleyball by accident in seventh grade, when a coach asked the tall new girl if she wanted to try. I never left the gym.\n\nI play all six rotations. I care about the dig as much as the kill, and I’m the one talking to the setter between every point. Senior year, one more run.",
+    "highlightLinks": [
+      {
+        "label": "Senior season kills",
+        "url": ""
+      },
+      {
+        "label": "Serve receive, conference play",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Kills per set",
+        "value": "4.1",
+        "context": "2025 season"
+      },
+      {
+        "label": "Hitting %",
+        "value": ".312",
+        "context": "2025 season"
+      },
+      {
+        "label": "Digs per set",
+        "value": "2.8",
+        "context": "2025 season"
+      },
+      {
+        "label": "Aces",
+        "value": "41",
+        "context": "2025 season"
+      },
+      {
+        "label": "Blocks",
+        "value": "58",
+        "context": "2025 season"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2025",
+        "title": "All-conference first team",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Conference player of the week",
+        "detail": "Three times."
+      },
+      {
+        "year": "2024",
+        "title": "Conference champions",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "hand": "Right"
+    },
+    "recruitingContact": "sofia.lindqvist@example.com",
+    "nilOpen": true,
+    "nilContactRole": "",
+    "nilContact": "sofia.lindqvist.nil@example.com",
+    "nilInterests": "Beach and lifestyle brands, San Diego shops, and anything that grows the women’s game.",
+    "nilOffers": [
+      "Instagram posts",
+      "Camps and clinics",
+      "Appearances",
+      "Photo shoots"
+    ],
+    "nilAudience": [
+      {
+        "label": "Instagram followers",
+        "value": "33.6K"
+      },
+      {
+        "label": "Average story views",
+        "value": "9K"
+      }
+    ],
+    "nilPartners": [
+      "Crestline Surf",
+      "Mission Acai Bar"
+    ],
+    "gallery": [
+      {
+        "src": "assets/img/examples/sofia-lindqvist-photo-1.webp",
+        "alt": "Sofia’s team in a rally at the net",
+        "caption": "Five-set win"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/sofia-lindqvist-cover.webp",
+    "heroPhotoAlt": "Sofia rising for a spike at the net",
+    "heroPhotoPositionX": 0.7,
+    "heroPhotoPositionY": 0.3,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "editorial",
+    "palette": "porcelain",
+    "type": "classic",
+    "layout": {
+      "cover": "cover",
+      "gallery": "feature"
+    }
+  }
+}

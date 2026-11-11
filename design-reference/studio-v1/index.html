@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Athlesite Studio — Looks review</title>
+<link rel="icon" href="assets/brand/athlesite-mark-on-light.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3F1EC;--paper:#FBFAF7;--ink:#0B0B0F;--muted:#6E7178;--line:#DAD6CE;--blue:#2563EB;--stage:#E7E4DD;--ease:cubic-bezier(.16,1,.3,1)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.4 Geist,system-ui,sans-serif;display:grid;grid-template-rows:auto auto auto minmax(0,1fr);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.bar{display:flex;align-items:center;gap:20px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--paper)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em}
+.brand img{height:22px}
+.brand small{font:500 11px/1 "Geist Mono",monospace;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:4px 7px;border:1px solid var(--line);border-radius:5px}
+.spacer{flex:1}
+.seg{display:flex;padding:3px;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:10px}
+.seg button{padding:7px 12px;border-radius:7px;color:var(--muted);font-weight:500;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08),0 0 0 1px var(--line)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;font-weight:500;border:1px solid var(--line);background:var(--paper)}
+.btn:hover{border-color:var(--ink)}
+
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.group{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.label{font:500 11px/1 "Geist Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cast{display:flex;gap:6px}
+.cast button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);text-align:left}
+.cast button small{font-size:11px;color:var(--muted)}
+.cast button[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.swatches{display:flex;gap:6px}
+.swatches button{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;border:1px solid var(--line);border-radius:999px;background:var(--paper);font-size:12px;white-space:nowrap}
+.swatches i{width:22px;height:22px;border-radius:50%;background:var(--sw-bg);position:relative;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.swatches i::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--sw-accent)}
+.swatches button[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.controls+.controls{padding-top:0}
+.accent{display:flex;align-items:center;gap:6px}
+.accent button,.accent label{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--sw);cursor:pointer;padding:0;position:relative}
+.accent button[aria-pressed=true]{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
+.accent .none{background:var(--paper);font-size:11px;width:auto;padding:0 10px;border-radius:999px;color:var(--muted)}
+.accent .none[aria-pressed=true]{color:var(--ink)}
+.accent label{background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red);overflow:hidden}
+.accent input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.accent .from{font-size:11px;color:var(--muted);margin-left:4px}
+#mirror{margin-left:8px}
+#mirror[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+#mirror:disabled{opacity:.4;cursor:not-allowed}
+.btn-remix{background:var(--ink);color:#fff;border-color:var(--ink);transition:transform .2s}
+.btn-remix:active{transform:scale(.96) rotate(-2deg)}
+
+.stage{position:relative;overflow:hidden;background:var(--stage);display:grid;place-items:center}
+.frame{position:absolute;top:24px;left:50%;transform-origin:top left;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 24px 60px -20px rgba(0,0,0,.25);border-radius:10px;overflow:hidden;transition:opacity .25s}
+.frame iframe{display:block;border:0;width:100%;height:100%}
+.frame.phone{border-radius:28px;box-shadow:0 0 0 8px #15171b,0 24px 60px -16px rgba(0,0,0,.4)}
+.frame.swap{opacity:.25}
+.meta{position:absolute;left:20px;bottom:14px;font:500 11px/1 "Geist Mono",monospace;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.keys{position:absolute;right:20px;bottom:14px;font-size:12px;color:var(--muted)}
+.keys kbd{font:500 11px "Geist Mono",monospace;padding:2px 6px;border:1px solid var(--line);border-radius:4px;background:var(--paper)}
+
+/* All-looks sheet */
+.sheet{position:absolute;inset:0;overflow:auto;padding:24px;display:none;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:24px;align-content:start}
+.sheet.on{display:grid}
+.sheet figure{margin:0;cursor:pointer}
+.sheet .thumb{position:relative;aspect-ratio:16/10;overflow:hidden;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 18px 40px -20px rgba(0,0,0,.3)}
+.sheet .thumb iframe{position:absolute;top:0;left:0;width:1440px;height:900px;border:0;transform-origin:top left;pointer-events:none}
+.sheet figcaption{display:flex;justify-content:space-between;gap:16px;padding:10px 2px;font-weight:500}
+.sheet figcaption span{color:var(--muted);font-weight:400;text-align:right}
+
+@media (max-width:900px){.keys{display:none}.bar{gap:12px}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><img src="assets/brand/athlesite-wordmark-on-light.png" alt="Athlesite"><small>Studio · Looks review</small></div>
+  <div class="spacer"></div>
+  <div class="seg" id="views" role="group" aria-label="View">
+    <button data-view="one" aria-pressed="true">One look</button>
+    <button data-view="all" aria-pressed="false">All looks</button>
+  </div>
+  <div class="seg" id="devices" role="group" aria-label="Screen">
+    <button data-device="desktop" aria-pressed="true">Desktop</button>
+    <button data-device="phone" aria-pressed="false">Phone</button>
+  </div>
+  <a class="btn" href="sports.html" target="_blank" rel="noopener">Sports</a>
+  <button class="btn" id="play">▶ Play opening</button>
+  <button class="btn" id="open">Open full page ↗</button>
+</header>
+
+<div class="controls">
+  <div class="group"><span class="label">Athlete</span><div class="cast" id="cast"></div></div>
+  <div class="group"><span class="label">Look</span><div class="seg" id="looks" role="group" aria-label="Look"></div></div>
+  <div class="group"><span class="label">Palette</span><div class="swatches" id="palettes"></div></div>
+</div>
+<div class="controls">
+  <div class="group"><span class="label">Fonts</span><div class="seg" id="types" role="group" aria-label="Fonts"></div></div>
+  <div class="group"><span class="label">Cover</span><div class="seg" id="covers" role="group" aria-label="Cover"></div><button class="btn" id="mirror" type="button" aria-pressed="false">⇋ Mirror</button></div>
+  <div class="group"><span class="label">Stats</span><div class="seg" id="statsv" role="group" aria-label="Stats layout"></div></div>
+  <div class="group"><span class="label">Gallery</span><div class="seg" id="galleryv" role="group" aria-label="Gallery layout"></div></div>
+  <div class="group"><span class="label">Photo</span><div class="seg" id="photos" role="group" aria-label="Photo treatment"></div></div>
+  <div class="group"><span class="label">Accent</span><div class="accent" id="accent"></div></div>
+  <button class="btn btn-remix" id="remix" type="button">⟳ Remix</button>
+</div>
+
+<main class="stage" id="stage">
+  <div class="frame" id="frame"><iframe id="site" title="Athlete page preview"></iframe></div>
+  <div class="sheet" id="sheet"></div>
+  <p class="meta" id="meta"></p>
+  <p class="keys"><kbd>←</kbd> <kbd>→</kbd> athlete · <kbd>1</kbd>–<kbd>5</kbd> look · <kbd>R</kbd> remix · <kbd>P</kbd> phone</p>
+</main>
+
+<script src="src/sports.js"></script>
+<script src="src/profile.js"></script>
+<script src="src/color.js"></script>
+<script src="src/render.js"></script>
+<script src="src/looks/cinematic.js"></script>
+<script src="src/looks/editorial.js"></script>
+<script src="src/looks/highlight.js"></script>
+<script src="src/looks/portrait.js"></script>
+<script src="src/looks/prospect.js"></script>
+<script src="src/athletes.js"></script>
+<script src="src/remix.js"></script>
+<script>
+(function () {
+  const A = window.Athlesite;
+  const $ = (s) => document.querySelector(s);
+  const LOOK_IDS = ['cinematic', 'editorial', 'highlight', 'portrait', 'prospect'].filter((k) => A.LOOKS[k]);
+  const SIZES = { desktop: [1440, 900], phone: [390, 844] };
+
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('studio-review') || '{}'); } catch { return {}; } })();
+  const CHOICES = ['palette', 'type', 'cover', 'stats', 'gallery', 'photo', 'accent', 'mirror'];
+  const state = Object.assign({ athlete: 'jordan', look: null, palette: null, type: null, cover: null, stats: null, gallery: null, photo: null, accent: null, device: 'desktop', view: 'one' }, saved);
+  const resetChoices = () => CHOICES.forEach((k) => (state[k] = null));
+  if (!A.ATHLETES[state.athlete]) state.athlete = 'jordan';
+
+  function profile() {
+    const p = structuredClone(A.ATHLETES[state.athlete]);
+    if (state.look && A.LOOKS[state.look]) p.design.look = state.look;
+    const look = A.LOOKS[p.design.look] || A.LOOKS.cinematic;
+    p.design.look = look.id;
+    if (state.palette && look.palettes.some((x) => x.id === state.palette)) p.design.palette = state.palette;
+    else if (!look.palettes.some((x) => x.id === p.design.palette)) p.design.palette = look.palettes[0].id;
+    if (state.type !== null) p.design.type = state.type;
+    if (state.photo !== null) p.design.photo = state.photo;
+    if (state.accent !== null) p.design.accent = state.accent;
+    for (const k of ['cover', 'stats', 'gallery', 'mirror']) if (state[k] !== null) p.design.layout[k] = state[k];
+    return p;
+  }
+
+  function save() { try { localStorage.setItem('studio-review', JSON.stringify(state)); } catch {} }
+
+  function renderControls(p) {
+    $('#cast').innerHTML = A.CAST.map(([k, name, note]) => `<button data-athlete="${k}" aria-pressed="${k === state.athlete}">${name}<small>${note}</small></button>`).join('');
+    $('#looks').innerHTML = LOOK_IDS.map((k, i) => `<button data-look="${k}" aria-pressed="${k === p.design.look}" title="${A.LOOKS[k].line}">${A.LOOKS[k].name}</button>`).join('');
+    const look = A.LOOKS[p.design.look];
+    $('#palettes').innerHTML = look.palettes.map((x) => `<button data-palette="${x.id}" aria-pressed="${x.id === p.design.palette}"><i style="--sw-bg:${x.bg};--sw-accent:${x.accent}"></i>${x.label}</button>`).join('');
+    $$('#devices button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.device === state.device)));
+    $$('#views button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+    const seg = (el, items, current, attr) => { $(el).innerHTML = items.map(([id, label]) => `<button data-${attr}="${id}" aria-pressed="${id === current}">${label}</button>`).join(''); };
+    const dz = p.design, types = look.types || [], covers = look.covers || [];
+    seg('#types', types.map((t) => [t.id, t.label]), dz.type || types[0]?.id, 'type');
+    seg('#covers', covers.map((v) => [v.id, v.label]), dz.layout.cover || covers[0]?.id, 'cover');
+    const coverNow = covers.find((v) => v.id === (dz.layout.cover || covers[0]?.id));
+    $('#mirror').setAttribute('aria-pressed', String(!!dz.layout.mirror));
+    $('#mirror').disabled = !coverNow?.mirror;
+    $('#mirror').title = !coverNow?.mirror ? 'This cover is centered, so there is nothing to flip' : coverNow.mirror === 'subject-left' ? 'Flips the text to the right side when you stand on the left of your photo' : 'Swaps the photo and text sides';
+    seg('#statsv', [['', 'Signature'], ['spotlight', 'Spotlight'], ['ledger', 'Ledger']], dz.layout.stats || '', 'stats');
+    seg('#galleryv', [['', 'Signature'], ['strip', 'Strip'], ['feature', 'Feature']], dz.layout.gallery || '', 'gallery');
+    seg('#photos', [['', 'Look default'], ['color', 'Color'], ['mono', 'B&amp;W'], ['duotone', 'Duotone']], dz.photo || '', 'photo');
+    const colors = photoColors[state.athlete] || [];
+    $('#accent').innerHTML = `<button class="none" data-accent="" aria-pressed="${!dz.accent}">Palette</button>`
+      + colors.map((c) => `<button data-accent="${c}" style="--sw:${c}" title="From the photo: ${c}" aria-pressed="${dz.accent === c}"></button>`).join('')
+      + `<label title="Any color"><input type="color" id="anyColor" value="${dz.accent || '#2563eb'}"></label>${colors.length ? '<span class="from">from photo</span>' : ''}`;
+    const visible = A.visibleSections(p, look.order);
+    $('#meta').textContent = `${look.name} · ${look.palettes.find((x) => x.id === p.design.palette).label}${p.design.accent ? ' · accent ' + p.design.accent : ''} · sections: ${visible.join(', ') || 'none'}`;
+  }
+  const $$ = (s) => [...document.querySelectorAll(s)];
+
+  function fit() {
+    const stage = $('#stage'), frame = $('#frame');
+    const [w, h] = SIZES[state.device];
+    const availW = stage.clientWidth - 48, availH = stage.clientHeight - 64;
+    let scale, fh;
+    if (state.device === 'phone') { scale = Math.min(1, availH / h, availW / w); fh = h; }
+    else { scale = Math.min(1, availW / w); fh = Math.max(h * 0.6, availH / scale); }
+    frame.classList.toggle('phone', state.device === 'phone');
+    frame.style.width = w + 'px';
+    frame.style.height = fh + 'px';
+    frame.style.transformOrigin = 'top center';
+    frame.style.transform = `translateX(-50%) scale(${scale})`;
+  }
+
+  let lastHTML = '', playOnce = false;
+  function render() {
+    const p = profile();
+    renderControls(p);
+    $('#frame').style.display = state.view === 'one' ? '' : 'none';
+    $('#sheet').classList.toggle('on', state.view === 'all');
+    if (state.view === 'all') return renderSheet(p);
+    // The opening only plays when asked, so switching palettes doesn't replay it every time.
+    const html = A.renderSite(p, { intro: playOnce ? 'always' : 'never' });
+    playOnce = false;
+    if (html !== lastHTML) {
+      lastHTML = html;
+      const frame = $('#frame');
+      frame.classList.add('swap');
+      $('#site').srcdoc = html;
+      $('#site').onload = () => frame.classList.remove('swap');
+    }
+    fit();
+    save();
+  }
+
+  function renderSheet(p) {
+    const sheet = $('#sheet');
+    sheet.innerHTML = LOOK_IDS.map((k) => {
+      const look = A.LOOKS[k];
+      return `<figure data-pick="${k}"><div class="thumb"><iframe title="${look.name}" tabindex="-1"></iframe></div><figcaption>${look.name}<span>${look.line}</span></figcaption></figure>`;
+    }).join('');
+    sheet.querySelectorAll('figure').forEach((fig) => {
+      const k = fig.dataset.pick, q = structuredClone(p);
+      q.design.look = k; q.design.palette = (k === A.ATHLETES[state.athlete].design.look ? A.ATHLETES[state.athlete].design.palette : A.LOOKS[k].palettes[0].id);
+      const iframe = fig.querySelector('iframe');
+      iframe.srcdoc = A.renderSite(q, { intro: 'never' });
+      const scale = fig.querySelector('.thumb').clientWidth / 1440;
+      iframe.style.transform = `scale(${scale})`;
+    });
+    save();
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button,figure');
+    if (!t) return;
+    if (t.dataset.athlete) { state.athlete = t.dataset.athlete; state.look = null; resetChoices(); loadPhotoColors(); }
+    else if (t.dataset.look) { state.look = t.dataset.look; resetChoices(); }
+    else if (t.dataset.palette) state.palette = t.dataset.palette;
+    else if ('type' in t.dataset) state.type = t.dataset.type;
+    else if ('cover' in t.dataset) state.cover = t.dataset.cover;
+    else if ('stats' in t.dataset) state.stats = t.dataset.stats;
+    else if ('gallery' in t.dataset) state.gallery = t.dataset.gallery;
+    else if ('photo' in t.dataset) state.photo = t.dataset.photo;
+    else if ('accent' in t.dataset) state.accent = t.dataset.accent;
+    else if (t.id === 'remix') applyRemix();
+    else if (t.id === 'mirror') state.mirror = !(state.mirror ?? profile().design.layout.mirror);
+    else if (t.dataset.device) state.device = t.dataset.device;
+    else if (t.dataset.view) state.view = t.dataset.view;
+    else if (t.dataset.pick) { state.look = t.dataset.pick; resetChoices(); state.view = 'one'; }
+    else if (t.id === 'open') return openFull();
+    else if (t.id === 'play') { playOnce = true; state.view = 'one'; lastHTML = ''; }
+    else return;
+    render();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input,textarea') || e.metaKey || e.ctrlKey) return;
+    const ids = A.CAST.map((x) => x[0]), i = ids.indexOf(state.athlete);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      state.athlete = ids[(i + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]; state.look = null; resetChoices(); loadPhotoColors();
+    } else if (/^[1-5]$/.test(e.key) && LOOK_IDS[+e.key - 1]) { state.look = LOOK_IDS[+e.key - 1]; resetChoices(); }
+    else if (e.key.toLowerCase() === 'r') applyRemix();
+    else if (e.key.toLowerCase() === 'p') state.device = state.device === 'phone' ? 'desktop' : 'phone';
+    else return;
+    e.preventDefault();
+    render();
+  });
+
+  function openFull() {
+    const p = profile();
+    window.open(`site.html?a=${state.athlete}&design=${encodeURIComponent(JSON.stringify(p.design))}`, '_blank');
+  }
+
+  // Remix: a fresh combination within the current look.
+  function applyRemix() {
+    const next = A.remix(profile(), { photoColors: photoColors[state.athlete] || [] });
+    Object.assign(state, { look: next.look, palette: next.palette, type: next.type, photo: next.photo, accent: next.accent,
+      cover: next.layout.cover, stats: next.layout.stats, gallery: next.layout.gallery, mirror: next.layout.mirror });
+  }
+
+  // "Pull colors from my photo": read the athlete's cover photo once and offer its vivid colors.
+  const photoColors = {};
+  function loadPhotoColors() {
+    const who = state.athlete, src = A.ATHLETES[who].data.heroPhotoUrl;
+    if (!src || photoColors[who]) return;
+    const img = new Image();
+    img.onload = () => { try { photoColors[who] = A.color.colorsFromImage(img, 4); } catch (e) { photoColors[who] = []; } if (state.athlete === who) render(); };
+    img.src = src;
+  }
+  // The color wheel sets any accent.
+  document.addEventListener('input', (e) => { if (e.target.id === 'anyColor') { state.accent = e.target.value.toUpperCase(); render(); } });
+
+  addEventListener('resize', () => (state.view === 'one' ? fit() : render()));
+  loadPhotoColors();
+  render();
+})();
+</script>
+</body>
+</html>

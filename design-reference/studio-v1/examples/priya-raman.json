@@ -1,0 +1,84 @@
+{
+  "data": {
+    "slug": "priyaraman",
+    "firstName": "Priya",
+    "lastName": "Raman",
+    "sport": "tennis",
+    "position": "Singles",
+    "level": "hs",
+    "classYear": "2027",
+    "schoolOrTeam": "Westbrook High School",
+    "city": "San Jose",
+    "state": "CA",
+    "heightIn": 66,
+    "gpa": "3.95",
+    "intendedMajor": "Computer science",
+    "tagline": "Point by point.",
+    "bio": "Counterpuncher with a forehand I’m allowed to be proud of. I win long rallies and I don’t mind three-setters.\n\nNumber one singles for three seasons. I study the match charts my dad keeps on every opponent, and I’ve started keeping my own.",
+    "highlightLinks": [
+      {
+        "label": "Match play, sectional final",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "UTR rating",
+        "value": "11.2",
+        "context": "Mar 2026"
+      },
+      {
+        "label": "Record (W-L)",
+        "value": "28-4",
+        "context": "2025–26"
+      },
+      {
+        "label": "Sectional ranking",
+        "value": "#14",
+        "context": "Girls 18s"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "League singles champion",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "All-league first team",
+        "detail": ""
+      },
+      {
+        "year": "2024",
+        "title": "Number one singles as a freshman",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "hand": "Right-handed"
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "priya.raman@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/priya-raman-photo-1.webp",
+        "alt": "Priya moving to the ball on the hard court",
+        "caption": "Practice"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/priya-raman-cover.webp",
+    "heroPhotoAlt": "Priya’s forehand on the clay",
+    "heroPhotoPositionX": 0.75,
+    "heroPhotoPositionY": 0.42,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "prospect",
+    "palette": "field",
+    "type": "technical",
+    "layout": {
+      "cover": "banner"
+    }
+  }
+}

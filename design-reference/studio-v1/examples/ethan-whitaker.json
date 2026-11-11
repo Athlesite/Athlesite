@@ -1,0 +1,122 @@
+{
+  "data": {
+    "slug": "ethanwhitaker",
+    "firstName": "Ethan",
+    "lastName": "Whitaker",
+    "sport": "golf",
+    "level": "hs",
+    "classYear": "2028",
+    "schoolOrTeam": "Briar Creek High School",
+    "city": "Charlotte",
+    "state": "NC",
+    "heightIn": 71,
+    "gpa": "4.0",
+    "intendedMajor": "Economics",
+    "tagline": "Fairways, greens, patience.",
+    "bio": "I learned the game from my grandfather on a nine-hole course with more geese than golfers. He taught me to play the shot in front of me and forget the last one.\n\nI hit it straight more than I hit it far, and I’m working on both. Sophomore, three years of high school golf to go.",
+    "highlightLinks": [
+      {
+        "label": "Swing, down the line and face on",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Scoring average",
+        "value": "72.4",
+        "context": "2025 season"
+      },
+      {
+        "label": "Best round",
+        "value": "66",
+        "context": "Spring Invitational"
+      },
+      {
+        "label": "Fairways hit",
+        "value": "71%",
+        "context": "2025 season"
+      }
+    ],
+    "results": [
+      {
+        "a": "Spring Invitational",
+        "b": "66 (−6)",
+        "c": "1st",
+        "d": "Apr 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Conference Championship",
+        "b": "142 (−2)",
+        "c": "T3",
+        "d": "May 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Junior Classic",
+        "b": "145 (+1)",
+        "c": "7th",
+        "d": "Jun 2025",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Regional Qualifier",
+        "b": "73 (+1)",
+        "c": "5th",
+        "d": "Apr 2025",
+        "e": "",
+        "pb": false
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "Conference medalist runner-up",
+        "detail": ""
+      },
+      {
+        "year": "2026",
+        "title": "First tournament win",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Varsity as a freshman",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "handicap": "+1.2"
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "ethan.whitaker@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/ethan-whitaker-photo-1.webp",
+        "alt": "Ethan finishing a full swing on the fairway",
+        "caption": "Final round"
+      },
+      {
+        "src": "assets/img/examples/ethan-whitaker-photo-2.webp",
+        "alt": "Ethan following his drive into the evening sky",
+        "caption": "Off the tee"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/ethan-whitaker-cover.webp",
+    "heroPhotoAlt": "Ethan blasting out of a greenside bunker at sunset",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.32,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "portrait",
+    "palette": "bone",
+    "type": "heritage",
+    "layout": {
+      "cover": "center"
+    }
+  }
+}

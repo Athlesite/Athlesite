@@ -1,0 +1,137 @@
+{
+  "data": {
+    "slug": "imaniwallace",
+    "firstName": "Imani",
+    "lastName": "Wallace",
+    "sport": "track",
+    "position": "Sprints (200m / 400m)",
+    "level": "hs",
+    "classYear": "2026",
+    "schoolOrTeam": "Eastfield High School",
+    "city": "Atlanta",
+    "state": "GA",
+    "heightIn": 67,
+    "gpa": "3.8",
+    "intendedMajor": "Psychology",
+    "tagline": "The last hundred meters are mine.",
+    "bio": "I run the 200 and the 400, and I anchor our 4×400. My coach calls the last hundred meters “the honest part.” That’s where I like to race.\n\nI got faster the year I stopped looking at the girl next to me. Now I only look at the clock.",
+    "highlightLinks": [
+      {
+        "label": "State finals, 400m",
+        "url": ""
+      },
+      {
+        "label": "Indoor season, 200m",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "400m",
+        "value": "52.88",
+        "context": "PR, state finals"
+      },
+      {
+        "label": "200m",
+        "value": "23.41",
+        "context": "PR, region meet"
+      },
+      {
+        "label": "4×400 split",
+        "value": "52.1",
+        "context": "Anchor leg"
+      }
+    ],
+    "results": [
+      {
+        "a": "400m",
+        "b": "52.88",
+        "c": "State Championships",
+        "d": "May 2026",
+        "e": "",
+        "pb": true
+      },
+      {
+        "a": "200m",
+        "b": "23.41",
+        "c": "Region 4 Championships",
+        "d": "Apr 2026",
+        "e": "",
+        "pb": true
+      },
+      {
+        "a": "400m",
+        "b": "53.40",
+        "c": "Region 4 Championships",
+        "d": "Apr 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "4×400 relay",
+        "b": "3:46.02",
+        "c": "State Championships",
+        "d": "May 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "300m (indoor)",
+        "b": "38.65",
+        "c": "Indoor State Meet",
+        "d": "Feb 2026",
+        "e": "",
+        "pb": true
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "State runner-up, 400m",
+        "detail": ""
+      },
+      {
+        "year": "2026",
+        "title": "Region champion, 200m and 400m",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Team captain",
+        "detail": ""
+      }
+    ],
+    "recruitingStatus": "open",
+    "recruitingContact": "imani.wallace@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/imani-wallace-photo-1.webp",
+        "alt": "Imani crouched at the start of an indoor sprint",
+        "caption": "Indoor season"
+      },
+      {
+        "src": "assets/img/examples/imani-wallace-photo-2.webp",
+        "alt": "Imani’s spikes on the track mid-stride",
+        "caption": "Speed work"
+      },
+      {
+        "src": "assets/img/examples/imani-wallace-photo-3.webp",
+        "alt": "Imani running the curve",
+        "caption": "Rounding the bend"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/imani-wallace-cover.webp",
+    "heroPhotoAlt": "Imani’s hands set on the line, feet in the blocks",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.3,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "cinematic",
+    "palette": "cherry",
+    "type": "premiere",
+    "layout": {
+      "cover": "split"
+    }
+  }
+}

@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Athlesite — Your story. One home.</title>
+<meta name="description" content="Athlesite gives every athlete their own premium website: one link for coaches, scouts, brands and everyone else.">
+<link rel="icon" href="assets/brand/athlesite-mark-on-light.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../studio-v1/src/card.css">
+<style>
+/* ---------- Tokens ---------- */
+:root{
+  --bg:#F3F1EC; --paper:#FBFAF7; --ink:#0B0B0F; --ink-2:#2A2D33; --muted:#62656B; --line:#DAD6CE;
+  --blue:#2563EB; --blue-deep:#1747C9; --blue-light:#69A1FF; --night:#07090C;
+  --display:"Anton",Impact,sans-serif; --sans:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace; --serif:"Instrument Serif",Georgia,serif;
+  --ease:cubic-bezier(.16,1,.3,1); --ease-io:cubic-bezier(.65,0,.35,1);
+  --gutter:clamp(20px,4vw,56px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:clip}
+img{display:block;max-width:100%}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.eyebrow{margin:0;font:500 11px/1.4 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.01em;text-transform:none}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:12px;white-space:nowrap;min-height:52px;padding:0 26px;border:0;border-radius:999px;font:600 15px/1 var(--sans);letter-spacing:-.01em;text-decoration:none;cursor:pointer;transition:transform .22s var(--ease),background .22s,box-shadow .28s var(--ease),color .2s}
+.btn svg{width:18px;height:18px;transition:transform .28s var(--ease)}
+.btn:hover svg{transform:translate(3px,-3px)}
+.btn:active{transform:scale(.97);transition-duration:.08s}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 10px 30px -12px #2563ebcc}
+.btn-blue:hover{background:#2f6df0;transform:translateY(-2px);box-shadow:0 18px 40px -14px #2563ebee}
+.btn-light{background:#fff;color:var(--ink)}
+.btn-light:hover{transform:translateY(-2px);box-shadow:0 14px 36px -14px #0008}
+.btn-ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 1px currentColor}
+.btn-ghost:hover{background:#0000000a}
+
+/* ---------- Nav ---------- */
+.nav{position:fixed;inset:0 0 auto;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:24px;height:76px;padding:0 var(--gutter);color:#fff;transition:color .35s,background .35s,box-shadow .35s}
+.nav.is-light{color:var(--ink);background:#f3f1ecd9;box-shadow:0 1px 0 #0000000f;-webkit-backdrop-filter:blur(12px) saturate(1.2);backdrop-filter:blur(12px) saturate(1.2)}
+.brand{position:relative;display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand .mark{height:34px;width:auto}
+.brand .word{height:10px;width:auto}
+.brand .on-light{position:absolute;opacity:0;transition:opacity .35s}
+.brand .on-light.mark{left:0;top:50%;translate:0 -50%}
+.brand .on-dark{transition:opacity .35s}
+.nav.is-light .brand .on-light{opacity:1}.nav.is-light .brand .on-dark{opacity:0}
+.brand .wordwrap{position:relative;display:grid}
+.brand .wordwrap img{grid-area:1/1}
+.brand .wordwrap .on-light{position:static}
+.nav-links{display:flex;gap:30px;font-size:14px;font-weight:500}
+.nav-links a{text-decoration:none;opacity:.82;transition:opacity .2s}
+.nav-links a:hover{opacity:1}
+.nav .btn{min-height:42px;padding:0 18px;font-size:14px}
+@media(max-width:860px){.nav-links{display:none}}
+@media(max-width:480px){.nav .btn{min-height:38px;padding:0 14px;font-size:13px}.brand .word{display:none}.hero-row{flex-direction:column;align-items:flex-start;gap:20px}}
+
+/* ---------- Scene 1 · Hero → the athlete becomes the website ---------- */
+.hero-scene{position:relative;height:330vh;background:var(--bg)}
+.hero-sticky{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+.hero-media{position:absolute;inset:0;transform-origin:50% 50%;will-change:transform,clip-path;background:var(--night)}
+.hero-media img{width:100%;height:100%;object-fit:cover;object-position:62% 30%}
+.hero-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#05070acc 0%,#05070a66 38%,#05070a00 64%),linear-gradient(0deg,#05070ab3 0%,#05070a00 46%);will-change:opacity}
+.hero-copy{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(40px,8vh,96px);color:#fff;will-change:transform,opacity}
+.hero-copy .eyebrow{color:#ffffffb3;margin-bottom:22px}
+.hero-title{margin:0;font:400 clamp(76px,14.2vw,248px)/.86 var(--display);letter-spacing:-.012em;text-transform:uppercase}
+.hero-title span{display:block;overflow:hidden;padding-bottom:.02em}
+.hero-title span>b{display:block;font-weight:400}
+.hero-title .accent{color:var(--blue-light)}
+.hero-row{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-top:clamp(20px,3vh,34px)}
+.hero-row p{max-width:420px;margin:0;color:#ffffffd0;font-size:clamp(15px,1.15vw,18px)}
+.scroll-cue{position:absolute;right:var(--gutter);top:50%;translate:0 -50%;display:flex;flex-direction:column;align-items:center;gap:12px;color:#ffffff99;font:500 10px var(--mono);letter-spacing:.24em;writing-mode:vertical-rl}
+.scroll-cue i{width:1px;height:64px;background:linear-gradient(#fff0,#fff);animation:cue 1.8s var(--ease) infinite}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* End state: headline above the browser window, stacked so they can never overlap. */
+.endstate{position:absolute;left:0;right:0;top:clamp(88px,11vh,116px);display:flex;flex-direction:column;align-items:center;gap:clamp(16px,2.6vh,28px);pointer-events:none}
+.reveal-head{text-align:center;opacity:0;will-change:transform,opacity;padding:0 var(--gutter)}
+.reveal-head h2{margin:8px 0 0;font:400 clamp(30px,3.4vw,54px)/1 var(--display);letter-spacing:-.01em;text-transform:uppercase}
+.reveal-head h2 .serif-i{font-size:1.12em;color:var(--blue)}
+
+/* The browser window the photo shrinks into. */
+.win{--winW:min(1100px,84vw,calc((100svh - 270px) / .6));width:var(--winW);border-radius:14px;opacity:0;box-shadow:0 0 0 1px #0000001a,0 50px 90px -40px #0b0b0f80,0 20px 40px -24px #0b0b0f59}
+.win-bar{display:flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:14px 14px 0 0;background:#fff;border-bottom:1px solid #0000000d}
+.win-bar>i{width:10px;height:10px;border-radius:50%;background:#d9d6cf}
+.url{display:flex;align-items:center;gap:6px;height:26px;margin:0 auto;padding:0 14px;border-radius:999px;background:#f1efea;color:var(--ink-2);font:500 12.5px var(--mono);letter-spacing:.01em;min-width:min(320px,50%)}
+.url svg{width:11px;height:11px;flex:none;color:#7b7f86}
+.url .slug{color:var(--blue)}
+.caret{width:1.5px;height:14px;background:var(--ink);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.win-screen{position:relative;height:calc(var(--winW) * .6 - 40px);border-radius:0 0 14px 14px;container-type:size;color:#fff}
+@media(max-width:700px){.win{--winW:88vw}.win-screen{height:min(calc(88vw * 1.35),calc(100svh - 300px))}}
+
+/* The athlete's site, laid over the shrunk photo. */
+.site{position:absolute;inset:0;pointer-events:none}
+.site>*{opacity:0;will-change:transform,opacity}
+.site-nav{position:absolute;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:3cqh 3.4cqw;font:500 max(9px,1.05cqw)/1 var(--sans)}
+.site-nav b{font:400 max(12px,1.5cqw)/1 var(--display);letter-spacing:.06em}
+.site-nav span{display:flex;gap:2.4cqw;opacity:.85}
+.site-hero{position:absolute;left:4cqw;bottom:22cqh}
+.site-hero small{display:block;font:500 max(8px,1cqw)/1.3 var(--mono);letter-spacing:.14em;opacity:.8}
+.site-hero h3{margin:1.4cqh 0 2.4cqh;font:400 max(30px,7.4cqw)/.88 var(--display);letter-spacing:-.01em}
+.site-hero a{display:inline-flex;gap:.7cqw;align-items:center;padding:1.1cqh 1.6cqw;border-radius:99px;background:#fff;color:var(--ink);font:600 max(9px,1.05cqw)/1 var(--sans);text-decoration:none}
+.site-stats{position:absolute;inset:auto 0 0;display:grid;grid-template-columns:repeat(4,1fr);padding:2.6cqh 4cqw;border-top:1px solid #ffffff26;background:linear-gradient(0deg,#05070acc,#05070a66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.site-stats b{display:block;font:400 max(16px,2.6cqw)/1 var(--display);letter-spacing:.01em}
+.site-stats small{font:500 max(7px,.85cqw)/1 var(--mono);letter-spacing:.14em;opacity:.7}
+@container (aspect-ratio < 1){.site-nav span{display:none}.site-hero{bottom:17cqh;left:6cqw}.site-hero h3{font-size:16cqw}.site-hero small{font-size:2.6cqw}.site-hero a{font-size:3.2cqw;padding:1.2cqh 3.6cqw}.site-stats{padding:2cqh 6cqw}.site-stats b{font-size:5.4cqw}.site-stats small{font-size:1.9cqw}}
+
+/* ---------- Section shared ---------- */
+.section{position:relative;padding:clamp(96px,14vh,160px) var(--gutter)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);align-items:end;gap:32px;max-width:1400px;margin:0 auto}
+.sec-head h2{margin:14px 0 0;font:400 clamp(48px,6.6vw,112px)/.9 var(--display);letter-spacing:-.012em;text-transform:uppercase}
+.sec-head h2 .serif-i{font-size:1.1em;color:var(--blue)}
+.sec-head p{margin:0;color:var(--muted);font-size:clamp(15px,1.15vw,18px)}
+@media(max-width:860px){.sec-head{grid-template-columns:1fr}}
+
+/* ---------- Scene 2 · Momentum carousel of athlete sites ---------- */
+.styles{padding-bottom:clamp(64px,10vh,120px);overflow-x:clip}
+.carousel{position:relative;height:calc(var(--ch) + 80px);margin-top:clamp(48px,7vh,80px);perspective:1200px;perspective-origin:50% 45%;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y;--cw:340px;--ch:460px}
+.carousel.is-dragging{cursor:grabbing}
+@media(max-width:1023px){.carousel{--cw:290px;--ch:400px}}
+@media(max-width:639px){.carousel{--cw:250px;--ch:350px;perspective:800px}}
+.card{position:absolute;left:50%;top:30px;width:var(--cw);height:var(--ch);margin-left:calc(var(--cw) / -2);will-change:transform,opacity;transform-style:flat}
+.card-inner{position:absolute;inset:0;clip-path:inset(0 round 18px);container-type:inline-size;transition:box-shadow .3s}
+.card-shadow{position:absolute;inset:6% 4% -2%;border-radius:18px;box-shadow:0 30px 50px -18px #0b0b0f66;z-index:-1}
+/* A fixed sheen that brightens as a card nears the middle. Only its opacity changes (on the graphics chip):
+   a sheen that moved across the card, or a blend mode, repainted all fifteen cards every frame. */
+.card-shine{position:absolute;inset:0;border-radius:18px;pointer-events:none;background:linear-gradient(115deg,transparent 30%,#ffffff1a 50%,transparent 70%);opacity:0;will-change:opacity}
+/* The style chip sits under the card like an exhibit label: on the card it would cover someone's design. */
+.card-tag{position:absolute;top:calc(100% + 14px);left:50%;translate:-50% 0;white-space:nowrap;padding:6px 11px;border-radius:99px;background:#ffffffa6;border:1px solid #0000000f;color:var(--ink-2);font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.carousel-foot{display:flex;justify-content:center;gap:28px;margin-top:6px;color:var(--muted);font:500 11px var(--mono);letter-spacing:.18em;text-transform:uppercase}
+
+/* The cards are the example pages' own cover cards: ../studio-v1/src/card.css, built by card.js. */
+
+/* ---------- Opened example: its live page in a phone (FLIP from the card) ---------- */
+.modal{--ph:min(78svh,680px);position:fixed;inset:0;z-index:90;display:flex;padding:24px;overflow-y:auto;overscroll-behavior:contain;visibility:hidden}
+.modal.is-open{visibility:visible}
+/* No backdrop blur: a full-screen blur is redrawn whenever anything behind it moves, too much for laptop graphics chips. */
+.modal-scrim{position:fixed;inset:0;background:#0b0b0fd1;opacity:0}
+.modal-box{position:relative;display:grid;grid-template-columns:auto minmax(0,420px);gap:clamp(24px,3vw,48px);align-items:center;margin:auto;max-width:calc(100vw - 2 * (clamp(8px,2vw,28px) + 60px))} /* room for the arrows */
+/* The same generic phone as Section 03 (no device details). Its screen shows a 390-wide page, scaled. */
+.m-phone{position:relative;height:var(--ph);width:calc(20px + (var(--ph) - 20px) * 390 / 844)}
+.m-shell{position:absolute;inset:0;border-radius:46px;background:#111;box-shadow:inset 0 0 0 1.5px #3a3a3a,0 50px 90px -40px #000c,0 20px 40px -26px #0009;opacity:0}
+.m-shell::after{content:"";position:absolute;inset:10px;border-radius:37px;background:var(--m-bg,#fff)}
+.m-ghost{position:absolute;left:10px;top:10px;border-radius:18px;overflow:hidden;transform-origin:0 0;pointer-events:none}
+.m-screen{position:absolute;inset:10px;border-radius:37px;overflow:hidden;background:var(--m-bg,#fff);opacity:0}
+.m-screen iframe{position:absolute;left:0;top:0;width:390px;height:var(--fh,844px);border:0;transform:scale(var(--fk,1));transform-origin:0 0}
+.modal-info{color:#fff}
+.modal-info .eyebrow{color:#ffffff99}
+.modal-info h3{margin:12px 0 14px;font:400 clamp(40px,4.4vw,64px)/.92 var(--display);text-transform:uppercase}
+.modal-info p{margin:0 0 22px;color:#ffffffc2}
+.modal-info ul{display:grid;gap:10px;margin:0 0 28px;padding:0;list-style:none;font-size:14px;color:#ffffffd9}
+.modal-info li{display:flex;gap:10px;align-items:baseline}
+.modal-info li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--blue-light);translate:0 -2px}
+.modal-actions{display:flex;flex-wrap:wrap;gap:12px}
+.modal-actions .btn-ghost{color:#fff}
+.modal-info .modal-note{margin:16px 0 0;font-size:13px;color:#ffffff8c}
+.modal-nav{position:absolute;z-index:2;top:50%;translate:0 -50%;display:grid;place-items:center;width:46px;height:46px;border:1px solid #ffffff2e;border-radius:50%;background:#ffffff1a;color:#fff;cursor:pointer;transition:background .2s}
+.modal-nav:hover{background:#ffffff2e}
+.modal-nav.prev{left:clamp(8px,2vw,28px)}.modal-nav.next{right:clamp(8px,2vw,28px)}
+.modal-close{position:fixed;z-index:2;top:clamp(12px,3vh,28px);right:clamp(12px,3vw,28px);width:44px;height:44px;border:0;border-radius:50%;background:#ffffff1f;color:#fff;font-size:20px;cursor:pointer}
+.modal-info,.modal-nav,.modal-close{opacity:0}
+/* Phones: the phone on top, the words under it; the arrows flank the phone. */
+@media(max-width:800px){
+  .modal{--ph:min(58svh,540px);display:block;padding:68px 16px 0}
+  .modal-box{grid-template-columns:1fr;justify-items:center;gap:22px;max-width:none}
+  .modal-info{width:100%;max-width:420px}
+  .modal-info h3{font-size:34px}
+  .modal-nav{top:calc(68px + var(--ph) / 2)}
+  /* The two buttons stay on screen; the details scroll under them. */
+  .modal-actions{position:sticky;z-index:1;bottom:0;flex-wrap:nowrap;gap:10px;margin:0 -16px;padding:22px 16px 16px;background:linear-gradient(180deg,#0b0b0f00,#0b0b0fe6 22px)}
+  .modal-actions .btn{flex:1;justify-content:center;min-height:48px;padding:0 14px;font-size:14px}
+  .modal-actions .btn svg{display:none}
+  .modal-info .modal-note{margin:2px 0 0;padding-bottom:28px}
+}
+
+/* ---------- Scene 3 · How it works (pinned) ---------- */
+.how{height:420vh;background:var(--paper)}
+.how-sticky{position:sticky;top:0;height:100vh;height:100svh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:clamp(24px,5vw,80px);padding:96px var(--gutter) 48px;max-width:1400px;margin:0 auto}
+.how-steps{display:grid;gap:clamp(10px,2vh,20px)}
+.how-steps .eyebrow{margin-bottom:8px}
+.step{display:grid;grid-template-columns:56px 1fr;gap:0 18px;opacity:.28;transition:opacity .45s var(--ease)}
+.step.is-active{opacity:1}
+.step span{grid-row:span 2;font:500 12px/2.6 var(--mono);letter-spacing:.14em;color:var(--blue)}
+.step h3{margin:0;font:400 clamp(40px,5.2vw,88px)/.95 var(--display);text-transform:uppercase}
+.step p{grid-column:2;max-width:400px;margin:0;height:0;overflow:hidden;color:var(--muted);transition:height .45s var(--ease)}
+.step.is-active p{height:3.2em}
+.how-progress{height:2px;margin-top:10px;background:var(--line);overflow:hidden}
+.how-progress i{display:block;height:100%;background:var(--blue);transform-origin:left;transform:scaleX(0);will-change:transform}
+.phone{position:relative;justify-self:center;width:min(330px,100%);aspect-ratio:9/19;border-radius:46px;padding:10px;background:#111;box-shadow:inset 0 0 0 1.5px #3a3a3a,0 50px 90px -40px #0b0b0f8c,0 20px 40px -26px #0b0b0f66}
+.phone-screen{position:relative;height:100%;border-radius:37px;overflow:hidden;background:#fff;container-type:inline-size}
+/* The phone shows the real Studio and the real page: screenshots of Jordan Bell (the athlete in Section 01)
+   taken by ../studio-v1/tools/how-shots.js, swapped as the steps scroll by. Re-run the tool when the Studio changes. */
+.phone-screen{background:#F3F1EC}
+.hf{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 0;opacity:0;transition:opacity .3s var(--ease)}
+.hf.is-on{opacity:1}
+.hf-page{height:auto;object-fit:fill}
+/* Where the next touch lands, like a screen recording. */
+.tap{position:absolute;z-index:3;width:10cqw;height:10cqw;margin:-5cqw 0 0 -5cqw;border-radius:50%;background:#0b0b0f2e;box-shadow:0 0 0 .5cqw #ffffffd9,0 0 0 .8cqw #0b0b0f33;opacity:0;transform:scale(.6);transition:opacity .2s,transform .35s var(--ease);pointer-events:none}
+.tap.is-on{opacity:1;transform:none}
+/* The Studio's own message toast (studio.css .toast, at its phone position), in the screen's units. */
+.hf-toast{position:absolute;z-index:3;left:50%;bottom:35.9cqw;margin:0;padding:2.82cqw 4.1cqw;border-radius:3.08cqw;background:#0B0B0F;color:#fff;font:500 3.59cqw/1.45 var(--sans);white-space:nowrap;box-shadow:0 4.6cqw 10.3cqw -4.1cqw #00000073;opacity:0;transform:translate(-50%,2.6cqw);transition:opacity .25s,transform .4s var(--ease)}
+.hf-toast.is-on{opacity:1;transform:translate(-50%,0)}
+@media(max-width:800px){
+  .how-sticky{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding-top:88px;gap:18px;align-items:start}
+  .phone{width:auto;height:min(60svh,560px);order:-1} /* the real screens need the room */
+  .step{grid-template-columns:40px 1fr}.step h3{font-size:34px}
+  .step:not(.is-active){display:none}
+}
+
+/* ---------- FAQ ---------- */
+.faq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(32px,6vw,96px);max-width:1400px;margin:0 auto}
+.faq h2{margin:14px 0 0;font:400 clamp(48px,6vw,104px)/.9 var(--display);text-transform:uppercase}
+.faq h2 .serif-i{color:var(--blue)}
+.qa{border-top:1px solid var(--line)}
+.qa:last-child{border-bottom:1px solid var(--line)}
+.qa button{display:flex;justify-content:space-between;gap:24px;width:100%;padding:26px 0;border:0;background:none;text-align:left;font:500 clamp(18px,1.5vw,22px)/1.3 var(--sans);letter-spacing:-.01em;cursor:pointer}
+.qa button i{flex:none;position:relative;width:16px;height:16px;margin-top:5px}
+.qa button i::before,.qa button i::after{content:"";position:absolute;left:0;top:7px;width:16px;height:1.5px;background:currentColor;transition:transform .35s var(--ease)}
+.qa button i::after{transform:rotate(90deg)}
+.qa.is-open button i::after{transform:rotate(0)}
+.qa-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease)}
+.qa.is-open .qa-body{grid-template-rows:1fr}
+.qa-body>div{overflow:hidden}
+.qa-body p{margin:0;padding:0 40px 26px 0;color:var(--muted);max-width:620px}
+@media(max-width:860px){.faq{grid-template-columns:1fr}}
+
+/* ---------- Claim your name ---------- */
+.claim{background:var(--night);color:#fff;text-align:center;overflow:hidden}
+.claim .eyebrow{color:#ffffff80}
+.claim-line{margin:22px 0 0;font:400 clamp(36px,8.4vw,150px)/.95 var(--display);text-transform:uppercase;letter-spacing:-.01em;white-space:nowrap}
+.claim-line .dom{color:#ffffff3d}
+.claim-line .slug{color:var(--blue-light)}
+.claim-line .caret{display:inline-block;width:.06em;height:.8em;margin-left:.04em;vertical-align:-.02em;background:var(--blue-light)}
+.claim-form{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:clamp(32px,5vh,52px) auto 0;max-width:560px}
+.claim-input{display:flex;align-items:center;flex:1 1 300px;height:56px;padding:0 20px;border-radius:999px;background:#ffffff12;box-shadow:inset 0 0 0 1px #ffffff26;font:500 15px var(--mono)}
+.claim-input span{color:#ffffff73}
+.claim-input input{flex:1;min-width:0;height:100%;border:0;background:none;color:#fff;font:inherit;outline:none}
+.claim-input:focus-within{box-shadow:inset 0 0 0 1.5px var(--blue-light)}
+.claim-note{margin-top:16px;min-height:1.5em;color:#ffffff80;font-size:13px}
+.footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;padding:28px var(--gutter);background:var(--night);color:#ffffff73;font-size:13px;border-top:1px solid #ffffff14}
+.footer a{text-decoration:none}.footer a:hover{color:#fff}
+
+/* ---------- Entrance ---------- */
+.js .rise{opacity:0;transform:translateY(28px)}
+.rise.in{opacity:1;transform:none;transition:opacity .9s var(--ease),transform 1s var(--ease)}
+.hero-title b{transform:translateY(105%)}
+.loaded .hero-title b{transform:none;transition:transform 1s var(--ease)}
+.loaded .hero-title span:nth-child(2) b{transition-delay:.08s}
+.hero-copy .eyebrow,.hero-row{opacity:0;transform:translateY(14px)}
+.loaded .hero-copy .eyebrow,.loaded .hero-row{opacity:1;transform:none;transition:opacity .8s var(--ease) .25s,transform .9s var(--ease) .25s}
+.hero-media img{transform:scale(1.06)}
+.loaded .hero-media img{transform:none;transition:transform 1.6s var(--ease)}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .js .rise,.hero-title b,.hero-copy .eyebrow,.hero-row,.hero-media img{opacity:1!important;transform:none!important}
+  .hero-scene{height:auto}.hero-sticky{position:relative;height:100svh}
+  .how{height:auto}.how-sticky{position:relative}
+  .tap{display:none}
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Athlesite home">
+    <img class="mark on-dark" src="assets/brand/athlesite-mark-reference-on-dark.png" alt="" width="264" height="190">
+    <img class="mark on-light" src="assets/brand/athlesite-mark-on-light.svg" alt="" width="150" height="110">
+    <span class="wordwrap"><img class="word on-dark" src="assets/brand/athlesite-wordmark-on-dark.png" alt="" width="369" height="28"><img class="word on-light" src="assets/brand/athlesite-wordmark-on-light.png" alt="" width="369" height="28"></span>
+  </a>
+  <nav class="nav-links" aria-label="Primary"><a href="#styles">Examples</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>
+  <a class="btn btn-blue" href="../studio-v1/studio.html?start=1">Create your Athlesite</a>
+</header>
+
+<main>
+<!-- Scene 1: the athlete becomes the website -->
+<section class="hero-scene" id="top" aria-labelledby="hero-title">
+  <div class="hero-sticky" id="heroSticky">
+    <div class="hero-media" id="heroMedia"><img src="assets/img/athlete-towel.png" alt="Football athlete on the sideline after a night game" width="1536" height="1024" fetchpriority="high"></div>
+    <div class="hero-shade" id="heroShade"></div>
+    <div class="hero-copy" id="heroCopy">
+      <p class="eyebrow">Athlesite · The athlete's own website</p>
+      <h1 class="hero-title" id="hero-title"><span><b>Your story</b></span><span class="accent"><b>One home</b></span></h1>
+      <div class="hero-row">
+        <p>A website that looks like you went pro. One link for coaches, scouts, brands and everyone who should know your name.</p>
+        <a class="btn btn-light" href="../studio-v1/studio.html?start=1">Create your Athlesite <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+    </div>
+    <div class="scroll-cue" id="scrollCue" aria-hidden="true">SCROLL<i></i></div>
+
+    <div class="endstate">
+    <div class="reveal-head" id="revealHead">
+      <p class="eyebrow">This is Jordan's</p>
+      <h2>One link. <span class="serif-i">Everything</span> they need to see.</h2>
+    </div>
+    <div class="win" id="win" aria-hidden="true">
+      <div class="win-bar"><i></i><i></i><i></i>
+        <div class="url"><svg viewBox="0 0 12 12" fill="none"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" stroke="currentColor" stroke-width="1.2"/></svg><span>athlesite.com/<span class="slug" id="urlSlug"></span></span><i class="caret"></i></div>
+      </div>
+      <div class="win-screen" id="winScreen">
+        <div class="site">
+          <div class="site-nav"><b>JORDAN BELL</b><span><em>Story</em><em>Film</em><em>Stats</em><em>Contact</em></span></div>
+          <div class="site-hero"><small>WIDE RECEIVER · #14 · CLASS OF 2027</small><h3>JORDAN<br>BELL</h3><a>▶ Watch highlights</a></div>
+          <div class="site-stats"><div><b>6′1″</b><small>HEIGHT</small></div><div><b>185</b><small>WEIGHT</small></div><div><b>4.42</b><small>40 YARD</small></div><div><b>12</b><small>OFFERS</small></div></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- Scene 2: momentum carousel of athlete sites -->
+<section class="section styles" id="styles" aria-labelledby="styles-title">
+  <div class="sec-head rise">
+    <div><p class="eyebrow">02 · Made to feel like you</p><h2 id="styles-title">Same ambition.<br><span class="serif-i">Your own</span> look.</h2></div>
+    <p>Every Athlesite starts in the same studio and ends up looking like its athlete. Drag through fifteen of them, then open one up.</p>
+  </div>
+  <div class="carousel" id="carousel" role="list" aria-label="Example athlete websites"></div>
+  <p class="sr-only" id="carouselHelp">Left and right arrow keys move through the examples. Enter opens one.</p>
+  <div class="carousel-foot"><span>Drag · Swipe</span><span>Click to open</span></div>
+</section>
+
+<!-- Scene 3: how it works -->
+<section class="how" id="how" aria-labelledby="how-title">
+  <div class="how-sticky">
+    <div class="how-steps">
+      <p class="eyebrow" id="how-title">03 · From athlete to Athlesite</p>
+      <div class="step is-active"><span>01</span><h3>Create</h3><p>Your name, your sport, your story. Guided, not a blank page.</p></div>
+      <div class="step"><span>02</span><h3>Personalize</h3><p>Pick a style, your colors, your photos. It stays premium whatever you choose.</p></div>
+      <div class="step"><span>03</span><h3>Publish</h3><p>You decide when it goes live and what is public.</p></div>
+      <div class="step"><span>04</span><h3>Share</h3><p>One link in your bio, your emails, your film. That's the whole pitch.</p></div>
+      <div class="how-progress"><i id="howBar"></i></div>
+    </div>
+    <div class="phone" aria-hidden="true"><div class="phone-screen" id="howScreen"></div></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq" aria-labelledby="faq-title">
+  <div class="faq">
+    <div class="rise"><p class="eyebrow">04 · Before you start</p><h2 id="faq-title">Good<br><span class="serif-i">questions</span></h2></div>
+    <div class="rise" id="qas">
+      <div class="qa"><button aria-expanded="false">What is an Athlesite?<i></i></button><div class="qa-body"><div><p>A professional website for an athlete: your story, film, stats, recruiting information and socials in one place, at one link you own.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Do I need to know how to build a website?<i></i></button><div class="qa-body"><div><p>No. A guided setup asks for your information and media, and the studio handles the design. You choose the style; it always looks finished.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Do I need to be recruited or have an NIL deal?<i></i></button><div class="qa-body"><div><p>No. Start where you are today. Your site can introduce you before a recruiting conversation or business opportunity exists.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Who controls what's public?<i></i></button><div class="qa-body"><div><p>You do. You decide when your site goes live and what it shows, and you can take it private again at any time.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Are the athletes shown here real customers?<i></i></button><div class="qa-body"><div><p>No. The athletes and sites on this page are fictional demonstrations, and the images are illustrative. No endorsements or recruiting outcomes are implied.</p></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Claim -->
+<section class="section claim" id="claim" aria-labelledby="claim-title">
+  <p class="eyebrow">05 · Your name belongs out there</p>
+  <h2 class="claim-line" id="claim-title" aria-label="Claim your Athlesite link"><span class="dom">athlesite.com/</span><span class="slug" id="claimSlug">yourname</span><i class="caret" aria-hidden="true"></i></h2>
+  <form class="claim-form" id="claimForm">
+    <label class="claim-input"><span>athlesite.com/</span><input id="claimInput" name="slug" autocomplete="off" spellcheck="false" placeholder="yourname" aria-label="Your link name" maxlength="30"></label>
+    <button class="btn btn-blue" type="submit">Claim it <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </form>
+  <p class="claim-note" id="claimNote" aria-live="polite"></p>
+</section>
+</main>
+
+<footer class="footer"><span>© 2026 Athlesite</span><span>Design preview · fictional athletes · illustrative imagery</span><a href="#top">Back to top ↑</a></footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-scrim" id="modalScrim"></div>
+  <button class="modal-nav prev" id="modalPrev" aria-label="Previous site">←</button>
+  <button class="modal-nav next" id="modalNext" aria-label="Next site">→</button>
+  <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+  <div class="modal-box">
+    <div class="m-phone" id="mPhone">
+      <div class="m-shell" id="mShell"></div>
+      <div class="m-ghost" id="mGhost" aria-hidden="true"></div>
+      <div class="m-screen" id="mScreen"><iframe id="mFrame" title="Example page, live preview" src="about:blank"></iframe></div>
+    </div>
+    <div class="modal-info" id="modalInfo">
+      <p class="eyebrow" id="modalStyle"></p>
+      <h3 id="modalTitle"></h3>
+      <p id="modalDesc"></p>
+      <ul id="modalList"></ul>
+      <div class="modal-actions"><a class="btn btn-blue" href="../studio-v1/studio.html?start=1" id="modalStart">Start with this style <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 18 18 6M8 6h10v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="btn btn-ghost" href="../studio-v1/site.html" id="modalFull" target="_blank" rel="noopener">See the full page</a></div>
+      <p class="modal-note" id="modalNote"></p>
+    </div>
+  </div>
+</div>
+
+<!-- The Studio's own page and card code, so the examples here are the real pages (../studio-v1). -->
+<script src="../studio-v1/src/sports.js"></script>
+<script src="../studio-v1/src/profile.js"></script>
+<script src="../studio-v1/src/color.js"></script>
+<script src="../studio-v1/src/render.js"></script>
+<script src="../studio-v1/src/looks/cinematic.js"></script>
+<script src="../studio-v1/src/looks/editorial.js"></script>
+<script src="../studio-v1/src/looks/highlight.js"></script>
+<script src="../studio-v1/src/looks/portrait.js"></script>
+<script src="../studio-v1/src/looks/prospect.js"></script>
+<script src="../studio-v1/src/card.js"></script>
+<script src="../studio-v1/examples/examples.js"></script>
+<!-- Section 03's screenshots of the real Studio and page (made by ../studio-v1/tools/how-shots.js). -->
+<script src="assets/img/how/how.js"></script>
+<script>
+(() => {
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const ramp = (p, a, b) => clamp((p - a) / (b - a));
+const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOut = t => 1 - Math.pow(1 - t, 4);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+addEventListener('load', () => requestAnimationFrame(() => document.documentElement.classList.add('loaded')));
+setTimeout(() => document.documentElement.classList.add('loaded'), 1200);
+
+/* ---------- Smooth wheel ---------- */
+if (!reduced) {
+  let target = scrollY, current = scrollY, raf = 0, last = 0, driving = false;
+  const max = () => document.documentElement.scrollHeight - innerHeight;
+  const frame = now => {
+    const dt = Math.min(50, last ? now - last : 16.7); last = now;
+    current += (target - current) * (1 - Math.exp(-dt / 110));
+    if (Math.abs(target - current) < .5) current = target;
+    scrollTo({ top: current, behavior: 'instant' });
+    if (current !== target) { raf = requestAnimationFrame(frame); return; }
+    raf = 0; last = 0; driving = false;
+  };
+  addEventListener('wheel', e => {
+    if (e.ctrlKey || e.defaultPrevented || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    if ($('#modal').classList.contains('is-open')) return;
+    e.preventDefault();
+    const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? innerHeight : 1;
+    if (!driving) target = current = scrollY;
+    target = clamp(target + e.deltaY * unit, 0, max());
+    driving = true;
+    if (!raf) raf = requestAnimationFrame(frame);
+  }, { passive: false });
+  addEventListener('scroll', () => { if (!driving) target = current = scrollY; }, { passive: true });
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]'); if (!a) return;
+    const el = document.querySelector(a.getAttribute('href')); if (!el) return;
+    e.preventDefault();
+    driving = true; current = scrollY;
+    target = clamp(el.getBoundingClientRect().top + scrollY - (a.getAttribute('href') === '#top' ? 0 : 0), 0, max());
+    if (!raf) raf = requestAnimationFrame(frame);
+  });
+}
+
+/* ---------- Scene 1: the photo becomes the website ---------- */
+const nav = $('#nav'), scene = $('.hero-scene'), sticky = $('#heroSticky'), media = $('#heroMedia');
+const shade = $('#heroShade'), copy = $('#heroCopy'), cue = $('#scrollCue'), head = $('#revealHead');
+const win = $('#win'), screenEl = $('#winScreen'), slugEl = $('#urlSlug');
+const siteParts = [...document.querySelectorAll('.site > *')];
+const SLUG = 'jordanbell';
+let geo = null;
+function measure() {
+  const s = sticky.getBoundingClientRect(), r = screenEl.getBoundingClientRect();
+  const vw = s.width, vh = s.height;
+  const W = r.width, H = r.height;
+  const k = Math.max(W / vw, H / vh);
+  geo = { vw, vh, k, tx: (r.left - s.left + W / 2) - vw / 2, ty: (r.top - s.top + H / 2) - vh / 2,
+          cx: Math.max(0, (vw - W / k) / 2), cy: Math.max(0, (vh - H / k) / 2), rad: 14 / k };
+}
+function heroFrame() {
+  if (!innerHeight) return; // a background tab reports a 0×0 viewport; measure once it's visible
+  if (!geo) measure();
+  const total = scene.offsetHeight - innerHeight;
+  const p = reduced ? 1 : clamp(-scene.getBoundingClientRect().top / total);
+  const e = easeIO(ramp(p, .1, .72));
+  const g = geo;
+  media.style.transform = `translate3d(${(g.tx * e).toFixed(2)}px,${(g.ty * e).toFixed(2)}px,0) scale(${lerp(1, g.k, e).toFixed(5)})`;
+  media.style.clipPath = e > 0 ? `inset(${(g.cy * e).toFixed(2)}px ${(g.cx * e).toFixed(2)}px round ${(g.rad * e).toFixed(2)}px)` : 'none';
+  const c = ramp(p, .02, .26);
+  copy.style.opacity = (1 - c).toFixed(3);
+  copy.style.transform = `translate3d(0,${(-70 * easeOut(c)).toFixed(2)}px,0)`;
+  cue.style.opacity = (1 - ramp(p, 0, .06)).toFixed(3);
+  shade.style.opacity = (1 - ramp(p, .3, .7)).toFixed(3);
+  const h = ramp(p, .56, .78);
+  head.style.opacity = h.toFixed(3);
+  head.style.transform = `translate3d(0,${(24 * (1 - easeOut(h))).toFixed(2)}px,0)`;
+  win.style.opacity = ramp(p, .6, .72).toFixed(3);
+  const n = Math.round(ramp(p, .68, .86) * SLUG.length);
+  if (slugEl.textContent.length !== n) slugEl.textContent = SLUG.slice(0, n);
+  siteParts.forEach((el, i) => {
+    const t = easeOut(ramp(p, .74 + i * .05, .9 + i * .03));
+    el.style.opacity = t.toFixed(3);
+    el.style.transform = `translate3d(0,${(16 * (1 - t)).toFixed(2)}px,0)`;
+  });
+  nav.classList.toggle('is-light', p > .45 || scene.getBoundingClientRect().bottom < 80);
+}
+
+/* ---------- Scene 3: how it works, on the real Studio and the real page ---------- */
+// Jordan goes through the real setup, changes his look in the real editor, chooses what's public and
+// publishes, then his link opens his real page. Each step's frames share its stretch of the scroll;
+// a frame with a tap shows where the next touch lands before the next frame comes in.
+const how = $('#how'), steps = [...document.querySelectorAll('.step')], howBar = $('#howBar'), howScreen = $('#howScreen');
+const SHOTS = new Map(((window.ATHLESITE_HOW || {}).frames || []).map(f => [f.name, f]));
+const shotImg = new Map();
+function shotEl(name) {
+  if (!shotImg.has(name)) {
+    const f = SHOTS.get(name), im = document.createElement('img');
+    im.className = f.tall ? 'hf hf-page' : 'hf'; im.alt = ''; im.decoding = 'async';
+    im.dataset.src = `assets/img/how/${name}.webp`;
+    if (f.tall) im.style.setProperty('--tall', f.tall);
+    howScreen.appendChild(im); shotImg.set(name, im);
+  }
+  return shotImg.get(name);
+}
+// Each beat: a frame (weight = its share of the step's scroll), its tap, the toast, or the page scrolling.
+const beat = (name, o = {}) => SHOTS.has(name) ? Object.assign({ name, w: 1, tap: SHOTS.get(name).tap }, o) : null;
+const BEATS = [
+  ['create-1', 'create-2', 'create-3', 'create-4', 'create-5', 'create-6'].map(n => beat(n)),
+  ['style-1', 'style-2', 'style-3', 'style-4', 'style-5'].map(n => beat(n)),
+  ['live-1', 'live-2', 'live-3', 'live-4'].map(n => beat(n)),
+  [beat('live-4', { tap: null, toast: true }), beat('share-1'), beat('share-page', { w: 3, scroll: true })],
+].map(list => list.filter(Boolean));
+const tapEl = Object.assign(document.createElement('i'), { className: 'tap' });
+const toastEl = Object.assign(document.createElement('p'), { className: 'hf-toast', textContent: 'Link copied: athlesite.com/jordanbell' });
+howScreen.append(tapEl, toastEl);
+// The frames load (and decode, off the main thread) once the section is near, not with the page.
+let howWarm = false;
+function warmHow() {
+  if (howWarm) return; howWarm = true;
+  BEATS.flat().forEach(b => shotEl(b.name));
+  (async () => { for (const im of shotImg.values()) { if (!im.src) im.src = im.dataset.src; try { await im.decode(); } catch (e) {} } })();
+}
+new IntersectionObserver(([e]) => { if (e.isIntersecting) warmHow(); }, { rootMargin: '150% 0px' }).observe(how);
+let howStep = -1, howOn = null, howTap = '', howToast = false, howY = '';
+function showShot(name) {
+  if (name === howOn) return;
+  const im = shotEl(name);
+  if (!im.src) im.src = im.dataset.src;
+  if (howOn) shotImg.get(howOn).classList.remove('is-on');
+  im.classList.add('is-on'); howOn = name;
+}
+function howFrame() {
+  const total = how.offsetHeight - innerHeight;
+  const p = reduced ? .999 : clamp(-how.getBoundingClientRect().top / total, 0, .9999);
+  const i = Math.floor(p * 4), sub = p * 4 - i;
+  if (i !== howStep) {
+    howStep = i;
+    steps.forEach((s, k) => s.classList.toggle('is-active', k === i));
+  }
+  howBar.style.transform = `scaleX(${p.toFixed(4)})`;
+  const beats = BEATS[i]; if (!beats || !beats.length) return;
+  const W = beats.reduce((a, b) => a + b.w, 0);
+  let at = sub * W, b = beats[0];
+  for (const x of beats) { b = x; if (at < x.w) break; at -= x.w; }
+  const t = clamp(at / b.w);
+  showShot(b.name);
+  // The tap shows in the second half of its frame, just before the next one.
+  const tap = b.tap && !reduced && t > .5 ? `${b.tap.x}%,${b.tap.y}%` : '';
+  if (tap !== howTap) {
+    howTap = tap;
+    if (tap) { tapEl.style.left = b.tap.x + '%'; tapEl.style.top = b.tap.y + '%'; }
+    tapEl.classList.toggle('is-on', !!tap);
+  }
+  const toast = !!b.toast && t > .08;
+  if (toast !== howToast) { howToast = toast; toastEl.classList.toggle('is-on', toast); }
+  // The page scrolls its first screens (only the image moves: no repaint).
+  if (b.scroll) {
+    const tall = SHOTS.get(b.name).tall, k = easeIO(ramp(t, .12, .92)) * (tall - 1);
+    const y = `translate3d(0,${(-100 * k / tall).toFixed(3)}%,0)`;
+    if (y !== howY) { howY = y; shotImg.get(b.name).style.transform = y; }
+  }
+}
+
+/* ---------- Single scroll-driven frame loop ---------- */
+let ticking = false;
+const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; heroFrame(); howFrame(); }); } };
+addEventListener('scroll', onScroll, { passive: true });
+addEventListener('resize', () => { geo = null; onScroll(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { geo = null; onScroll(); } });
+heroFrame(); howFrame();
+
+/* ---------- Reveal on enter ---------- */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -12% 0px' });
+document.querySelectorAll('.rise').forEach(el => io.observe(el));
+
+/* ---------- Scene 2: momentum carousel of the real example pages ---------- */
+// The examples are real pages made in the Studio (../studio-v1/examples, one per sport). Each card
+// is built from its page by the Studio's own card code, so it follows that athlete's choices.
+const A = window.Athlesite || {}, EX = A.EXAMPLES || {};
+const STUDIO = '../studio-v1/';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Card 0 starts in the middle. Neighbours always differ in look, and light and dark cards take turns.
+const ORDER = ['jordan-bell', 'maya-rodriguez', 'aaliyah-grant', 'grace-nakamura', 'cole-bennett', 'sofia-lindqvist', 'liam-kowalski', 'ethan-whitaker', 'owen-castellanos', 'priya-raman', 'imani-wallace', 'hannah-mercer', 'kenzie-morales', 'mateo-ruiz', 'tyler-brooks'];
+// Example photos are stored relative to studio-v1; from here they live one folder over.
+const fromStudio = u => u && !/^([a-z]+:|\/)/i.test(u) ? STUDIO + u.replace(/^\.\//, '') : u;
+function exampleProfile(raw) {
+  const p = A.normalizeProfile(raw), d = p.data;
+  d.heroPhotoUrl = fromStudio(d.heroPhotoUrl);
+  d.gallery = d.gallery.map(g => Object.assign({}, g, { src: fromStudio(g.src) }));
+  d.highlightLinks = d.highlightLinks.map(h => Object.assign({}, h, { poster: fromStudio(h.poster) }));
+  return p;
+}
+/** Four lines on what this athlete chose: cover, colors, fonts, and one thing their page has. */
+function choices(p, c) {
+  const d = p.data, lay = p.design.layout || {}, look = c.look;
+  const cover = (look.covers || []).find(v => v.id === lay.cover) || (look.covers || [])[0];
+  const videos = d.highlightLinks.filter(h => h.label || h.url).length, photos = d.gallery.filter(g => g.src).length;
+  const reel = videos >= 2 && (lay.film === 'reel' || (look.filmLayout === 'reel' && lay.film !== 'list'));
+  const tone = { color: 'Color photos', mono: 'Black-and-white photos', duotone: 'Duotone photos' }[p.design.photo];
+  const own = d.custom && String(d.custom.title).trim() && String(d.custom.body).trim();
+  const extra =
+    d.results.length ? `Results table${d.results.some(r => r.pb) ? ', best marks flagged' : ''}` :
+    d.nilOpen ? 'NIL section for brand partners' :
+    own ? `Their own section: “${d.custom.title}”` :
+    reel ? 'Highlights as a cinema reel' :
+    lay.gallery === 'folio' && photos >= 3 ? 'Photos as a folio' :
+    tone && p.design.photo !== (look.photo || 'color') ? tone :
+    `${d.level === 'college' ? 'College' : 'High school'} recruiting details`;
+  return [
+    cover && `${cover.label} cover${lay.mirror ? ', mirrored' : ''}`,
+    `${c.palette.label} colors${p.design.accent ? ', their own accent' : ''}`,
+    c.type.label && `${c.type.label} type${c.type.note ? ': ' + c.type.note.charAt(0).toLowerCase() + c.type.note.slice(1) : ''}`,
+    extra,
+  ].filter(Boolean);
+}
+const SITES = A.renderCard ? [...ORDER.filter(k => EX[k]), ...Object.keys(EX).filter(k => !ORDER.includes(k))].map(slug => {
+  const p = exampleProfile(EX[slug]), c = A.cardContext(p);
+  return { slug, p, name: c.name, first: p.data.firstName || c.name, style: c.look.name, sport: c.sportName, bg: c.palette.bg, desc: c.look.line, list: choices(p, c) };
+}) : [];
+const carousel = $('#carousel');
+if (!SITES.length) { carousel.hidden = true; $('.carousel-foot').hidden = true; } // the Studio folder is missing
+// Fifteen pages fill the loop on any screen; a smaller set repeats so the loop never shows a gap.
+const N = SITES.length * Math.max(1, Math.ceil(10 / Math.max(1, SITES.length)));
+const cards = [];
+for (let i = 0; i < N; i++) {
+  const s = SITES[i % SITES.length];
+  const el = document.createElement('div');
+  el.className = 'card'; el.setAttribute('role', 'listitem'); el.tabIndex = i === 0 ? 0 : -1; // one Tab stop; arrows move between cards
+  el.setAttribute('aria-describedby', 'carouselHelp');
+  el.setAttribute('aria-label', `${s.name}, ${s.sport}, ${s.style} style. Open preview.`);
+  el.innerHTML = `<div class="card-shadow"></div><div class="card-inner">${A.renderCard(s.p)}</div><div class="card-shine"></div><span class="card-tag" aria-hidden="true">${esc(s.style)} · ${esc(s.sport)}</span>`;
+  carousel.appendChild(el);
+  cards.push({ el, shine: el.querySelector('.card-shine'), site: i % SITES.length, z: null, op: null, sh: null });
+}
+// Each look's fonts once, then names that still overflow their column shrink to fit (sizes in cqw).
+new Set(SITES.map(s => A.cardFonts(s.p))).forEach(href => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); });
+const fitCards = () => { if (A.fitCards) A.fitCards(carousel); };
+fitCards();
+document.fonts?.ready.then(() => requestAnimationFrame(fitCards));
+document.fonts?.addEventListener?.('loadingdone', () => requestAnimationFrame(fitCards));
+addEventListener('resize', fitCards);
+
+const FRICTION = .935, SNAP = .035, AUTO_SPEED = .45, AUTO_DELAY = 3200, GAP = 22;
+let scrollX = 0, velocity = 0, scrollTarget = null, dragging = false, paused = false, lastInput = performance.now(), visible = false, enteredAt = 0;
+let laidX = NaN, settled = false; // skip frames where nothing moved (e.g. while a card is open)
+let kbHold = false; // keyboard focus is on a card: no drifting away from under it
+const cw = () => parseFloat(getComputedStyle(carousel).getPropertyValue('--cw'));
+function layoutCards(now) {
+  const width = carousel.clientWidth, STRIDE = cw() + GAP, TOTAL = N * STRIDE;
+  const mobile = innerWidth < 640, maxRot = mobile ? 8 : 14, maxZ = mobile ? -60 : -120, maxScale = mobile ? .25 : .35;
+  const elapsed = (now - enteredAt) / 1000;
+  let done = true;
+  cards.forEach((c, i) => {
+    let pos = i * STRIDE - scrollX;
+    pos = ((pos % TOTAL) + TOTAL * 1.5) % TOTAL - TOTAL / 2;
+    const d = pos / (width * .55), ad = Math.min(Math.abs(d), 1.5);
+    // The entrance ripples out from the middle card (card 0 starts there; the loop wraps both ways).
+    const centerDist = Math.min(i, N - i);
+    const prog = reduced ? 1 : clamp((elapsed - (.15 + centerDist * .06)) / .9);
+    if (prog < 1) done = false;
+    const en = easeOut(prog);
+    const y = (1 - en) * 60, sc = (1 - ad * maxScale) * (.94 + en * .06);
+    c.el.style.transform = `translate3d(${pos.toFixed(1)}px,${y.toFixed(1)}px,${(ad * maxZ).toFixed(1)}px) rotateY(${(-d * maxRot).toFixed(2)}deg) scale(${sc.toFixed(4)})`;
+    // Only what changed is written: opacity, stacking and sheen settle while the cards keep moving.
+    const op = en.toFixed(3), z = Math.round((1 - ad / 1.5) * 100), sh = Math.max(0, 1 - ad * .7).toFixed(2);
+    if (op !== c.op) { c.el.style.opacity = c.op = op; }
+    if (z !== c.z) { c.el.style.zIndex = c.z = z; }
+    if (sh !== c.sh) { c.shine.style.opacity = c.sh = sh; }
+  });
+  laidX = scrollX; settled = done;
+}
+addEventListener('resize', () => { laidX = NaN; });
+function carouselTick(now) {
+  if (!visible) return;
+  const STRIDE = cw() + GAP;
+  if (scrollTarget !== null) { scrollX += (scrollTarget - scrollX) * .1; if (Math.abs(scrollTarget - scrollX) < .5) { scrollX = scrollTarget; scrollTarget = null; } }
+  else if (!dragging && !paused && !kbHold && !reduced) {
+    scrollX += velocity; velocity *= FRICTION;
+    const idle = now - lastInput;
+    if (Math.abs(velocity) < .8 && idle < AUTO_DELAY) velocity += (Math.round(scrollX / STRIDE) * STRIDE - scrollX) * SNAP;
+    else if (idle >= AUTO_DELAY && Math.abs(velocity) < .3) scrollX += AUTO_SPEED;
+  }
+  if (scrollX !== laidX || !settled) layoutCards(now);
+  requestAnimationFrame(carouselTick);
+}
+new IntersectionObserver(([e]) => {
+  const was = visible; visible = e.isIntersecting;
+  if (visible && !was) { if (!enteredAt) enteredAt = performance.now(); requestAnimationFrame(carouselTick); }
+}, { rootMargin: '0px 0px -10% 0px' }).observe(carousel);
+layoutCards(-1e9);
+/** Glide so card i sits in the middle (the nearest way round the loop), one stride from any glide already under way. */
+function centerOn(i) {
+  const STRIDE = cw() + GAP, TOTAL = N * STRIDE, from = scrollTarget ?? scrollX, want = i * STRIDE;
+  scrollTarget = want + Math.round((from - want) / TOTAL) * TOTAL;
+  velocity = 0; lastInput = performance.now();
+}
+const middleCard = () => { const STRIDE = cw() + GAP, at = Math.round((scrollTarget ?? scrollX) / STRIDE); return ((at % N) + N) % N; };
+
+let drag = null, suppressClick = false;
+const startDrag = (x, y) => { drag = { x0: x, y0: y, x, t: performance.now(), v: 0, axis: null, dist: 0 }; velocity = 0; scrollTarget = null; lastInput = performance.now(); };
+const moveDrag = (x, y) => {
+  if (!drag) return false;
+  if (!drag.axis) { const dx = Math.abs(x - drag.x0), dy = Math.abs(y - drag.y0); if (dx + dy < 8) return false; drag.axis = dx > dy * 1.2 ? 'h' : 'v'; if (drag.axis === 'h') { dragging = true; carousel.classList.add('is-dragging'); } }
+  if (drag.axis !== 'h') return false;
+  const now = performance.now(), dx = x - drag.x, dt = Math.max(1, now - drag.t);
+  scrollX -= dx; drag.v = (-dx / dt) * 16; drag.x = x; drag.t = now; drag.dist += Math.abs(dx); lastInput = now;
+  return true;
+};
+const endDrag = () => { if (!drag) return; if (dragging) velocity = drag.v; suppressClick = drag.dist > 5; dragging = false; carousel.classList.remove('is-dragging'); drag = null; lastInput = performance.now(); };
+carousel.addEventListener('mousedown', e => { if (e.button === 0) startDrag(e.clientX, e.clientY); });
+addEventListener('mousemove', e => { if (drag) moveDrag(e.clientX, e.clientY); });
+addEventListener('mouseup', endDrag);
+carousel.addEventListener('touchstart', e => startDrag(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+carousel.addEventListener('touchmove', e => { if (moveDrag(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); }, { passive: false });
+carousel.addEventListener('touchend', endDrag);
+carousel.addEventListener('wheel', e => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * .5) { e.preventDefault(); scrollX += e.deltaX; velocity = 0; lastInput = performance.now(); } }, { passive: false });
+// Keyboard: the carousel is one Tab stop (the card last focused); ← → move focus card to card and
+// bring it to the middle; while a card has keyboard focus the carousel holds still.
+const rove = i => { cards.forEach((c, k) => { c.el.tabIndex = k === i ? 0 : -1; }); };
+carousel.addEventListener('focusin', e => {
+  const i = cards.findIndex(c => c.el === e.target);
+  if (i < 0 || !e.target.matches(':focus-visible')) return; // a mouse press focuses too: leave drags alone
+  rove(i); kbHold = true;
+  if (middleCard() !== i) centerOn(i);
+});
+carousel.addEventListener('focusout', e => { if (!carousel.contains(e.relatedTarget)) { kbHold = false; lastInput = performance.now(); } });
+carousel.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const from = cards.findIndex(c => c.el === document.activeElement), i = ((from < 0 ? middleCard() : from) + (e.key === 'ArrowRight' ? 1 : -1) + N) % N;
+    rove(i); cards[i].el.focus({ preventScroll: true }); centerOn(i);
+  }
+  if (e.key === 'Enter' || e.key === ' ') { const c = cards.find(c => c.el === document.activeElement); if (c) { e.preventDefault(); openModal(c); } }
+});
+carousel.addEventListener('click', e => {
+  if (suppressClick) { suppressClick = false; return; }
+  const c = cards.find(c => c.el.contains(e.target)); if (c) openModal(c);
+});
+
+/* ---------- Opened example: its live page in a phone (FLIP from the card) ---------- */
+// The card flies into the phone's screen, the phone forms around it, then the live page
+// (../studio-v1/site.html?ex=…, opening and all) fades in over the card once it has loaded.
+const modal = $('#modal'), scrim = $('#modalScrim'), phone = $('#mPhone'), shell = $('#mShell'), ghost = $('#mGhost');
+const screenBox = $('#mScreen'), frame = $('#mFrame'), info = $('#modalInfo');
+const navBtns = [$('#modalPrev'), $('#modalNext'), $('#modalClose')];
+const outside = [$('#nav'), $('main'), $('footer')];
+const EASE = 'cubic-bezier(.65,0,.35,1)', EASE_OUT = 'cubic-bezier(.16,1,.3,1)';
+const anim = (el, kf, o) => reduced ? null : el.animate(kf, { fill: 'both', ...o });
+let activeCard = null, closing = false, lastFocus = null, liveToken = 0, liveTimer = 0, stepToken = 0;
+const activeSite = () => SITES[cards[activeCard].site];
+function fill(s) {
+  $('#modalStyle').textContent = `${s.style} style · ${s.sport}`;
+  $('#modalTitle').textContent = s.name;
+  $('#modalDesc').textContent = s.desc;
+  $('#modalList').innerHTML = s.list.map(t => `<li>${esc(t)}</li>`).join('');
+  $('#modalStart').href = `${STUDIO}studio.html?start=1&from=${encodeURIComponent(s.slug)}`;
+  $('#modalFull').href = `${STUDIO}site.html?ex=${encodeURIComponent(s.slug)}`;
+  $('#modalNote').textContent = `Your own words and photos, in ${s.first}'s design.`;
+  phone.style.setProperty('--m-bg', s.bg);
+  frame.title = `${s.name}'s page, live preview`;
+}
+// The live page is a 390-wide phone page, scaled to the screen.
+function sizeFrame() {
+  const k = screenBox.clientWidth / 390;
+  frame.style.setProperty('--fk', k.toFixed(5));
+  frame.style.setProperty('--fh', (screenBox.clientHeight / k).toFixed(1) + 'px');
+}
+// The ghost is a copy of the card at the card's own size; it rests across the screen's width, centered.
+function ghostOf(card) {
+  ghost.replaceChildren(card.el.querySelector('.ac').cloneNode(true));
+  ghost.style.width = card.el.offsetWidth + 'px'; ghost.style.height = card.el.offsetHeight + 'px';
+}
+function ghostRest() {
+  const w = ghost.offsetWidth, h = ghost.offsetHeight, k = screenBox.clientWidth / w;
+  return `translate(0px,${((screenBox.clientHeight - h * k) / 2).toFixed(2)}px) scale(${k.toFixed(5)})`;
+}
+function ghostOver(rect) { // the transform that lays the ghost over a card on screen
+  const p = phone.getBoundingClientRect();
+  return `translate(${(rect.left - p.left - 10).toFixed(2)}px,${(rect.top - p.top - 10).toFixed(2)}px) scale(${(rect.width / ghost.offsetWidth).toFixed(5)})`;
+}
+/** Load a page into the phone; it fades in over the card once loaded (and not before minMs). */
+function goLive(s, minMs) {
+  const token = ++liveToken, t0 = performance.now();
+  clearTimeout(liveTimer);
+  screenBox.getAnimations().forEach(a => a.cancel());
+  screenBox.style.opacity = 0;
+  const reveal = () => {
+    if (token !== liveToken || activeCard === null || closing) return;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => {
+      if (token !== liveToken || activeCard === null || closing) return;
+      if (reduced) screenBox.style.opacity = 1;
+      else anim(screenBox, [{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' });
+    }, Math.max(0, minMs - (performance.now() - t0)));
+  };
+  frame.onload = () => { if (frame.src !== 'about:blank') reveal(); };
+  liveTimer = setTimeout(reveal, 5000); // a slow connection still gets the page, eventually
+  frame.src = `${STUDIO}site.html?ex=${encodeURIComponent(s.slug)}&embed=1`; // embed: no desktop scrollbar in the phone
+}
+function openModal(card) {
+  if (activeCard !== null || !SITES.length) return;
+  activeCard = cards.indexOf(card); closing = false; lastFocus = document.activeElement; paused = true;
+  const s = activeSite();
+  fill(s);
+  const from = card.el.getBoundingClientRect();
+  modal.classList.add('is-open'); modal.scrollTop = 0;
+  outside.forEach(el => { if (el) el.inert = true; });
+  document.body.style.overflow = 'hidden';
+  sizeFrame(); ghostOf(card);
+  ghost.style.transform = ghostRest();
+  card.el.style.visibility = 'hidden';
+  centerOn(activeCard); // the carousel brings this card to the middle behind the glass
+  anim(ghost, [{ transform: ghostOver(from) }, { transform: ghostRest() }], { duration: 620, easing: EASE });
+  anim(shell, [{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 520, delay: 140, easing: EASE_OUT });
+  anim(scrim, [{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'ease-out' });
+  anim(info, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 320, easing: EASE_OUT });
+  navBtns.forEach(b => anim(b, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 450 }));
+  if (reduced) [scrim, shell, info, ...navBtns].forEach(el => el.style.opacity = 1);
+  goLive(s, 640);
+  setTimeout(() => $('#modalClose').focus({ preventScroll: true }), 50);
+}
+function closeModal() {
+  if (activeCard === null || closing) return;
+  closing = true; liveToken++; clearTimeout(liveTimer); stepToken++;
+  const card = cards[activeCard];
+  const done = () => {
+    modal.classList.remove('is-open'); cards.forEach(c => { c.el.style.visibility = ''; });
+    [ghost, shell, screenBox, scrim, info, ...navBtns].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    frame.onload = null; frame.src = 'about:blank'; // the page (and its motion) stops while closed
+    screenBox.style.opacity = 0;
+    outside.forEach(el => { if (el) el.inert = false; });
+    activeCard = null; closing = false; paused = false; lastInput = performance.now(); document.body.style.overflow = '';
+    // Focus goes back to the card now in the middle (the one last shown), not the one first opened.
+    (cards.some(c => c.el === lastFocus) ? card.el : lastFocus)?.focus?.({ preventScroll: true });
+  };
+  // A glide still under way behind the glass finishes now, so the card lands where it will stay.
+  if (scrollTarget !== null) { scrollX = scrollTarget; scrollTarget = null; layoutCards(performance.now()); }
+  if (reduced) return done();
+  const to = card.el.getBoundingClientRect();
+  ghost.getAnimations().forEach(a => a.cancel());
+  ghost.style.transform = ghostRest();
+  // The live page fades back to the card, the phone dissolves, and the card flies home.
+  screenBox.animate([{ opacity: +getComputedStyle(screenBox).opacity }, { opacity: 0 }], { duration: 180, fill: 'both' });
+  info.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'both' });
+  navBtns.forEach(b => b.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'both' }));
+  shell.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.96)' }], { duration: 320, delay: 120, easing: 'ease-in', fill: 'both' });
+  scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, delay: 150, fill: 'both' });
+  ghost.animate([{ transform: ghostRest() }, { transform: ghostOver(to) }], { duration: 560, delay: 140, easing: EASE, fill: 'both' }).finished.then(done, done);
+}
+function step(dir) {
+  if (activeCard === null || closing) return;
+  const token = ++stepToken;
+  activeCard = (activeCard + dir + N) % N;
+  centerOn(activeCard);
+  const card = cards[activeCard], s = activeSite();
+  liveToken++; clearTimeout(liveTimer); // a page still loading for the old card never shows
+  const swap = () => {
+    if (token !== stepToken || activeCard === null || closing) return;
+    cards.forEach(c => { if (c !== card) c.el.style.visibility = ''; }); // quick steps skip some swaps
+    fill(s); ghostOf(card);
+    ghost.getAnimations().forEach(a => a.cancel());
+    ghost.style.transform = ghostRest();
+    anim(ghost, [{ opacity: 0, transform: ghostRest() + ' scale(1.015)' }, { opacity: 1, transform: ghostRest() }], { duration: 320, easing: EASE_OUT });
+    anim(info, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 60 });
+    goLive(s, 340);
+    setTimeout(() => { if (activeCard !== null && cards[activeCard] === card) card.el.style.visibility = 'hidden'; }, 400);
+  };
+  if (reduced) return swap();
+  const fade = [screenBox, ghost].map(el => el.animate([{ opacity: +getComputedStyle(el).opacity }, { opacity: 0 }], { duration: 180, fill: 'both' }));
+  info.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'both' });
+  fade[1].finished.then(swap, () => {});
+}
+addEventListener('resize', () => {
+  if (activeCard === null || closing) return;
+  sizeFrame();
+  ghost.getAnimations().forEach(a => a.cancel());
+  ghost.style.transform = ghostRest();
+});
+scrim.addEventListener('click', closeModal);
+$('#modalClose').addEventListener('click', closeModal);
+$('#modalPrev').addEventListener('click', () => step(-1));
+$('#modalNext').addEventListener('click', () => step(1));
+addEventListener('keydown', e => {
+  if (activeCard === null) return;
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowRight') step(1);
+  if (e.key === 'ArrowLeft') step(-1);
+});
+
+/* ---------- FAQ: one open at a time ---------- */
+document.querySelectorAll('.qa button').forEach(btn => btn.addEventListener('click', () => {
+  const qa = btn.parentElement, open = !qa.classList.contains('is-open');
+  document.querySelectorAll('.qa').forEach(q => { q.classList.remove('is-open'); q.querySelector('button').setAttribute('aria-expanded', 'false'); });
+  if (open) { qa.classList.add('is-open'); btn.setAttribute('aria-expanded', 'true'); }
+}));
+
+/* ---------- Claim your name ---------- */
+const claimSlug = $('#claimSlug'), claimInput = $('#claimInput'), claimNote = $('#claimNote');
+const toSlug = v => v.toLowerCase().replace(/[^a-z0-9-]+/g, '').replace(/--+/g, '-').slice(0, 30);
+// The giant line always fits on one line: shrink the type for long names instead of clipping.
+const claimLine = $('.claim-line');
+function fitClaim() {
+  claimLine.style.fontSize = '';
+  const max = claimLine.parentElement.clientWidth - 2 * parseFloat(getComputedStyle(claimLine.parentElement).paddingLeft);
+  if (claimLine.scrollWidth > max) claimLine.style.fontSize = (parseFloat(getComputedStyle(claimLine).fontSize) * max / claimLine.scrollWidth).toFixed(1) + 'px';
+}
+new MutationObserver(fitClaim).observe(claimSlug, { childList: true, characterData: true, subtree: true });
+addEventListener('resize', fitClaim);
+document.fonts?.ready.then(fitClaim);
+const demo = ['jordanbell', 'mayarodriguez', 'tylerbrooks', 'yourname'];
+let demoTimer = 0, demoIdx = 0, demoChar = 0, deleting = false;
+function demoType() {
+  if (claimInput.value) return;
+  const word = demo[demoIdx];
+  demoChar += deleting ? -1 : 1;
+  claimSlug.textContent = word.slice(0, demoChar);
+  let wait = deleting ? 45 : 95;
+  if (!deleting && demoChar === word.length) { deleting = true; wait = 1600; }
+  else if (deleting && demoChar === 0) { deleting = false; demoIdx = (demoIdx + 1) % demo.length; wait = 350; }
+  demoTimer = setTimeout(demoType, wait);
+}
+if (!reduced) {
+  new IntersectionObserver(([e]) => { clearTimeout(demoTimer); if (e.isIntersecting) demoType(); }).observe($('#claim'));
+}
+claimInput.addEventListener('input', () => {
+  const v = toSlug(claimInput.value);
+  if (claimInput.value !== v) claimInput.value = v;
+  clearTimeout(demoTimer);
+  claimSlug.textContent = v || 'yourname';
+  claimNote.textContent = '';
+  if (!v) demoTimer = setTimeout(demoType, 1200);
+});
+$('#claimForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = toSlug(claimInput.value);
+  if (v.length < 3) { claimNote.textContent = 'Links need at least 3 characters.'; return; }
+  // Into the Studio setup; the link name they claimed goes with them onto their new page.
+  location.href = `../studio-v1/studio.html?start=1&slug=${encodeURIComponent(v)}`;
+});
+})();
+</script>
+</body>
+</html>

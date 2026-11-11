@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Break the UI (dev only)</title>
+<link rel="stylesheet" href="src/card.css">
+<style>
+/* Dev-only harness (break-ui): the athlete page and its cover card with worst-case data. Not part of the product. */
+body{margin:0;background:#E7E4DD;font:13px/1.4 system-ui,sans-serif;color:#222}
+.top{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 16px}
+.top select{font:inherit}
+.wrap{display:flex;gap:20px;align-items:flex-start;padding:0 16px 120px}
+.card-box{flex:none;width:340px;height:460px;position:relative;container-type:inline-size;border-radius:18px;overflow:hidden;box-shadow:0 20px 40px -20px #0006}
+iframe{border:0;background:#fff;box-shadow:0 20px 40px -20px #0006}
+.toggle{position:fixed;left:50%;bottom:18px;translate:-50% 0;display:flex;gap:2px;padding:3px;border-radius:99px;background:#d6d3cc;z-index:9}
+.toggle button{border:0;border-radius:99px;padding:7px 14px;background:none;font:500 13px system-ui;cursor:pointer;color:#333}
+.toggle button[aria-pressed=true]{background:#fff;box-shadow:0 1px 2px #0002}
+</style>
+</head>
+<body>
+<div class="top">
+  <label>Look <select id="look"><option>cinematic</option><option>editorial</option><option>highlight</option><option>portrait</option><option>prospect</option></select></label>
+  <label>Cover <select id="cover"><option value="">(look default)</option></select></label>
+  <label>Width <select id="w"><option>1440</option><option>1024</option><option>390</option><option>320</option></select></label>
+  <span id="info"></span>
+</div>
+<div class="wrap"><div class="card-box" id="card"></div><iframe id="page" title="Athlete page"></iframe></div>
+<div class="toggle" role="group" aria-label="Data">
+  <button data-d="demo">Demo data</button><button data-d="worst">Worst case</button><button data-d="short">Short</button><button data-d="one">One</button><button data-d="empty">Empty</button>
+</div>
+<script src="src/sports.js"></script>
+<script src="src/profile.js"></script>
+<script src="src/color.js"></script>
+<script src="src/render.js"></script>
+<script src="src/looks/cinematic.js"></script>
+<script src="src/looks/editorial.js"></script>
+<script src="src/looks/highlight.js"></script>
+<script src="src/looks/portrait.js"></script>
+<script src="src/looks/prospect.js"></script>
+<script src="src/athletes.js"></script>
+<script src="src/card.js"></script>
+<script src="tools/worst-data.js"></script>
+<script>
+// ?data=demo|worst|short|one|empty &look= &cover= &w= — kept in the URL so a reload keeps the state.
+const A = window.Athlesite, q = new URLSearchParams(location.search), $ = (s) => document.querySelector(s);
+const state = { data: q.get('data') || 'worst', look: q.get('look') || 'cinematic', cover: q.get('cover') || '', w: q.get('w') || '1440' };
+function profile() {
+  const raw = state.data === 'demo' ? A.ATHLETES.jordan : A.WORST[state.data];
+  const p = A.normalizeProfile(structuredClone(raw));
+  p.design.look = state.look; p.design.palette = ''; p.design.layout.cover = state.cover;
+  return p;
+}
+function draw() {
+  history.replaceState(null, '', '?' + new URLSearchParams(state));
+  document.querySelectorAll('.toggle button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.d === state.data)));
+  $('#look').value = state.look; $('#w').value = state.w;
+  const covers = (A.LOOKS[state.look].covers || []);
+  $('#cover').innerHTML = '<option value="">(look default)</option>' + covers.map((c) => `<option value="${c.id}">${c.label}</option>`).join('');
+  $('#cover').value = state.cover;
+  const p = profile();
+  document.querySelectorAll('link[data-cf]').forEach((l) => l.remove());
+  const cf = A.cardFonts(p); if (cf) document.head.insertAdjacentHTML('beforeend', `<link data-cf rel="stylesheet" href="${cf}">`);
+  $('#card').innerHTML = A.renderCard(p);
+  requestAnimationFrame(() => A.fitCards && A.fitCards($('#card').parentElement));
+  const f = $('#page'); f.style.width = state.w + 'px'; f.style.height = (state.w < 800 ? 844 : 900) + 'px';
+  f.srcdoc = A.renderSite(p, { intro: 'never' }).replace('</head>', '<base href="' + location.href.replace(/[^/]*$/, '') + '"></head>');
+  $('#info').textContent = `${state.data} · ${state.look} · ${state.w}px`;
+}
+document.querySelector('.toggle').addEventListener('click', (e) => { const b = e.target.closest('[data-d]'); if (b) { state.data = b.dataset.d; draw(); } });
+$('#look').addEventListener('change', (e) => { state.look = e.target.value; state.cover = ''; draw(); });
+$('#cover').addEventListener('change', (e) => { state.cover = e.target.value; draw(); });
+$('#w').addEventListener('change', (e) => { state.w = e.target.value; draw(); });
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+{
+  "data": {
+    "slug": "hannahmercer",
+    "firstName": "Hannah",
+    "lastName": "Mercer",
+    "sport": "rowing",
+    "position": "Port",
+    "level": "college",
+    "academicYear": "Junior",
+    "eligibility": "2 years",
+    "division": "NCAA Division I",
+    "schoolOrTeam": "Riverbend College",
+    "city": "Philadelphia",
+    "state": "PA",
+    "heightIn": 71,
+    "tagline": "Long pull. Quiet boat.",
+    "bio": "I walked on as a freshman who had never touched an oar. Three years later I row in the first varsity eight, usually in the engine room, where the work is loud and nobody sees it.\n\nRowing is the only sport where you race backwards and trust everyone behind you. I love that about it.",
+    "highlightLinks": [
+      {
+        "label": "Spring racing, first varsity eight",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "2k erg",
+        "value": "6:58.4",
+        "context": "Feb 2026"
+      },
+      {
+        "label": "6k erg",
+        "value": "22:31.0",
+        "context": "Dec 2025"
+      },
+      {
+        "label": "Height",
+        "value": "5′11″",
+        "context": ""
+      }
+    ],
+    "results": [
+      {
+        "a": "Riverbend Head Race",
+        "b": "Varsity 8+",
+        "c": "2nd",
+        "d": "15:42.6",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Conference Championships",
+        "b": "First varsity 8+",
+        "c": "1st",
+        "d": "6:21.4",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Spring Sprints",
+        "b": "First varsity 8+",
+        "c": "3rd",
+        "d": "6:24.9",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Lake Wallace Invitational",
+        "b": "Varsity 4+",
+        "c": "1st",
+        "d": "7:12.3",
+        "e": "",
+        "pb": false
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "Conference champions, first varsity eight",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Moved up to the first varsity eight",
+        "detail": ""
+      },
+      {
+        "year": "2024",
+        "title": "Walked on as a novice",
+        "detail": ""
+      }
+    ],
+    "custom": {
+      "title": "Why rowing",
+      "body": "I came to college to study architecture and walked past a boathouse on my second day. A coach was standing outside holding a sign that said “Tall? Come row.” I am, so I did.\n\nIt’s the best accident that has ever happened to me."
+    },
+    "sportDetails": {
+      "weight_class": "Openweight"
+    },
+    "recruitingContact": "hannah.mercer@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/hannah-mercer-photo-1.webp",
+        "alt": "A lone sculler on the river at sunrise",
+        "caption": "Dawn practice"
+      },
+      {
+        "src": "assets/img/examples/hannah-mercer-photo-2.webp",
+        "alt": "Hannah’s crew from above, oars in rhythm",
+        "caption": "Seat racing"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/hannah-mercer-cover.webp",
+    "heroPhotoAlt": "Hannah’s four in silhouette on sunlit water",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.62,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "editorial",
+    "palette": "clay",
+    "type": "warm",
+    "layout": {
+      "cover": "stacked"
+    }
+  }
+}

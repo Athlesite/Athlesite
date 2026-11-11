@@ -1,0 +1,95 @@
+{
+  "data": {
+    "slug": "tylerbrooks",
+    "firstName": "Tyler",
+    "lastName": "Brooks",
+    "sport": "baseball",
+    "position": "Shortstop",
+    "jerseyNumber": "6",
+    "level": "hs",
+    "classYear": "2027",
+    "schoolOrTeam": "Kearney High School",
+    "city": "Kearney",
+    "state": "NE",
+    "heightIn": 72,
+    "weightLb": 175,
+    "gpa": "3.8",
+    "intendedMajor": "Engineering",
+    "tagline": "Glove first. Bat that keeps getting louder.",
+    "bio": "Shortstop, right-handed. I take pride in making the routine play every time and the hard one when it matters. Two-year varsity starter.\n\nI keep a notebook on every pitcher I face. My coach says it’s a little much. My on-base percentage says otherwise.",
+    "heroPhotoUrl": "assets/img/tyler-brooks.webp",
+    "heroPhotoAlt": "Tyler Brooks on the infield holding his glove",
+    "heroPhotoPositionX": 0.68,
+    "heroPhotoPositionY": 0.2,
+    "highlightLinks": [
+      {
+        "label": "Infield defense, spring 2025",
+        "url": ""
+      },
+      {
+        "label": "Batting practice, front view",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Batting average",
+        "value": ".382",
+        "context": "2025 season"
+      },
+      {
+        "label": "On-base %",
+        "value": ".471",
+        "context": "2025 season"
+      },
+      {
+        "label": "Stolen bases",
+        "value": "18",
+        "context": "2025 season"
+      },
+      {
+        "label": "Exit velocity",
+        "value": "92 mph",
+        "context": "Showcase, Aug 2025"
+      },
+      {
+        "label": "60-yard dash",
+        "value": "6.8",
+        "context": "Showcase, Aug 2025"
+      },
+      {
+        "label": "Infield velo",
+        "value": "84 mph",
+        "context": "Showcase, Aug 2025"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2025",
+        "title": "All-conference first team",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Academic all-state",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "bats": "Right",
+      "throws": "Right",
+      "club": "Prairie Prospects 17U"
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "tbrooks.baseball@example.com",
+    "recruitingNotes": "Available for summer camps in July."
+  },
+  "design": {
+    "look": "prospect",
+    "palette": "chalk",
+    "type": "standard",
+    "layout": {
+      "cover": "card"
+    }
+  }
+}

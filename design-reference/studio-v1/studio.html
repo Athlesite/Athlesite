@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F3F1EC"><!-- the phone's browser bar matches the Studio's top bar -->
+<title>Athlesite Studio</title>
+<link rel="icon" href="assets/brand/athlesite-mark-on-light.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="src/card.css">
+<link rel="stylesheet" href="src/studio/studio.css">
+</head>
+<body>
+<a class="skip" href="#panel">Skip to the tools</a>
+
+<header class="bar">
+  <h1 class="sr-only">Athlesite Studio: edit your page</h1>
+  <div class="brand"><img src="assets/brand/athlesite-mark-on-light.svg" alt="Athlesite"><span>Studio</span></div>
+  <div class="bar-mid">
+    <div id="device-slot"></div>
+    <div id="mode-slot"></div>
+    <button type="button" class="btn" id="play" aria-label="Play opening"><svg class="solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Play opening</span></button>
+  </div>
+  <div class="bar-end">
+    <div class="menu-wrap">
+      <button type="button" class="btn file-btn-menu" id="file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="file-menu" title="Save, open or start a page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span>File</span></button>
+      <div class="menu" id="file-menu" role="menu" aria-label="File" hidden>
+        <button type="button" role="menuitem" data-act="save"><span>Save to a file</span><kbd data-key="S"></kbd></button>
+        <button type="button" role="menuitem" data-act="open"><span>Open a file…</span><kbd data-key="O"></kbd></button>
+        <hr>
+        <button type="button" role="menuitem" data-act="new"><span>Start a new page…</span></button>
+      </div>
+      <input type="file" id="open-file" accept=".json,application/json" class="sr-only" tabindex="-1" aria-hidden="true">
+    </div>
+    <button type="button" class="icon-btn" id="undo" aria-label="Undo" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+    <button type="button" class="icon-btn" id="redo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+    <p class="save-state" id="save-state" aria-live="polite"></p>
+    <label class="test-pick" title="Internal: load a fictional test athlete (replaces the page)">
+      <span>Test athlete</span>
+      <select id="test-athlete"><option value="">Load…</option></select>
+    </label>
+  </div>
+</header>
+
+<main class="work">
+  <section class="canvas" id="canvas" aria-label="Preview of your page"></section>
+  <aside class="panel" id="panel" aria-label="Tools" data-sheet="peek">
+    <button type="button" class="sheet-handle" id="sheet-handle" aria-label="Show more tools" aria-expanded="false"><span aria-hidden="true"></span></button>
+    <div class="panel-inner" id="panel-inner"></div>
+  </aside>
+</main>
+
+<p id="studio-grip-help" hidden>Use the up and down arrow keys to move this section, or drag it.</p>
+<div class="sr-only" id="studio-live" aria-live="polite"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="src/sports.js"></script>
+<script src="src/profile.js"></script>
+<script src="src/color.js"></script>
+<script src="src/render.js"></script>
+<script src="src/looks/cinematic.js"></script>
+<script src="src/looks/editorial.js"></script>
+<script src="src/looks/highlight.js"></script>
+<script src="src/looks/portrait.js"></script>
+<script src="src/looks/prospect.js"></script>
+<script src="src/card.js"></script>
+<script src="src/athletes.js"></script>
+<script src="examples/examples.js"></script>
+<script src="src/remix.js"></script>
+<script src="src/studio/store.js"></script>
+<script src="src/studio/preview.js"></script>
+<script src="src/studio/panel.js"></script>
+<script src="src/studio/photos.js"></script>
+<script src="src/studio/fields.js"></script>
+<script src="src/studio/editors.js"></script>
+<script src="src/studio/files.js"></script>
+<script src="src/studio/firstrun.js"></script>
+<script src="src/studio/app.js"></script>
+</body>
+</html>

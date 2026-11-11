@@ -1,0 +1,122 @@
+{
+  "data": {
+    "slug": "kenziemorales",
+    "firstName": "Kenzie",
+    "lastName": "Morales",
+    "sport": "softball",
+    "position": "Pitcher",
+    "jerseyNumber": "21",
+    "level": "hs",
+    "classYear": "2027",
+    "schoolOrTeam": "Sienna Ridge High School",
+    "city": "Katy",
+    "state": "TX",
+    "heightIn": 69,
+    "gpa": "3.7",
+    "intendedMajor": "Nursing",
+    "tagline": "Every pitch has a plan.",
+    "bio": "I pitch like I’m playing chess: set it up early, finish it late. My riseball gets the strikeouts, but my changeup is the one I’m proudest of.\n\nWhen I’m not in the circle I’m in the cage. I hit third in our lineup and I’ll take the bat out of nobody’s hands.",
+    "highlightLinks": [
+      {
+        "label": "Junior season pitching",
+        "url": ""
+      },
+      {
+        "label": "Riseball and changeup, slow motion",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "ERA",
+        "value": "1.12",
+        "context": "2026 season"
+      },
+      {
+        "label": "Strikeouts",
+        "value": "214",
+        "context": "2026 season"
+      },
+      {
+        "label": "WHIP",
+        "value": "0.84",
+        "context": "2026 season"
+      },
+      {
+        "label": "Batting average",
+        "value": ".356",
+        "context": "2026 season"
+      },
+      {
+        "label": "Home runs",
+        "value": "9",
+        "context": "2026 season"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "District pitcher of the year",
+        "detail": ""
+      },
+      {
+        "year": "2026",
+        "title": "Perfect game",
+        "detail": "15 strikeouts in the district opener."
+      },
+      {
+        "year": "2025",
+        "title": "All-state second team",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "bats": "Right",
+      "throws": "Right",
+      "club": "Gulf Coast Heat 16U"
+    },
+    "recruitingStatus": "committed",
+    "committedTo": "Gulf Coast University",
+    "recruitingContact": "kenzie.morales@example.com",
+    "nilOpen": true,
+    "nilContactRole": "parent",
+    "nilContact": "morales.family@example.com",
+    "nilInterests": "Katy businesses and softball brands that back girls’ sports.",
+    "nilOffers": [
+      "Instagram posts",
+      "Pitching lessons and clinics",
+      "Store appearances"
+    ],
+    "nilAudience": [
+      {
+        "label": "Instagram followers",
+        "value": "9.2K"
+      },
+      {
+        "label": "Pitching video views",
+        "value": "120K"
+      }
+    ],
+    "gallery": [
+      {
+        "src": "assets/img/examples/kenzie-morales-photo-1.webp",
+        "alt": "Kenzie’s team in the field during a game",
+        "caption": "Conference play"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/kenzie-morales-cover.webp",
+    "heroPhotoAlt": "Kenzie at the top of her windmill delivery",
+    "heroPhotoPositionX": 0.68,
+    "heroPhotoPositionY": 0.3,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "highlight",
+    "palette": "crimson",
+    "type": "stadium",
+    "layout": {
+      "cover": "block",
+      "stats": "spotlight"
+    }
+  }
+}

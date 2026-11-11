@@ -1,0 +1,84 @@
+{
+  "data": {
+    "slug": "mayarodriguez",
+    "firstName": "Maya",
+    "lastName": "Rodriguez",
+    "sport": "soccer",
+    "position": "Midfielder",
+    "jerseyNumber": "8",
+    "level": "hs",
+    "classYear": "2026",
+    "schoolOrTeam": "Westlake High School",
+    "city": "Austin",
+    "state": "TX",
+    "heightIn": 66,
+    "gpa": "3.9",
+    "intendedMajor": "Kinesiology",
+    "tagline": "The player. The teammate. The person.",
+    "bio": "I started playing at four because my sister did, and I kept playing because the field was the one place I never had to think about anything else.\n\nI’m a box-to-box midfielder. I like the ugly parts of the game: winning the second ball, the run nobody tracks, the pass before the assist. Off the field I coach a U8 team on Saturdays, and I’m pretty sure they teach me more than I teach them.\n\nI want to play in college somewhere that takes both the game and the classroom seriously.",
+    "heroPhotoUrl": "assets/img/maya-rodriguez.webp",
+    "heroPhotoAlt": "Maya Rodriguez standing on a soccer field in a green kit",
+    "heroPhotoPositionX": 0.7,
+    "heroPhotoPositionY": 0.25,
+    "highlightLinks": [
+      {
+        "label": "Fall 2025 highlights",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Goals",
+        "value": "14",
+        "context": "2025 season"
+      },
+      {
+        "label": "Assists",
+        "value": "11",
+        "context": "2025 season"
+      },
+      {
+        "label": "Minutes played",
+        "value": "1,620",
+        "context": "2025 season"
+      },
+      {
+        "label": "Shots on target",
+        "value": "31",
+        "context": "2025 season"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2025",
+        "title": "District MVP",
+        "detail": "Voted by the district’s coaches."
+      },
+      {
+        "year": "2025",
+        "title": "Team captain",
+        "detail": ""
+      },
+      {
+        "year": "2024",
+        "title": "Regional showcase selection",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "foot": "Right",
+      "club": "Hill Country FC"
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "maya.rodriguez@example.com"
+  },
+  "design": {
+    "look": "editorial",
+    "palette": "pitch",
+    "type": "feature",
+    "layout": {
+      "cover": "split",
+      "stats": "ledger"
+    }
+  }
+}

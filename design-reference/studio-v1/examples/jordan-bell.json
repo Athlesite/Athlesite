@@ -1,0 +1,132 @@
+{
+  "data": {
+    "slug": "jordanbell",
+    "firstName": "Jordan",
+    "lastName": "Bell",
+    "sport": "football",
+    "position": "Wide receiver",
+    "jerseyNumber": "14",
+    "level": "hs",
+    "classYear": "2027",
+    "schoolOrTeam": "Northview High School",
+    "city": "Columbus",
+    "state": "OH",
+    "heightIn": 73,
+    "weightLb": 185,
+    "gpa": "3.6",
+    "intendedMajor": "Sports management",
+    "tagline": "Driven by the chase. Focused on what’s next.",
+    "bio": "The work happens long before the lights come on. I’m a wide receiver who brings the same energy to the classroom, the weight room, and every snap.\n\nI grew up running routes in the street with my older brother, and I still play like I’m trying to catch him. Still learning. Always competing.",
+    "heroPhotoUrl": "assets/img/jordan-bell.webp",
+    "heroPhotoAlt": "Jordan Bell on the sideline under stadium lights, towel over his shoulders",
+    "heroPhotoPositionX": 0.55,
+    "heroPhotoPositionY": 0.3,
+    "highlightLinks": [
+      {
+        "label": "Junior season highlights",
+        "url": "",
+        "poster": "assets/img/jordan-bell-back.webp"
+      },
+      {
+        "label": "Summer camp reel",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Receiving yards",
+        "value": "842",
+        "context": "2025 season"
+      },
+      {
+        "label": "Receptions",
+        "value": "54",
+        "context": "2025 season"
+      },
+      {
+        "label": "Touchdowns",
+        "value": "9",
+        "context": "2025 season"
+      },
+      {
+        "label": "40-yard dash",
+        "value": "4.42",
+        "context": "Laser timed, June 2025"
+      },
+      {
+        "label": "Vertical",
+        "value": "36″",
+        "context": "June 2025"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2025",
+        "title": "All-region first team",
+        "detail": "Led the conference in yards after catch."
+      },
+      {
+        "year": "2025",
+        "title": "Team captain",
+        "detail": "Voted by teammates as a junior."
+      },
+      {
+        "year": "2024",
+        "title": "Varsity letter",
+        "detail": ""
+      }
+    ],
+    "gallery": [
+      {
+        "src": "assets/img/jordan-bell-back.webp",
+        "alt": "Jordan from behind, number 14, under the lights",
+        "caption": "Friday night, week 9"
+      },
+      {
+        "src": "assets/img/examples/jordan-bell-photo-2.webp",
+        "alt": "Jordan in his helmet under the stadium lights",
+        "caption": "Senior night"
+      }
+    ],
+    "custom": {
+      "title": "Beyond the game",
+      "body": "Summers I help run a reading program for kids at the Linden rec center. Most of them come for the football drills after. I’m fine with that.\n\nI also make the playlist for the locker room. Nobody has complained yet."
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "coach.harris@example.com",
+    "nilOpen": true,
+    "nilContactRole": "parent",
+    "nilContact": "bell.family@example.com",
+    "nilInterests": "Local businesses that show up for Columbus kids: training gear, food spots, anything that gets more kids into the game.",
+    "nilOffers": [
+      "Instagram posts",
+      "Youth camps and clinics",
+      "Store appearances",
+      "Product reviews"
+    ],
+    "nilAudience": [
+      {
+        "label": "Instagram followers",
+        "value": "6.8K"
+      },
+      {
+        "label": "Highlight views",
+        "value": "41K"
+      },
+      {
+        "label": "Average post reach",
+        "value": "12K"
+      }
+    ]
+  },
+  "design": {
+    "look": "cinematic",
+    "palette": "night",
+    "type": "blockbuster",
+    "layout": {
+      "cover": "left",
+      "film": "reel",
+      "gallery": "folio"
+    }
+  }
+}

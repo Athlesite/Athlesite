@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Athlesite design reference</title>
+<link rel="icon" href="studio-v1/assets/brand/athlesite-mark-on-light.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="studio-v1/src/card.css">
+<!--
+  The start page of the design reference: the whole product, connected, in the order an athlete meets it.
+  Open this file straight from disk (double-click). Everything here runs from local files; only the fonts
+  and the example photos' credits point outside.
+-->
+<style>
+  :root{--bg:#F3F1EC;--paper:#FBFAF7;--ink:#111114;--muted:#5E6068;--line:#E2DED5;--blue:#2563EB;--soon:#9A6B12;--soon-bg:#FBF1DC}
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  header{padding:56px 0 40px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600}
+  .brand img{width:26px;height:26px}
+  h1{margin:28px 0 12px;font:600 clamp(34px,5vw,52px)/1.04 Geist,system-ui,sans-serif;letter-spacing:-.03em;text-wrap:balance}
+  .lede{max-width:62ch;margin:0;color:var(--muted);font-size:17px;text-wrap:pretty}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin:22px 0 0;padding:0;list-style:none;font:500 12px/1.4 "Geist Mono",monospace;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:500}
+  section{padding:48px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{margin:0 0 8px;font:500 11px/1 "Geist Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  h2{margin:0 0 6px;font:600 26px/1.15 Geist,system-ui,sans-serif;letter-spacing:-.02em}
+  .sub{margin:0 0 26px;max-width:66ch;color:var(--muted)}
+  /* The flow */
+  .flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:0;padding:0;list-style:none;counter-reset:step}
+  .step{position:relative;display:grid;align-content:start;gap:6px;min-height:150px;padding:18px 18px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper);counter-increment:step}
+  .step-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .step-top::before{content:counter(step,decimal-leading-zero);font:500 11px/1 "Geist Mono",monospace;letter-spacing:.1em;color:var(--muted)}
+  .step b{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .step p{margin:0;font-size:13.5px;color:var(--muted)}
+  .step a.go{margin-top:auto;padding-top:8px;font-weight:500;font-size:14px;text-decoration:none}
+  .step a.go::after{content:"";position:absolute;inset:0;border-radius:14px}
+  .step:has(a.go){transition:border-color .2s,transform .16s cubic-bezier(.23,1,.32,1)}
+  @media (hover:hover) and (pointer:fine){.step:has(a.go):hover{border-color:#B9B3A8}}
+  .step:has(a.go):active{transform:scale(.985)}
+  .tag{justify-self:start;padding:3px 8px;border-radius:99px;font:500 10.5px/1.3 "Geist Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+  .tag.product{background:#E8EEFD;color:#1D4ED8}
+  .tag.lab{background:#E7F3EA;color:#1F6B37}
+  .tag.soon{background:var(--soon-bg);color:var(--soon)}
+  /* Examples */
+  .views{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 22px;padding:0;list-style:none;font-size:13.5px;color:var(--muted)}
+  .views b{color:var(--ink);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:22px 16px}
+  .ex{display:grid;gap:8px;min-width:0}
+  .ex-art{display:block;aspect-ratio:340/460;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 10px 22px -12px rgba(0,0,0,.45)}
+  .ex-name{margin:2px 0 0;font-weight:600;font-size:14.5px;line-height:1.3;overflow-wrap:anywhere}
+  .ex-name span{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+  .ex-links{display:flex;flex-wrap:wrap;gap:2px 10px;margin:0;font-size:12.5px}
+  .ex-links a{display:inline-flex;align-items:center;min-height:24px;white-space:nowrap;color:var(--muted);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+  @media (hover:hover) and (pointer:fine){.ex-links a:hover{color:var(--ink);text-decoration-color:currentColor}}
+  .ex-links a:first-child{color:var(--ink);font-weight:500}
+  /* Docs */
+  .docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+  .docs a{display:grid;gap:4px;height:100%;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--paper);text-decoration:none}
+  @media (hover:hover) and (pointer:fine){.docs a:hover{border-color:#B9B3A8}}
+  .docs b{font-weight:600}
+  .docs span{font-size:13.5px;color:var(--muted)}
+  footer{padding:32px 0 56px;font-size:13px;color:var(--muted)}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (max-width:560px){.wrap{padding:0 16px}header{padding-top:36px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><img src="studio-v1/assets/brand/athlesite-mark-on-light.svg" alt="">Athlesite</div>
+    <h1>Design reference</h1>
+    <p class="lede">The finished design, connected in the order an athlete meets it: the homepage, the Studio setup and editor, and the athlete pages it makes. It also shows what each page may show under today’s product rules, and where the backend plugs in.</p>
+    <ul class="meta">
+      <li>Studio lab <b>26faec9</b></li>
+      <li>Product <b>main @ ef04553</b></li>
+      <li>Built <b>2026-11-10</b></li>
+      <li>Status <b>design reference, not production code</b></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">The flow</p>
+      <h2>Walk it in order</h2>
+      <p class="sub">The recommended order from CFul’s porting response, pending founder approval. <span class="tag product">In product</span> exists in the app on <code>main</code>. <span class="tag lab">Lab</span> is built here. <span class="tag soon">To design</span> is next.</p>
+      <ol class="flow">
+        <li class="step"><span class="step-top"><span class="tag lab">Lab</span></span><b>Homepage</b><p>The 15 example pages, “Claim it” and “Start with this style”.</p><a class="go" href="homepage-v2/index.html">Open the homepage →</a></li>
+        <li class="step"><span class="step-top"><span class="tag product">In product</span></span><b>Age check</b><p>Date of birth, never saved. Under 13 and 13–17 blocked for now. Reuse its copy as is.</p></li>
+        <li class="step"><span class="step-top"><span class="tag product">In product</span></span><b>Email code</b><p>Account before anything is saved. No drafts on the device.</p></li>
+        <li class="step"><span class="step-top"><span class="tag lab">Lab</span></span><b>Studio setup</b><p>Five quick questions, asked once.</p><a class="go" href="studio-v1/studio.html?start=1">Start the setup →</a></li>
+        <li class="step"><span class="step-top"><span class="tag lab">Lab</span></span><b>Studio editor</b><p>Live page with tools. Autosaves to the account once ported.</p><a class="go" href="studio-v1/studio.html">Open the editor →</a></li>
+        <li class="step"><span class="step-top"><span class="tag soon">To design</span></span><b>Publish</b><p>Choose the link name, see it as a visitor, publish. Guardian approval for minors.</p></li>
+        <li class="step"><span class="step-top"><span class="tag lab">Lab</span></span><b>Athlete page</b><p>What coaches see. Public fields only.</p><a class="go" href="studio-v1/site.html?ex=jordan-bell">Open a page →</a></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Athlete pages</p>
+      <h2>The 15 example pages, three ways</h2>
+      <p class="sub">Fictional athletes, one per sport. They show where the product can go, and some fields aren’t approved for public pages yet.</p>
+      <ul class="views">
+        <li><b>Full:</b> every section filled in (future features included)</li>
+        <li><b>Published today:</b> only the product’s 18 public fields</li>
+        <li><b>Minor:</b> first name + last initial, no city, height or weight</li>
+      </ul>
+      <div class="grid" id="examples"></div>
+      <noscript><p>Turn on JavaScript to see the example cards. The pages are in <code>studio-v1/examples/</code>.</p></noscript>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">For the backend</p>
+      <h2>Read these before connecting anything</h2>
+      <p class="sub">Proposals for the founders. They don’t authorize code, migrations, Storage or deployment changes.</p>
+      <ul class="docs">
+        <li><a href="01-COMPARISON.md"><b>01 · Lab vs product</b><span>What the product already has, what the lab is, and what changes in the port.</span></a></li>
+        <li><a href="02-VISIBILITY-MATRIX.md"><b>02 · Field visibility</b><span>Every field: adult, minor, owner preview, guardian review, public.</span></a></li>
+        <li><a href="03-BACKEND-HOOKS.md"><b>03 · Backend hooks</b><span>Each spot in the lab where a stand-in does the backend’s job.</span></a></li>
+        <li><a href="studio-v1/PORTING.md"><b>PORTING.md</b><span>The original porting notes (October 11). CFul’s answers supersede parts of it.</span></a></li>
+        <li><a href="studio-v1/DECISIONS-SESSION-7.md"><b>Design decisions</b><span>Every call made finishing the lab, for review.</span></a></li>
+        <li><a href="brand/README.md"><b>Brand</b><span>Logo master, wordmark, lockups, logo sheet, guidelines.</span></a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Open from disk; nothing needs installing. Example photos: Pexels, credited in <a href="studio-v1/PHOTO-CREDITS.md">PHOTO-CREDITS.md</a>. The Studio’s working repo is the local <code>athlesite-design</code> lab; this folder is a snapshot of it.</div>
+</footer>
+
+<script src="studio-v1/src/sports.js"></script>
+<script src="studio-v1/src/profile.js"></script>
+<script src="studio-v1/src/color.js"></script>
+<script src="studio-v1/src/render.js"></script>
+<script src="studio-v1/src/looks/cinematic.js"></script>
+<script src="studio-v1/src/looks/editorial.js"></script>
+<script src="studio-v1/src/looks/highlight.js"></script>
+<script src="studio-v1/src/looks/portrait.js"></script>
+<script src="studio-v1/src/looks/prospect.js"></script>
+<script src="studio-v1/examples/examples.js"></script>
+<script src="studio-v1/src/card.js"></script>
+<script>
+  // The example cards, in the homepage wheel's order (the same as the Studio's style strip).
+  (function () {
+    const A = window.Athlesite, EX = A.EXAMPLES || {};
+    const ORDER = ['jordan-bell', 'maya-rodriguez', 'aaliyah-grant', 'grace-nakamura', 'cole-bennett', 'sofia-lindqvist', 'liam-kowalski', 'ethan-whitaker', 'owen-castellanos', 'priya-raman', 'imani-wallace', 'hannah-mercer', 'kenzie-morales', 'mateo-ruiz', 'tyler-brooks'];
+    const keys = [...ORDER.filter((k) => EX[k]), ...Object.keys(EX).filter((k) => !ORDER.includes(k))];
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const grid = document.getElementById('examples'), fonts = new Set();
+    for (const k of keys) {
+      const p = A.normalizeProfile(EX[k]), d = p.data;
+      // Example photos are stored relative to studio-v1 (as on the homepage).
+      if (d.heroPhotoUrl && !/^([a-z]+:|\/)/i.test(d.heroPhotoUrl)) d.heroPhotoUrl = 'studio-v1/' + d.heroPhotoUrl.replace(/^\.\//, '');
+      const look = A.LOOKS[p.design.look] || A.LOOKS.cinematic;
+      const sport = (A.SPORT_CATALOG[d.sport] || {}).label || d.sport;
+      const href = A.cardFonts && A.cardFonts(p);
+      if (href) fonts.add(href);
+      const page = (v) => `studio-v1/site.html?ex=${encodeURIComponent(k)}${v ? '&view=' + v : ''}`;
+      grid.insertAdjacentHTML('beforeend', `<article class="ex">
+        <a class="ex-art" href="${page('')}" aria-label="${esc(d.firstName)} ${esc(d.lastName)}’s full page">${A.renderCard(p).replace(/<img class="ac-ph"/g, '<img loading="lazy" class="ac-ph"')}</a>
+        <p class="ex-name">${esc(d.firstName)} ${esc(d.lastName)}<span>${esc(sport)} · ${esc(look.name)}</span></p>
+        <p class="ex-links"><a href="${page('')}">Full</a><a href="${page('public')}">Published today</a><a href="${page('minor')}">Minor</a></p>
+      </article>`);
+    }
+    fonts.forEach((h) => document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${h}">`));
+    const fit = () => A.fitCards && A.fitCards(grid);
+    document.fonts.ready.then(fit);
+    addEventListener('resize', () => requestAnimationFrame(fit));
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Stylized football athlete artwork</title>
+  <desc id="desc">Abstract editorial football illustration used for fictional Athlesite demo athlete Jordan Bell.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080a12"/>
+      <stop offset="0.55" stop-color="#111b4b"/>
+      <stop offset="1" stop-color="#3b5eff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="75%" cy="20%" r="70%">
+      <stop offset="0" stop-color="#8ba0ff" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#3b5eff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <rect width="1200" height="900" fill="url(#glow)"/>
+  <g opacity=".16" stroke="#fff">
+    <path d="M0 180H1200M0 360H1200M0 540H1200M0 720H1200"/>
+    <path d="M200 0V900M400 0V900M600 0V900M800 0V900M1000 0V900"/>
+  </g>
+  <text x="56" y="118" fill="#fff" opacity=".08" font-size="132" font-family="Arial, Helvetica, sans-serif" font-weight="700">11</text>
+  <g transform="translate(610 118)">
+    <circle cx="210" cy="112" r="70" fill="#0c1024"/>
+    <path d="M124 217C154 169 270 163 310 217L375 360H58Z" fill="#151a33"/>
+    <path d="M53 275C-10 318-44 398-25 493L106 456L136 330Z" fill="#0d1127"/>
+    <path d="M380 275C453 328 470 414 447 497L315 455L287 329Z" fill="#0d1127"/>
+    <path d="M73 337H352L328 760H95Z" fill="#f4f6ff"/>
+    <path d="M73 337H352L335 424H91Z" fill="#263cdb"/>
+    <text x="211" y="602" text-anchor="middle" fill="#263cdb" font-size="210" font-family="Arial, Helvetica, sans-serif" font-weight="800">11</text>
+    <path d="M116 760H197L183 900H92ZM230 760H311L337 900H246Z" fill="#0b0e1f"/>
+  </g>
+  <text x="58" y="824" fill="#fff" opacity=".8" font-size="22" font-family="Arial, Helvetica, sans-serif" letter-spacing="6">FOOTBALL / ROUND ROCK, TX</text>
+</svg>

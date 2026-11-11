@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title desc">
+  <title id="title">Stylized soccer athlete artwork</title>
+  <desc id="desc">Abstract editorial soccer illustration used for fictional Athlesite demo athlete Maya Rodriguez.</desc>
+  <rect width="900" height="1100" fill="#e8eadf"/>
+  <path d="M0 715C214 612 388 617 900 452V1100H0Z" fill="#153e2c"/>
+  <circle cx="710" cy="210" r="154" fill="#d9ff78" opacity=".7"/>
+  <g transform="translate(118 128)">
+    <circle cx="270" cy="152" r="72" fill="#1c2a24"/>
+    <path d="M194 242C216 207 321 198 350 242L393 501L169 498Z" fill="#f8faf0"/>
+    <path d="M189 272L101 463L151 490L230 341Z" fill="#1c2a24"/>
+    <path d="M356 270L465 402L427 440L330 351Z" fill="#1c2a24"/>
+    <path d="M194 491L268 493L240 777L166 774Z" fill="#1c2a24"/>
+    <path d="M303 492L365 488L427 748L355 766Z" fill="#1c2a24"/>
+    <circle cx="511" cy="788" r="68" fill="#f7f5eb" stroke="#1c2a24" stroke-width="10"/>
+    <path d="M511 721L548 749L534 793L487 793L473 749Z" fill="#1c2a24"/>
+  </g>
+  <text x="64" y="88" fill="#153e2c" font-size="24" font-family="Georgia, serif" letter-spacing="4">MAYA RODRIGUEZ</text>
+  <text x="62" y="1018" fill="#e8eadf" font-size="66" font-family="Georgia, serif" font-weight="700">PLAY WITH PURPOSE.</text>
+  <text x="65" y="1063" fill="#d9ff78" font-size="19" font-family="Arial, Helvetica, sans-serif" letter-spacing="4">SOCCER / MIDFIELD / CLASS OF 2027</text>
+</svg>

@@ -1,0 +1,141 @@
+{
+  "data": {
+    "slug": "colebennett",
+    "firstName": "Cole",
+    "lastName": "Bennett",
+    "sport": "pickleball",
+    "position": "Doubles",
+    "level": "college",
+    "academicYear": "Sophomore",
+    "division": "Club",
+    "schoolOrTeam": "Copper State University",
+    "city": "Tempe",
+    "state": "AZ",
+    "heightIn": 72,
+    "tagline": "Patience at the kitchen line.",
+    "bio": "I played tennis until I picked up a paddle at my aunt’s community center and never put it down. Doubles is my game: soft hands, patient dinks, and a partner I trust.\n\nI help run our club team and teach a beginner clinic on Sunday mornings. Half the regulars are retirees, and they are ruthless.",
+    "highlightLinks": [
+      {
+        "label": "Tournament doubles, gold medal match",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "DUPR rating",
+        "value": "5.12",
+        "context": "Mar 2026"
+      },
+      {
+        "label": "Record (W-L)",
+        "value": "46-11",
+        "context": "2025–26"
+      },
+      {
+        "label": "Tournament medals",
+        "value": "9",
+        "context": "Since 2024"
+      }
+    ],
+    "results": [
+      {
+        "a": "State Games",
+        "b": "5.0 men’s doubles",
+        "c": "Gold",
+        "d": "Jul 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Desert Open",
+        "b": "4.5 mixed doubles",
+        "c": "Silver",
+        "d": "Mar 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Collegiate Club Championships",
+        "b": "Men’s doubles",
+        "c": "Bronze",
+        "d": "Nov 2025",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Valley Classic",
+        "b": "4.5 men’s doubles",
+        "c": "Gold",
+        "d": "Oct 2025",
+        "e": "",
+        "pb": false
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "State Games gold, men’s doubles",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "Club team captain",
+        "detail": ""
+      },
+      {
+        "year": "2024",
+        "title": "First tournament medal",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "hand": "Right-handed",
+      "club": "Copper State Pickleball Club"
+    },
+    "recruitingContact": "cole.bennett@example.com",
+    "nilOpen": true,
+    "nilContactRole": "",
+    "nilContact": "cole.bennett@example.com",
+    "nilInterests": "Paddle and apparel brands, and local clubs that want to grow the game with younger players.",
+    "nilOffers": [
+      "Instagram and TikTok",
+      "Clinics",
+      "Product reviews"
+    ],
+    "nilAudience": [
+      {
+        "label": "TikTok followers",
+        "value": "14.7K"
+      },
+      {
+        "label": "Average video views",
+        "value": "22K"
+      }
+    ],
+    "gallery": [
+      {
+        "src": "assets/img/examples/cole-bennett-photo-1.webp",
+        "alt": "Cole’s paddle and ball on the court",
+        "caption": "Tournament day"
+      },
+      {
+        "src": "assets/img/examples/cole-bennett-photo-2.webp",
+        "alt": "Cole reaching for a dink at the net",
+        "caption": "At the kitchen"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/cole-bennett-cover.webp",
+    "heroPhotoAlt": "Cole set at the kitchen line, paddle ready",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.38,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "prospect",
+    "palette": "navy",
+    "type": "grotesk",
+    "layout": {
+      "cover": "compact"
+    }
+  }
+}

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static design reference: plain browser scripts and fixtures, not app code.
+    "design-reference/**",
+    // Willy's local design lab, kept beside the app but outside the repo (.git/info/exclude).
+    "athlesite-design/**",
   ]),
 ]);
 

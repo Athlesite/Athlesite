@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Athlesite Studio — Teammate test</title>
+<link rel="icon" href="assets/brand/athlesite-mark-on-light.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3F1EC;--paper:#FBFAF7;--ink:#0B0B0F;--muted:#6E7178;--line:#DAD6CE;--blue:#2563EB}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 14px/1.45 Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.bar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--paper)}
+.bar img{height:22px}
+.tag{font:500 11px/1 "Geist Mono",monospace;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:4px 7px;border:1px solid var(--line);border-radius:5px}
+main{padding:28px 20px 64px;max-width:1800px;margin:0 auto}
+h1{margin:0;font:400 clamp(34px,5vw,52px)/1 "Instrument Serif",serif}
+h1 em{color:var(--blue)}
+.lede{margin:10px 0 28px;color:var(--muted);max-width:70ch}
+h2{margin:32px 0 6px;font:600 17px/1.2 Geist,sans-serif}
+.sub{margin:0 0 14px;color:var(--muted)}
+.row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+figure{margin:0}
+.thumb{position:relative;aspect-ratio:16/10;overflow:hidden;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06),0 16px 36px -22px rgba(0,0,0,.35)}
+.thumb.phone{aspect-ratio:390/700;max-width:220px}
+.thumb iframe{position:absolute;top:0;left:0;border:0;transform-origin:top left;pointer-events:none}
+figcaption{padding:10px 2px 0}
+figcaption b{display:block;font-weight:600}
+figcaption span{display:block;font-size:12px;color:var(--muted)}
+.score{margin-top:18px;padding:14px 16px;background:var(--paper);border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--muted)}
+.score b{color:var(--ink)}
+@media (max-width:1100px){.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header class="bar"><img src="assets/brand/athlesite-wordmark-on-light.png" alt="Athlesite"><span class="tag">Studio · Teammate test</span></header>
+<main>
+  <h1>Five teammates, <em>five different pages</em></h1>
+  <p class="lede">Westlake High School soccer. To make the test strict, every player uses the <b>same photo</b>, so only their design choices can tell the pages apart. If row 2 still looks like five different sites, athletes on one team won't end up with copies of each other.</p>
+
+  <h2>1 · Different looks</h2>
+  <p class="sub">The easy case: each player picks a different look.</p>
+  <div class="row" id="row1"></div>
+
+  <h2>2 · Same look, same team color</h2>
+  <p class="sub">The hard case: all five pick Editorial and Westlake green. Only cover (and mirror), fonts, photo treatment and section layouts differ.</p>
+  <div class="row" id="row2"></div>
+
+  <h2>2 · The same five on a phone</h2>
+  <p class="sub">Where coaches will usually open the link.</p>
+  <div class="row" id="row3"></div>
+
+  <p class="score" id="score"></p>
+</main>
+
+<script src="src/sports.js"></script>
+<script src="src/profile.js"></script>
+<script src="src/color.js"></script>
+<script src="src/render.js"></script>
+<script src="src/looks/cinematic.js"></script>
+<script src="src/looks/editorial.js"></script>
+<script src="src/looks/highlight.js"></script>
+<script src="src/looks/portrait.js"></script>
+<script src="src/looks/prospect.js"></script>
+<script src="src/athletes.js"></script>
+<script src="src/remix.js"></script>
+<script>
+(function () {
+  const A = window.Athlesite;
+  const maya = A.ATHLETES.maya;
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const GREEN = '#1F6B45';
+
+  // Fictional Westlake teammates. Same school, same photo; their own names, numbers and words.
+  const people = [
+    { first: 'Maya', last: 'Rodriguez', position: 'Midfielder', number: '8', tagline: 'The player. The teammate. The person.' },
+    { first: 'Sofia', last: 'Alvarez', position: 'Forward', number: '10', tagline: 'Finish the chance.' },
+    { first: 'Jade', last: 'Thompson', position: 'Defender', number: '3', tagline: 'Nothing gets through.' },
+    { first: 'Nora', last: 'Kim', position: 'Goalkeeper', number: '1', tagline: 'Calm hands. Loud voice.' },
+    { first: 'Ella', last: 'Brooks', position: 'Midfielder', number: '14', tagline: 'Every pass has a reason.' },
+  ];
+  const player = (who, design) => {
+    const p = structuredClone(maya);
+    Object.assign(p.data, { firstName: who.first, lastName: who.last, position: who.position, jerseyNumber: who.number, tagline: who.tagline, slug: (who.first + who.last).toLowerCase() });
+    p.design = A.normalizeProfile({ design: Object.assign({}, maya.design, design) }).design;
+    return { who, p };
+  };
+
+  const row1 = [
+    player(people[0], { look: 'editorial', palette: 'pitch' }),
+    player(people[1], { look: 'cinematic', palette: 'forest', type: 'velocity', layout: { cover: 'center' }, photo: 'duotone' }),
+    player(people[2], { look: 'highlight', palette: 'volt', type: 'stadium', layout: { cover: 'block' } }),
+    player(people[3], { look: 'portrait', palette: 'bone', type: 'fashion', layout: { cover: 'photo' }, photo: 'color' }),
+    player(people[4], { look: 'prospect', palette: 'field', type: 'grotesk', layout: { cover: 'banner' } }),
+  ];
+  const row2 = [
+    player(people[0], { look: 'editorial', palette: 'pitch', accent: GREEN, type: 'feature', layout: { cover: 'split', stats: '', gallery: '' } }),
+    player(people[1], { look: 'editorial', palette: 'evening', accent: GREEN, type: 'classic', layout: { cover: 'cover', stats: 'spotlight' }, photo: 'mono' }),
+    player(people[2], { look: 'editorial', palette: 'porcelain', accent: GREEN, type: 'warm', layout: { cover: 'stacked', stats: 'ledger' } }),
+    player(people[3], { look: 'editorial', palette: 'clay', accent: GREEN, type: 'classic', layout: { cover: 'split', stats: 'spotlight', mirror: true }, photo: 'duotone' }),
+    player(people[4], { look: 'editorial', palette: 'pitch', accent: GREEN, type: 'warm', layout: { cover: 'cover', stats: 'ledger' }, photo: 'duotone' }),
+  ];
+
+  function tile(el, { who, p }, phone) {
+    const [w, h] = phone ? [390, 700] : [1440, 900];
+    const look = A.LOOKS[p.design.look];
+    const fig = document.createElement('figure');
+    const cover = (look.covers.find((v) => v.id === p.design.layout.cover) || look.covers[0]).label;
+    const type = (look.types.find((t) => t.id === p.design.type) || look.types[0]).label;
+    const pal = look.palettes.find((x) => x.id === p.design.palette).label;
+    fig.innerHTML = `<div class="thumb${phone ? ' phone' : ''}"><iframe title="${esc(who.first)}" tabindex="-1" style="width:${w}px;height:${h}px"></iframe></div>
+      ${phone ? '' : `<figcaption><b>${esc(who.first)} ${esc(who.last)} · #${esc(who.number)}</b><span>${look.name} · ${cover}${p.design.layout.mirror ? ' (mirrored)' : ''} · ${type} · ${pal}${p.design.photo ? ' · ' + p.design.photo : ''}</span></figcaption>`}`;
+    el.appendChild(fig);
+    const iframe = fig.querySelector('iframe');
+    iframe.srcdoc = A.renderSite(p, { intro: 'never' });
+    const fitScale = () => { iframe.style.transform = `scale(${fig.querySelector('.thumb').clientWidth / w})`; };
+    fitScale();
+    addEventListener('resize', fitScale);
+  }
+
+  row1.forEach((x) => tile(document.getElementById('row1'), x));
+  row2.forEach((x) => tile(document.getElementById('row2'), x));
+  row2.forEach((x) => tile(document.getElementById('row3'), x, true));
+
+  // How far apart the hard-case designs are: the fewest choices any two teammates share differently.
+  let min = Infinity, pair = '';
+  for (let i = 0; i < row2.length; i++) for (let j = i + 1; j < row2.length; j++) {
+    const d = A.designDifference(row2[i].p.design, row2[j].p.design);
+    if (d < min) { min = d; pair = `${row2[i].who.first} and ${row2[j].who.first}`; }
+  }
+  document.getElementById('score').innerHTML = `In row 2, the closest two pages (<b>${pair}</b>) still differ in <b>${min}</b> design choices, on top of their own names, numbers and words.`;
+})();
+</script>
+</body>
+</html>

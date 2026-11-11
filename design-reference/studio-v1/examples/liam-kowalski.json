@@ -1,0 +1,106 @@
+{
+  "data": {
+    "slug": "liamkowalski",
+    "firstName": "Liam",
+    "lastName": "Kowalski",
+    "sport": "hockey",
+    "position": "Center",
+    "jerseyNumber": "19",
+    "level": "college",
+    "academicYear": "Sophomore",
+    "eligibility": "3 years",
+    "division": "NCAA Division I",
+    "schoolOrTeam": "Northern Lakes University",
+    "city": "Duluth",
+    "state": "MN",
+    "heightIn": 72,
+    "weightLb": 190,
+    "tagline": "Win the draw. Win the shift.",
+    "bio": "Two-way center. I take the big draws, kill penalties, and still find the net. Before college I played two years of junior hockey, eight hours from home, and it taught me how to be a pro before anyone was paying me like one.\n\nOff the ice I’m an engineering major and the guy who fixes everyone’s skate blades.",
+    "highlightLinks": [
+      {
+        "label": "Sophomore season goals",
+        "url": ""
+      },
+      {
+        "label": "Faceoff wins, every zone",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Goals",
+        "value": "14",
+        "context": "2025–26"
+      },
+      {
+        "label": "Assists",
+        "value": "22",
+        "context": "2025–26"
+      },
+      {
+        "label": "Points",
+        "value": "36",
+        "context": "2025–26"
+      },
+      {
+        "label": "Plus / minus",
+        "value": "+18",
+        "context": "2025–26"
+      },
+      {
+        "label": "Faceoff %",
+        "value": "56.3%",
+        "context": "2025–26"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2025",
+        "title": "Conference all-rookie team",
+        "detail": ""
+      },
+      {
+        "year": "2024",
+        "title": "Junior league champions",
+        "detail": "Upper Midwest Junior League."
+      },
+      {
+        "year": "2024",
+        "title": "Team captain",
+        "detail": "Junior hockey, final season."
+      }
+    ],
+    "sportDetails": {
+      "shoots": "Left"
+    },
+    "recruitingContact": "liam.kowalski@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/liam-kowalski-photo-1.webp",
+        "alt": "Liam skating alone on an empty rink",
+        "caption": "Morning skate"
+      },
+      {
+        "src": "assets/img/examples/liam-kowalski-photo-2.webp",
+        "alt": "Liam’s team pressing in front of the net",
+        "caption": "Power play"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/liam-kowalski-cover.webp",
+    "heroPhotoAlt": "Liam carrying the puck, skates and stick on the ice",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.28,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "cinematic",
+    "palette": "gold",
+    "type": "velocity",
+    "layout": {
+      "cover": "center",
+      "film": "reel",
+      "gallery": "folio"
+    }
+  }
+}

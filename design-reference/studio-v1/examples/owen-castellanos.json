@@ -1,0 +1,102 @@
+{
+  "data": {
+    "slug": "owencastellanos",
+    "firstName": "Owen",
+    "lastName": "Castellanos",
+    "sport": "lacrosse",
+    "position": "Attack",
+    "jerseyNumber": "22",
+    "level": "hs",
+    "classYear": "2026",
+    "schoolOrTeam": "Harbor Point High School",
+    "city": "Annapolis",
+    "state": "MD",
+    "heightIn": 70,
+    "weightLb": 172,
+    "gpa": "3.5",
+    "intendedMajor": "Business",
+    "tagline": "Feed the crease. Finish the chance.",
+    "bio": "Lefty attackman. I live behind the cage, where I can see the whole field, and I’d rather throw the assist than take the shot if the shot isn’t mine.\n\nI started in a backyard with a rebounder my dad built out of a garage door. It still works. So do I.",
+    "highlightLinks": [
+      {
+        "label": "Senior season highlights",
+        "url": ""
+      },
+      {
+        "label": "Feeds from X",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Goals",
+        "value": "61",
+        "context": "2026 season"
+      },
+      {
+        "label": "Assists",
+        "value": "38",
+        "context": "2026 season"
+      },
+      {
+        "label": "Points",
+        "value": "99",
+        "context": "2026 season"
+      },
+      {
+        "label": "Ground balls",
+        "value": "42",
+        "context": "2026 season"
+      },
+      {
+        "label": "Shooting %",
+        "value": "44%",
+        "context": "2026 season"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "All-county first team",
+        "detail": ""
+      },
+      {
+        "year": "2026",
+        "title": "100-point career milestone",
+        "detail": "Reached in week 3."
+      },
+      {
+        "year": "2025",
+        "title": "County champions",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "hand": "Left",
+      "club": "Chesapeake Elite"
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "owen.castellanos@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/owen-castellanos-photo-1.webp",
+        "alt": "Owen crouched at the X before the whistle",
+        "caption": "Face-off"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/owen-castellanos-cover.webp",
+    "heroPhotoAlt": "Owen at the face-off, stick on the ball",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.32,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "highlight",
+    "palette": "volt",
+    "type": "arena",
+    "layout": {
+      "cover": "center",
+      "stats": "ledger"
+    }
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "data": {
+    "slug": "aaliyahgrant",
+    "firstName": "Aaliyah",
+    "lastName": "Grant",
+    "sport": "basketball",
+    "position": "Point guard",
+    "jerseyNumber": "11",
+    "level": "college",
+    "academicYear": "Junior",
+    "eligibility": "2 years",
+    "division": "NCAA Division I",
+    "schoolOrTeam": "Harbor City University",
+    "city": "Baltimore",
+    "state": "MD",
+    "heightIn": 68,
+    "tagline": "Pace, poise, and the next pass.",
+    "bio": "I’ve run the point since I was nine, at a rec center where the older guys only let me play if I passed. I still think the best play is the one that makes someone else look good.\n\nThree years in, I lead us in assists and steals, and I’m the one who calls the defense. I’m studying statistics, which mostly means I can tell you exactly how many times I’ve been fouled without a whistle.",
+    "highlightLinks": [
+      {
+        "label": "Junior season, every assist",
+        "url": ""
+      },
+      {
+        "label": "Conference tournament run",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Points per game",
+        "value": "16.4",
+        "context": "2025–26"
+      },
+      {
+        "label": "Assists per game",
+        "value": "6.1",
+        "context": "2025–26"
+      },
+      {
+        "label": "3-point %",
+        "value": "38.2%",
+        "context": "2025–26"
+      },
+      {
+        "label": "Steals per game",
+        "value": "2.1",
+        "context": "2025–26"
+      },
+      {
+        "label": "Free throw %",
+        "value": "84.0%",
+        "context": "2025–26"
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "All-conference second team",
+        "detail": ""
+      },
+      {
+        "year": "2026",
+        "title": "Conference assists leader",
+        "detail": ""
+      },
+      {
+        "year": "2024",
+        "title": "All-freshman team",
+        "detail": ""
+      }
+    ],
+    "custom": {
+      "title": "Off the court",
+      "body": "Tuesday nights I tutor middle schoolers in math at the branch library down the street from our arena. Half of them come for the math. The other half want to know what it’s like to play on TV.\n\nBoth are good reasons to show up."
+    },
+    "recruitingContact": "aaliyah.grant@example.com",
+    "nilOpen": true,
+    "nilContactRole": "",
+    "nilContact": "aaliyah.grant.nil@example.com",
+    "nilInterests": "Women’s sports brands, Baltimore businesses, and anything that gets more girls on a court.",
+    "nilOffers": [
+      "Instagram and TikTok",
+      "Youth clinics",
+      "Appearances",
+      "Product reviews"
+    ],
+    "nilAudience": [
+      {
+        "label": "Instagram followers",
+        "value": "21.4K"
+      },
+      {
+        "label": "TikTok followers",
+        "value": "58K"
+      },
+      {
+        "label": "Engagement rate",
+        "value": "8.1%"
+      }
+    ],
+    "nilPartners": [
+      "Harbor Sneaker Co.",
+      "Fells Point Coffee"
+    ],
+    "gallery": [
+      {
+        "src": "assets/img/examples/aaliyah-grant-photo-1.webp",
+        "alt": "Aaliyah rising into a jump shot in an empty gym",
+        "caption": "Extra reps"
+      },
+      {
+        "src": "assets/img/examples/aaliyah-grant-photo-2.webp",
+        "alt": "Aaliyah dribbling low in the morning light",
+        "caption": "Ball handling, 6 a.m."
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/aaliyah-grant-cover.webp",
+    "heroPhotoAlt": "Aaliyah dribbling against a defender, both in silhouette on the gym floor",
+    "heroPhotoPositionX": 0.32,
+    "heroPhotoPositionY": 0.3,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "highlight",
+    "palette": "electric",
+    "type": "scoreboard",
+    "layout": {
+      "cover": "number"
+    }
+  }
+}

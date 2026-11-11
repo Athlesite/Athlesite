@@ -1,0 +1,130 @@
+{
+  "data": {
+    "slug": "mateoruiz",
+    "firstName": "Mateo",
+    "lastName": "Ruiz",
+    "sport": "wrestling",
+    "position": "152 lb",
+    "level": "hs",
+    "classYear": "2027",
+    "schoolOrTeam": "Saguaro Ridge High School",
+    "city": "Tucson",
+    "state": "AZ",
+    "heightIn": 68,
+    "weightLb": 152,
+    "gpa": "3.4",
+    "intendedMajor": "Criminal justice",
+    "tagline": "Hand fight. Head position. Finish.",
+    "bio": "I started wrestling because I was the smallest kid in my class and tired of it. I kept wrestling because it’s the only sport where everything is on you.\n\nI’m a top-position wrestler: I like to ride, and I like the third period, when everybody else is tired.",
+    "highlightLinks": [
+      {
+        "label": "State tournament, all matches",
+        "url": ""
+      }
+    ],
+    "stats": [
+      {
+        "label": "Record (W-L)",
+        "value": "41-3",
+        "context": "2025–26"
+      },
+      {
+        "label": "Pins",
+        "value": "22",
+        "context": "2025–26"
+      },
+      {
+        "label": "Win %",
+        "value": "93%",
+        "context": "2025–26"
+      },
+      {
+        "label": "Takedowns",
+        "value": "168",
+        "context": "2025–26"
+      }
+    ],
+    "results": [
+      {
+        "a": "State Championships",
+        "b": "3rd",
+        "c": "152 lb",
+        "d": "Feb 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Sectional Championships",
+        "b": "1st",
+        "c": "152 lb",
+        "d": "Feb 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Desert Classic",
+        "b": "1st",
+        "c": "152 lb",
+        "d": "Jan 2026",
+        "e": "",
+        "pb": false
+      },
+      {
+        "a": "Holiday Invitational",
+        "b": "2nd",
+        "c": "145 lb",
+        "d": "Dec 2025",
+        "e": "",
+        "pb": false
+      }
+    ],
+    "milestones": [
+      {
+        "year": "2026",
+        "title": "State placer, 152 lb",
+        "detail": "Third place."
+      },
+      {
+        "year": "2026",
+        "title": "Sectional champion",
+        "detail": ""
+      },
+      {
+        "year": "2025",
+        "title": "100th career win",
+        "detail": ""
+      }
+    ],
+    "sportDetails": {
+      "weight": "152 lb",
+      "club": "Valley Wrestling Club"
+    },
+    "recruitingStatus": "open",
+    "recruitingContact": "mateo.ruiz@example.com",
+    "gallery": [
+      {
+        "src": "assets/img/examples/mateo-ruiz-photo-1.webp",
+        "alt": "Mateo lifting an opponent off the mat",
+        "caption": "Finals"
+      },
+      {
+        "src": "assets/img/examples/mateo-ruiz-photo-2.webp",
+        "alt": "Mateo driving through a takedown",
+        "caption": "Takedown"
+      }
+    ],
+    "heroPhotoUrl": "assets/img/examples/mateo-ruiz-cover.webp",
+    "heroPhotoAlt": "Mateo throwing his opponent at a tournament",
+    "heroPhotoPositionX": 0.5,
+    "heroPhotoPositionY": 0.3,
+    "heroPhotoZoom": 1
+  },
+  "design": {
+    "look": "portrait",
+    "palette": "charcoal",
+    "type": "fashion",
+    "layout": {
+      "cover": "side"
+    }
+  }
+}

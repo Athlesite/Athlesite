@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Spacing check</title></head>
+<body style="margin:0">
+<!--
+  Typography and spacing checker. Renders a page into the frame below, settles it, then measures
+  the real ink of every piece of text (canvas font metrics on top of the DOM's line positions) and
+  reports: lines or words touching/overlapping, letters overlapping (outlined type), text cut off by
+  a section's edge, and text running off the screen. Driven by tools/spacing-run.js.
+-->
+<iframe id="f" title="page" style="border:0;position:absolute;left:0;top:0"></iframe>
+<script src="../src/sports.js"></script>
+<script src="../src/profile.js"></script>
+<script src="../src/color.js"></script>
+<script src="../src/render.js"></script>
+<script src="../src/looks/cinematic.js"></script>
+<script src="../src/looks/editorial.js"></script>
+<script src="../src/looks/highlight.js"></script>
+<script src="../src/looks/portrait.js"></script>
+<script src="../src/looks/prospect.js"></script>
+<script src="../src/athletes.js"></script>
+<script>
+(function () {
+  const A = window.Athlesite;
+  const STILL = '<style>.js [data-reveal]{opacity:1!important;transform:none!important;transition:none!important}*,*::before,*::after{animation:none!important;transition:none!important}</style>';
+
+  async function renderInto(profile, w, h) {
+    const f = document.getElementById('f');
+    f.style.width = w + 'px'; f.style.height = h + 'px';
+    // An absolute base: a relative one can't resolve inside a srcdoc frame (about:srcdoc).
+    const html = A.renderSite(profile, { intro: 'never', base: new URL('../', location.href).href })
+      .replace('</head>', STILL + '</head>')
+      .replace('<html lang="en">', '<html lang="en" data-still>');
+    await new Promise((r) => { f.onload = r; f.srcdoc = html; });
+    const doc = f.contentDocument;
+    await doc.fonts.ready;
+    await new Promise((r) => setTimeout(r, 160));
+    return doc;
+  }
+
+  const SNIP = (s) => s.replace(/\s+/g, ' ').trim().slice(0, 28);
+  const classOf = (el) => (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : el.tagName.toLowerCase());
+  const where = (el) => { const sec = el.closest('[data-section]'); return (sec ? sec.dataset.section : '?') + ' ' + el.tagName.toLowerCase() + classOf(el); };
+  const HEADING = 'h1,h2,h3,p,dd,dt,li,a,figcaption,blockquote,span.nav-name';
+
+  /** Is this element (or one it sits in) clipped to nothing with CSS? */
+  function clippedAway(el, win) {
+    for (let x = el; x && x.nodeType === 1; x = x.parentElement) {
+      const cs = win.getComputedStyle(x);
+      if (cs.clip === 'rect(0px, 0px, 0px, 0px)' || cs.clipPath === 'inset(50%)') return true;
+    }
+    return false;
+  }
+
+  /** Every visible line of text as an ink box (where the letters really are). */
+  function inkBoxes(doc) {
+    const win = doc.defaultView, ctx = doc.createElement('canvas').getContext('2d');
+    const out = [];
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const text = n.textContent;
+      if (!text.trim()) continue;
+      const el = n.parentElement;
+      if (!el || el.closest('script,style,.sr-only,[hidden],.intro,.nav-sheet')) continue;
+      if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      // Text kept only for screen readers by CSS (clipped to nothing, e.g. the results table's
+      // column headers on phones) isn't on screen either.
+      if (clippedAway(el, win)) continue;
+      const cs = win.getComputedStyle(el);
+      const size = parseFloat(cs.fontSize);
+      if (!size) continue;
+      const shown = cs.textTransform === 'uppercase' ? text.toUpperCase() : cs.textTransform === 'lowercase' ? text.toLowerCase() : text;
+      ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+      // Canvas ignores font-variant-numeric: where the page forces lining figures, measure digits as capitals.
+      const m = ctx.measureText(/lining-nums/.test(cs.fontVariantNumeric) ? shown.trim().replace(/\d/g, 'H') : shown.trim());
+      const stroke = parseFloat(cs.webkitTextStrokeWidth) || 0;
+      const range = doc.createRange();
+      range.selectNodeContents(n);
+      for (const r of range.getClientRects()) {
+        if (r.width < 1) continue;
+        const baseline = r.top + m.fontBoundingBoxAscent;
+        out.push({
+          el, size, stroke, text: shown,
+          deco: !!el.closest('[aria-hidden="true"]'),
+          block: el.closest(HEADING) || el,
+          left: r.left - stroke / 2, right: r.right + stroke / 2,
+          top: baseline - m.actualBoundingBoxAscent - stroke / 2,
+          bottom: baseline + m.actualBoundingBoxDescent + stroke / 2,
+        });
+      }
+    }
+    return out;
+  }
+
+  /** Letters in big type: neighbouring glyphs must not overlap (outlined type needs clear air). */
+  function letterIssues(doc, boxes) {
+    const win = doc.defaultView, ctx = doc.createElement('canvas').getContext('2d');
+    const issues = [];
+    const seen = new Set();
+    // Only outlined type: for solid letters, box overlap is normal (italics, "AV" kerning) and not visible.
+    boxes.filter((b) => b.size >= 40 && b.stroke > 0).forEach((b) => {
+      if (seen.has(b.el)) return;
+      seen.add(b.el);
+      const cs = win.getComputedStyle(b.el);
+      ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${b.size}px ${cs.fontFamily}`;
+      const walker = doc.createTreeWalker(b.el, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        if (n.parentElement !== b.el) continue;
+        const t = cs.textTransform === 'uppercase' ? n.textContent.toUpperCase() : n.textContent;
+        // Pixel test: draw each pair of neighbouring letters with their real outline (plus a pixel of
+        // required air) on two canvases and look for any pixel both letters cover. Exact for italics
+        // and kerned pairs, where letter boxes overlap but the letters themselves don't.
+        const range = doc.createRange();
+        const fm = ctx.measureText('H');
+        const glyphs = [];
+        for (let i = 0; i < t.length; i++) {
+          if (/\s/.test(t[i])) { glyphs.push(null); continue; }
+          range.setStart(n, i); range.setEnd(n, i + 1);
+          const r = range.getBoundingClientRect();
+          glyphs.push({ ch: t[i], x: r.left, base: r.top + fm.fontBoundingBoxAscent });
+        }
+        const size = Math.ceil(b.size * 1.6), lw = b.stroke + 2;
+        const draw = (g, x0, y0) => {
+          const cv = doc.createElement('canvas');
+          cv.width = size * 2; cv.height = size;
+          const cx = cv.getContext('2d');
+          cx.font = ctx.font; cx.lineWidth = lw; cx.lineJoin = 'round';
+          cx.strokeText(g.ch, g.x - x0, g.base - y0);
+          return cx.getImageData(0, 0, cv.width, cv.height).data;
+        };
+        let touching = 0;
+        for (let i = 1; i < glyphs.length; i++) {
+          const a = glyphs[i - 1], g = glyphs[i];
+          if (!a || !g || Math.abs(a.base - g.base) > 2) continue;
+          const x0 = a.x - b.size * 0.4, y0 = a.base - b.size * 1.1;
+          const pa = draw(a, x0, y0), pb = draw(g, x0, y0);
+          for (let k = 3; k < pa.length; k += 4) if (pa[k] > 40 && pb[k] > 40) { touching++; break; }
+        }
+        if (touching) issues.push({ kind: 'outlined letters touch', at: where(b.el), text: SNIP(n.textContent), px: -touching, deco: b.deco });
+      }
+    });
+    return issues;
+  }
+
+  function check(doc) {
+    const win = doc.defaultView, W = win.innerWidth;
+    const boxes = inkBoxes(doc);
+    const issues = [];
+    // 1. Text against text: overlapping, or stacked too close.
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j];
+        if (a.el === b.el && Math.abs(a.top - b.top) < 1) continue;
+        const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        if (ox <= 2) continue;
+        const [hi, lo] = a.top <= b.top ? [a, b] : [b, a];
+        const gap = lo.top - hi.bottom;
+        const big = Math.max(a.size, b.size);
+        const sameBlock = a.block === b.block;
+        // Lines of one name or title: clear air (0.02em). Separate pieces of text: real room.
+        const need = sameBlock ? 0.02 * big : Math.max(6, 0.06 * big);
+        if (gap < need) {
+          const deco = a.deco || b.deco;
+          // A decorative giant number/initials sitting behind words is layering, reported apart.
+          issues.push({ kind: gap < 0 ? (sameBlock ? 'lines overlap' : 'text overlaps text') : (sameBlock ? 'lines too tight' : 'too close'), at: where(hi.el) + ' / ' + where(lo.el), text: SNIP(hi.text) + ' / ' + SNIP(lo.text), px: +gap.toFixed(1), need: +need.toFixed(1), deco });
+        }
+      }
+    }
+    // 2. Cut off by a container's edge.
+    boxes.forEach((b) => {
+      for (let p = b.el.parentElement; p && p !== doc.body; p = p.parentElement) {
+        const cs = win.getComputedStyle(p);
+        if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+        const r = p.getBoundingClientRect();
+        const cut = Math.max(r.top - b.top, b.bottom - r.bottom, cs.overflowX !== 'visible' ? Math.max(r.left - b.left, b.right - r.right) : 0);
+        if (cut > 1.5) issues.push({ kind: 'cut off by edge', at: where(b.el) + ' in ' + classOf(p), text: SNIP(b.text), px: +cut.toFixed(1), deco: b.deco });
+        break;
+      }
+      // 3. Off the screen sideways.
+      if (b.left < -1 || b.right > W + 1) issues.push({ kind: 'off screen', at: where(b.el), text: SNIP(b.text), px: +Math.max(-b.left, b.right - W).toFixed(1), deco: b.deco });
+    });
+    if (doc.documentElement.scrollWidth > doc.documentElement.clientWidth + 1) issues.push({ kind: 'page scrolls sideways', at: 'page', text: '', px: doc.documentElement.scrollWidth - doc.documentElement.clientWidth, deco: false });
+    return issues.concat(letterIssues(doc, boxes));
+  }
+
+  window.runCombo = async ({ athlete, look, type, cover, stats, mirror, w, h }) => {
+    const p = structuredClone(A.ATHLETES[athlete]);
+    Object.assign(p.design, { look, palette: '', type, layout: Object.assign({}, p.design.layout, { cover, stats: stats || '', mirror: !!mirror }) });
+    const doc = await renderInto(A.normalizeProfile(p), w, h);
+    return check(doc);
+  };
+  window.combos = () => {
+    const out = [];
+    const athletes = Object.keys(A.ATHLETES);
+    let k = 0;
+    for (const athlete of athletes) for (const look of Object.keys(A.LOOKS)) {
+      const L = A.LOOKS[look];
+      for (const t of L.types) for (const c of L.covers) {
+        const stats = ['', 'spotlight', 'ledger'][k++ % 3];
+        out.push({ athlete, look, type: t.id, cover: c.id, stats, mirror: !!c.mirror && k % 2 === 0 });
+      }
+    }
+    return out;
+  };
+  window.ready = true;
+})();
+</script>
+</body></html>
