@@ -33,7 +33,8 @@ const TESTS = [
   ['studio-focus', drive('studio-focus.js', 'studio.html'), [DESK, PHONE]],
   ['studio-picks', drive('studio-picks.js', 'studio.html'), [DESK, PHONE]],
   ['studio-keys', drive('studio-keys.js', 'studio.html'), [PHONE]],
-  ['studio-styles', drive('studio-styles.js', 'studio.html'), [DESK, PHONE]], // phones only: the on-screen keyboard
+  ['studio-styles', drive('studio-styles.js', 'studio.html'), [DESK, PHONE]],
+  ['studio-account', drive('studio-account.js', 'studio.html'), [DESK, PHONE]], // phones only: the on-screen keyboard
   ['new-athlete', drive('new-athlete.js', 'studio.html', { env: { PHOTOS, OUT } }), [DESK, PHONE]],
   ['homepage-s2', drive('homepage-s2.js', '../homepage-v2/index.html'), [DESK, PHONE]],
   ['homepage-s3', drive('homepage-s3.js', '../homepage-v2/index.html'), [DESK, PHONE]],

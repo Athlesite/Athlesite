@@ -5,6 +5,7 @@
 // Env PHOTOS = folder with big.jpg (tools/make-test-photos.js), OUT = a scratch folder for files.
 // Must print PROBLEMS none.
 const fs = require('fs'), path = require('path');
+const passAccount = require('./account-steps');
 module.exports = async (t) => {
   const problems = [];
   const expect = (label, ok, got) => { t.log((ok ? 'ok   ' : 'FAIL ') + label + (ok ? '' : '  got: ' + JSON.stringify(got))); if (!ok) problems.push(label); };
@@ -28,6 +29,7 @@ module.exports = async (t) => {
   await t.shot('start-1');
 
   // 1 · Level + class
+  await passAccount(t);
   await t.clickSel('.fr-choice[data-v=hs]'); await t.sleep(350);
   await t.shot('start-1b');
   await t.clickSel('.fr-chip[data-y="2028"]'); await t.sleep(700);

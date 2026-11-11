@@ -7,6 +7,7 @@
 // hide the rest. Env PHOTOS = folder from make-test-photos.js, OUT = scratch folder for the file.
 // Run at 390×844 and 1440×900. Must print PROBLEMS none.
 const fs = require('fs'), path = require('path');
+const passAccount = require('./account-steps');
 module.exports = async (t) => {
   const W = await t.ev('return innerWidth');
   const problems = [], notes = [];
@@ -40,6 +41,7 @@ module.exports = async (t) => {
   await shot('setup-1');
 
   await step('setup', async () => {
+    await passAccount(t);
     await t.clickSel('.fr-choice[data-v=hs]'); await t.sleep(350);
     await t.clickSel('.fr-chip[data-y="2027"]'); await t.sleep(700);
     await shot('setup-name');
@@ -183,14 +185,19 @@ module.exports = async (t) => {
   });
 
   await step('visitor', async () => {
+    const missing = await page(`return ['story','results','stats','film','gallery','milestones','nil','details'].filter((k) => !doc.getElementById(k))`);
+    expect('every section they filled is on the page (Edit)', missing.length === 0, missing);
     await t.ev(`const b = [...document.querySelectorAll('#mode-slot button')].find((x) => /visitor/i.test(x.textContent)); b.click(); return 1`); await t.sleep(1500);
     await shot('visitor-top');
-    for (const at of ['results', 'nil', 'details']) {
+    for (const at of ['story', 'film', 'details']) {
       await page(`const el = doc.getElementById(${JSON.stringify(at)}); if (el) el.scrollIntoView(); return 1`); await t.sleep(900);
       await shot('visitor-' + at);
     }
-    const missing = await page(`return ['story','results','stats','film','gallery','milestones','nil','details'].filter((k) => !doc.getElementById(k))`);
-    expect('every section they filled is on the page', missing.length === 0, missing);
+    // Visitor view shows what a published page may show today (public-view.js): public sections stay,
+    // sections built on private or not-yet-approved fields don't.
+    const seen = await page(`return { shown: ['story','film','details'].filter((k) => !doc.getElementById(k)), hidden: ['results','stats','gallery','milestones','nil'].filter((k) => doc.getElementById(k)) }`);
+    expect('visitor view keeps the public sections', seen.shown.length === 0, seen.shown);
+    expect('visitor view leaves out the private ones', seen.hidden.length === 0, seen.hidden);
     await t.ev(`const b = [...document.querySelectorAll('#mode-slot button')].find((x) => /^Edit/.test(x.textContent.trim())); b.click(); return 1`); await t.sleep(800);
   });
 

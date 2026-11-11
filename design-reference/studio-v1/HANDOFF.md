@@ -119,7 +119,9 @@ compaction while the 60fps comparison was finishing).
 
 ### 0.3 Where to resume
 
-**Session 8 starts here.** Session 7 (2026-10-26 and 2026-11-10) finished the lab with Willy's "full control"
+**Session 9 starts here.** Session 8 (2026-11-10): CFul answered PORTING.md (v1 + 2.0; key limits in memory and in the product branch's design-reference/02-VISIBILITY-MATRIX.md). Willy chose a product-repo branch: **`claude/studio-design-reference`** (from main @ ef04553) holds `design-reference/` (start page index.html, 01 comparison, 02 visibility matrix, 03 backend hooks, a snapshot of studio-v1 + homepage-v2, brand/). New in the lab: `site.html?view=public|minor` and editor visitor view use `src/public-view.js` (18 public fields); account screens before the setup (DOB → email → code + terms, product wording, simulated; `?account=0` skips); Publish in the top bar (`src/studio/publish.js`, product slug rule + reserved list). All in **DECISIONS-SESSION-8.md**. Open: the push to GitHub (Willy's go), contact on public pages (matrix note A), edits-after-publish, CFul's S3c work (not on GitHub).
+
+**Session 8 started here.** Session 7 (2026-10-26 and 2026-11-10) finished the lab with Willy's "full control"
 ("im giving you full control on finishing it. i want to get it over with"): every change and decision is in
 **`DECISIONS-SESSION-7.md`** (Willy reviews it). In short: the lab moved inside the product folder (own repo,
 excluded locally); athlete pages scroll lighter (Reel blur, frosted bars: 10% → 1.6% dropped frames, quiet

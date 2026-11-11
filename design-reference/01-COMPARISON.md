@@ -56,8 +56,11 @@ it isn't compared here. Reconcile it before integration starts.
 - **Renderer:** `src/render.js` builds the whole page as one HTML string. Five looks live in
   `src/looks/*.js` with `src/site/*.css`; `src/site/site.js` adds behavior (nav, fitting, motion).
 - **Data:** `src/profile.js`. It's a superset of the product's model; see `02-VISIBILITY-MATRIX.md`.
+- **Before the setup:** age check, email, then code + adult terms. These use the product's wording and
+  are simulated: no email is sent and any code works.
 - **Setup:** 5 questions (level and class, name, sport, position and number, cover photo), then the
   editor.
+- **Publish:** link name, what visitors see, then live (`src/studio/publish.js`).
 - **Storage:** autosaves to `localStorage` (`src/studio/store.js`) and keeps photos in IndexedDB
   (`src/studio/photos.js`). It can also save and open a page file (`src/studio/files.js`).
 - **Examples:** 15 fictional athletes (`examples/*.json`, one per sport), with Pexels photos credited in
@@ -71,14 +74,14 @@ it isn't compared here. Reconcile it before integration starts.
 | Area | Studio lab today | Product rule (`main` / CFul) | Port must |
 | --- | --- | --- | --- |
 | Saving before sign-in | localStorage + IndexedDB autosave | Memory-only before sign-in (PR #26) | Remove device saving; sign in first, then save to the account |
-| Order of screens | Setup → editor, no account | Age gate → email code → setup → private draft → Publish (CFul's recommendation) | Use the product's age gate and email code, then the Studio setup; founders approve the order |
+| Order of screens | Age gate → email code + adult terms → setup → editor → Publish (the account screens are simulated) | Age gate → email code → setup → private draft → Publish (CFul's recommendation) | Use the product's age gate and email code, then the Studio setup; founders approve the order |
 | Questions asked | Setup asks level, name, sport, position, number | Wizard asks athlete info, media, recruiting, links | Ask each thing once, in one place (CFul: "no duplicate questions") |
 | Public fields | Pages show everything filled in | 18-column public contract | Public render uses only approved fields; the rest stays private (see the matrix) |
 | Minors | Full names, every section | Blocked 13–17 today; later: first name + last initial, reduced fields, guardian approves the exact public version | Design the minor version now (reference shows it); ship adult-only first |
 | Photos | Gallery, video posters, hero; stored in the browser | Hero only, via the server pipeline and private Storage paths | Hero first; gallery and posters wait for a reviewed Storage policy |
 | Rendering | String renderer (`render.js`) in an iframe `srcdoc` | React/Next app | CFul: compare a TS port of the templates against React components, choose after security tests |
-| Preview | Editor preview shows the full record | Owner preview stays private; the public view goes through the public read path | "View as visitor" must use the same public projection |
-| Link name (slug) | Asked at the very start (homepage "Claim it") | Chosen near first publish; minors never get a real-name default | Move the slug step next to Publish; keep "Claim it" as a suggestion only |
+| Preview | Edit mode: the full record (owner). View as visitor: public fields only | Owner preview stays private; the public view goes through the public read path | "View as visitor" must use the same public projection |
+| Link name (slug) | Chosen in Publish, by the product's rule and reserved list; "Claim it" is a suggestion | Chosen near first publish; minors never get a real-name default | Move the slug step next to Publish; keep "Claim it" as a suggestion only |
 | Design choices | `design` object (look, palette, fonts, layout, order, hidden…) | No field yet | Proposed: versioned design JSONB, allow-listed values, private by default until reviewed |
 | Hero crop default | `heroPhotoPositionY` 0.3 | 0 | Decide explicitly so existing crops don't shift |
 | Recruiting status values | Includes values like "committed" | Fixed value set | Keep the product's values until a migration changes them |

@@ -127,7 +127,7 @@
   $('#device-slot').append(device.el);
 
   let sheetBeforeVisit = '';
-  const mode = S.ui.Seg({ label: 'Preview mode', onPick: (v) => {
+  const showMode = (v) => {
     preview.setMode(v); document.body.classList.toggle('is-visitor', v === 'visitor');
     // Phones: a visitor sees the page, not the tools. The sheet drops to its handle and comes back
     // to where it was on Edit (a full sheet used to cover the whole page in visitor view).
@@ -135,9 +135,10 @@
       if (v === 'visitor') { sheetBeforeVisit = panelEl.dataset.sheet; setSheet('peek'); }
       else if (sheetBeforeVisit) { setSheet(sheetBeforeVisit); sheetBeforeVisit = ''; }
     }
-    announce(v === 'visitor' ? 'Viewing as a visitor. Clicks work like on your real page.' : 'Editing. Click anything on your page to change it.');
-  } });
-  mode.items([{ id: 'edit', label: 'Edit' }, { id: 'visitor', label: 'View as visitor' }]);
+    announce(v === 'visitor' ? 'Viewing as a visitor: only what your published page shows. Clicks work like on your real page.' : 'Editing. Click anything on your page to change it.');
+  };
+  const mode = S.ui.Seg({ label: 'Preview mode', onPick: showMode });
+  mode.items([{ id: 'edit', label: 'Edit' }, { id: 'visitor', label: 'View as visitor', short: 'Visitor' }]);
   mode.set('edit', true);
   $('#mode-slot').append(mode.el);
 
@@ -165,6 +166,13 @@
     toastTimer = setTimeout(() => (toastEl.hidden = true), error ? 6000 : 3600);
   }
   S.toast = toast;
+
+  // — Publish: the link name, a look as a visitor, then live (publish.js) —
+  S.publish.attach($('#publish-btn'), {
+    get: () => store.get(),
+    setSlug: (slug) => store.commit((d) => { d.data.slug = slug; }, { kind: 'content', key: 'slug' }),
+    visit: () => { mode.set('visitor'); showMode('visitor'); },
+  });
 
   // — File: save the page to a file, open one, start a new page (files.js, firstrun.js) —
   const fileBtn = $('#file-btn'), fileMenu = $('#file-menu'), fileInput = $('#open-file');
@@ -232,13 +240,14 @@
     if (src) return { design: Object.fromEntries(DESIGN_KEYS.map((k) => [k, structuredClone(src.design[k])])), name: A.fullName(src.data) };
     return { design: { look: A.LOOKS[look] ? look : 'cinematic' }, name: '' };
   }
-  // ?slug=<name>: the link they claimed on the homepage (same rules as there: a–z, 0–9, hyphens, 3–30).
-  const cleanSlug = (v) => { const s = String(v || '').toLowerCase().replace(/[^a-z0-9-]+/g, '').replace(/--+/g, '-').slice(0, 30); return s.length >= 3 ? s : ''; };
-  function startFirstRun({ replacing = false, from = '', look = '', slug = '' } = {}) {
+  // ?slug=<name>: the link they claimed on the homepage, cleaned to the product's rule (a letter first,
+  // then a–z, 0–9 and single hyphens, 3–30). Only a suggestion: it's checked again at Publish.
+  const cleanSlug = (v) => { const s = String(v || '').toLowerCase().replace(/[^a-z0-9-]+/g, '').replace(/--+/g, '-').replace(/^[^a-z]+/, '').slice(0, 30).replace(/-+$/, ''); return s.length >= 3 ? s : ''; };
+  function startFirstRun({ replacing = false, from = '', look = '', slug = '', account = false } = {}) {
     menu(false);
     const start = startingDesign({ from, look });
     const run = S.firstRun.open({
-      replacing, design: start.design,
+      replacing, design: start.design, account,
       onDone: (p) => {
         afterOpen = null;
         if (cleanSlug(slug)) p.data.slug = cleanSlug(slug);
@@ -320,5 +329,5 @@
   S.photos.cleanup(S.photos.refsIn(saved || store.get()).concat(S.photos.refsIn(store.get())));
   panel.go('home', { focusTitle: false });
   if (q.get('device') === 'phone') { preview.setDevice('phone'); device.set('phone', true); }
-  if (fresh) startFirstRun({ replacing: !!saved, from: q.get('from') || '', look: q.get('look') || '', slug: q.get('slug') || '' });
+  if (fresh) startFirstRun({ replacing: !!saved, from: q.get('from') || '', look: q.get('look') || '', slug: q.get('slug') || '', account: !saved && q.get('account') !== '0' });
 })();

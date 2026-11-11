@@ -129,7 +129,7 @@
       const fresh = !!sig;
       sig = next;
       el.querySelectorAll('[role=radio]').forEach((b) => b.remove());
-      el.insertAdjacentHTML('beforeend', list.map((it, i) => `<button type="button" role="radio" data-v="${esc(it.id)}" aria-checked="false" style="--i:${i}"${it.disabled ? ' disabled' : ''}${it.title ? ` title="${esc(it.title)}"` : ''}>${esc(it.label)}</button>`).join(''));
+      el.insertAdjacentHTML('beforeend', list.map((it, i) => `<button type="button" role="radio" data-v="${esc(it.id)}" aria-checked="false" style="--i:${i}"${it.disabled ? ' disabled' : ''}${it.title ? ` title="${esc(it.title)}"` : ''}${it.short ? ` aria-label="${esc(it.label)}"` : ''}>${it.short ? `<span class="seg-long">${esc(it.label)}</span><span class="seg-short" aria-hidden="true">${esc(it.short)}</span>` : esc(it.label)}</button>`).join(''));
       if (fresh && !reduced()) { el.classList.remove('is-new'); void el.offsetWidth; el.classList.add('is-new'); }
       set(value, true);
     }

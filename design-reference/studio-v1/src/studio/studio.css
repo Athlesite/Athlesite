@@ -214,6 +214,9 @@ body:not(.is-ready) .pv-viewport{opacity:0}
   .brand span,#device-slot,.test-pick{display:none}
   .bar-mid{justify-content:flex-start}
   .bar-mid .seg [role=radio]{padding:6px 9px;font-size:13px}
+  /* Room for Publish: the short label, and the opening plays from Visitor / on load instead of the bar. */
+  .seg-long,#play{display:none}
+  .seg-short{display:inline}
   .work{display:block;position:relative}
   .canvas{position:absolute;inset:0}
   .panel{position:fixed;left:0;right:0;bottom:0;height:88dvh;border-left:0;border-top:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -12px 40px -16px rgba(0,0,0,.35);z-index:10;grid-template-rows:auto minmax(0,1fr);transform:translateY(calc(100% - 132px));transition:transform .45s var(--spring)}
@@ -353,7 +356,7 @@ body.has-fr{overflow:hidden}
 .fr-back svg{width:16px;height:16px}
 .fr-back-ghost{display:none}
 .fr-eyebrow{margin:0 0 12px;font:500 11px/1 "Geist Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.fr-q{margin:0;font:600 clamp(30px,4.2vw,46px)/1.06 Geist,system-ui,sans-serif;letter-spacing:-.03em;outline:0}
+.fr-q{margin:0;font:600 clamp(30px,4.2vw,46px)/1.06 Geist,system-ui,sans-serif;letter-spacing:-.03em;outline:0;text-wrap:balance}
 .fr-sub{margin:12px 0 0;max-width:54ch;font-size:16px;line-height:1.5;color:var(--muted)}
 .fr-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:32px}
 .fr-choice{display:grid;gap:4px;padding:22px 22px 20px;border:1px solid var(--line);border-radius:16px;background:var(--paper);text-align:left;transition:border-color .2s,box-shadow .2s,transform .18s var(--ease)}
@@ -496,3 +499,63 @@ body.has-fr{overflow:hidden}
 @media (hover:hover) and (pointer:fine){.style-card:hover .style-card-art{box-shadow:0 0 0 1px var(--line),0 10px 22px -10px rgba(0,0,0,.5)}.style-card:hover .style-card-label{color:var(--ink)}}
 .style-card:active .style-card-art{transform:scale(.97)}
 .style-card:focus-visible{outline:none}.style-card:focus-visible .style-card-art{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--blue)}
+
+/* — Account screens before the setup (firstrun.js): date of birth, email, code + terms — */
+.fr-form .field select{padding:12px 34px 12px 14px;border-radius:11px;font-size:16px}
+.fr-dob>.field{flex:1 1 120px}
+.fr-dob>.field:first-child{flex:2 1 180px}
+.fr-dob>.field.is-short{max-width:none}
+.fr-error{margin:0;font-size:14px;line-height:1.45;color:var(--danger)}
+.fr-form .field:has(.fr-code){max-width:360px}
+.fr-code{font-family:"Geist Mono",ui-monospace,monospace!important;letter-spacing:.2em}
+.fr-code::placeholder{font-family:Geist,system-ui,sans-serif;letter-spacing:0}
+.seg-short{display:none}
+.fr-check{display:flex;align-items:flex-start;gap:12px;min-height:44px;padding:4px 0;font-size:15px;line-height:1.45;cursor:pointer}
+.fr-check input{flex:none;width:20px;height:20px;margin:1px 0 0;accent-color:var(--ink);cursor:pointer}
+.fr-proto{margin:0;font:500 11px/1.4 "Geist Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fr-skip:disabled{opacity:.55;text-decoration:none;cursor:default}
+.fr.is-account .fr-open,.fr.is-blocked .fr-open{display:none}
+.fr.is-blocked .fr-progress{visibility:hidden}
+
+/* — Publish (publish.js): the button in the bar, and its dialog — */
+.btn-publish{min-height:34px;padding:0 16px;border-radius:999px;border-color:var(--ink);background:var(--ink);color:#fff;font-weight:600}
+@media (hover:hover) and (pointer:fine){.btn-publish:hover{border-color:#26262c;background:#26262c}}
+.btn-publish.is-live{border-color:var(--line);background:var(--paper);color:var(--ink);font-weight:500}
+@media (hover:hover) and (pointer:fine){.btn-publish.is-live:hover{border-color:#B9B3A8;background:var(--paper)}}
+.btn-publish i{width:7px;height:7px;border-radius:50%;background:#3A9A5B}
+.pub{width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:0;border:0;border-radius:18px;background:var(--paper);color:var(--ink);box-shadow:0 24px 60px -20px rgba(0,0,0,.45);overscroll-behavior:contain}
+.pub::backdrop{background:rgba(17,17,20,.38)}
+.pub[open]{animation:pub-in .22s cubic-bezier(.23,1,.32,1)}
+@keyframes pub-in{from{opacity:0;transform:translateY(8px) scale(.98)}}
+.pub-card{display:grid;gap:10px;padding:24px 24px 20px}
+.pub-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pub-head h2{margin:0;font:600 22px/1.2 Geist,system-ui,sans-serif;letter-spacing:-.02em}
+.pub-sub{margin:0 0 6px;color:var(--muted);font-size:15px;line-height:1.5}
+.pub-label{margin-top:4px;font-size:13px;font-weight:600}
+.pub-link{display:flex;align-items:center;min-height:48px;border:1px solid var(--line);border-radius:12px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.pub-link:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.pub-link span{padding-left:14px;color:var(--muted);font:500 15px Geist,system-ui,sans-serif;white-space:nowrap}
+.pub-link input{flex:1;min-width:0;padding:12px 14px 12px 1px;border:0;background:none;font:500 16px Geist,system-ui,sans-serif;color:var(--ink);outline:0}
+.pub-check{margin:0;min-height:1.45em;font-size:13.5px;line-height:1.45;color:var(--danger)}
+.pub-check.is-ok{color:#1F6B37}
+.pub-h{margin:10px 0 0;font-size:13px;font-weight:600}
+.pub-list{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.pub-list li{padding:5px 10px;border:1px solid var(--line);border-radius:99px;background:#fff;font-size:13px}
+.pub-note{margin:0;font-size:13.5px;line-height:1.5;color:var(--muted)}
+.pub-visit{justify-self:start;min-height:36px;font-size:14px;color:var(--ink)}
+.pub-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;margin-top:8px}
+.pub-actions .btn{min-height:46px;padding:0 24px;border-radius:999px;font-size:15px}
+.pub-live{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.pub-url{flex:1;min-width:0;font:600 16px/1.3 Geist,system-ui,sans-serif;overflow-wrap:anywhere;-webkit-user-select:all;user-select:all}
+.pub-live .btn{border-radius:999px}
+.pub-proto{margin:6px 0 0;font:500 11px/1.4 "Geist Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+/* Phones: a sheet from the bottom, thumb-reachable. */
+@media (max-width:640px){
+  .pub{width:100%;max-width:none;max-height:92dvh;margin:auto 0 0;border-radius:18px 18px 0 0}
+  .pub[open]{animation-name:pub-up}
+  .pub-card{padding:22px 16px calc(18px + env(safe-area-inset-bottom))}
+  .pub-actions .btn{min-height:48px}
+  .btn-publish{padding:0 14px}
+}
+@keyframes pub-up{from{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){.pub[open]{animation:none}}

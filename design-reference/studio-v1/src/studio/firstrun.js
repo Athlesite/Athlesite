@@ -9,9 +9,13 @@
  * the editor, so a page starts in Cinematic ("Create your own") or in the design of the homepage
  * example they chose ("Start with this style"), and the editor shows a tip about the other looks.
  *
- *   S.firstRun.open({ replacing, design, onDone(profile), onOpenFile(), onCancel() })
+ *   S.firstRun.open({ replacing, design, account, onDone(profile), onOpenFile(), onCancel() })
  * replacing: a page already exists (shows "Back to my page"; finishing replaces it, undoable).
  * design: the design to start from (an example's), or nothing for Cinematic.
+ * account: a new athlete first passes the age check and makes an account (email code + terms),
+ *   before any profile question: the product's order (CFul's porting response, 2026-11-10) in its own
+ *   words (src/lib/age-gate-copy.ts, src/components/auth/InlineOtpForm.tsx on product main). In this
+ *   prototype no email is sent, any code works, and nothing is saved, the date of birth least of all.
  */
 (function () {
   const A = window.Athlesite, S = A.studio;
@@ -24,13 +28,33 @@
   // High school classes still to graduate (a school year turns over in the summer).
   const classYears = () => { const n = new Date(), y = n.getFullYear() + (n.getMonth() >= 6 ? 1 : 0); return [y, y + 1, y + 2, y + 3]; };
   const COLLEGE_YEARS = ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const HOME = '../homepage-v2/index.html';
 
-  function open({ replacing = false, design = null, onDone, onOpenFile, onCancel } = {}) {
-    const st = { level: '', year: '', first: '', last: '', sport: '', position: '', number: '', photo: null };
+  // As the product shows an address it sent a code to: first and last letter (maskEmail, otpMachine.ts).
+  const maskEmail = (email) => {
+    const [local, domain] = String(email).trim().split('@');
+    if (!domain || !local) return email;
+    return local.length <= 2 ? `${local[0]}…@${domain}` : `${local[0]}…${local[local.length - 1]}@${domain}`;
+  };
+  // A real calendar date, not in the future; and the age it gives today.
+  const realDate = (y, m, d) => {
+    if (!y || !m || !d || y < 1900) return false;
+    const t = new Date(y, m - 1, d);
+    return t.getFullYear() === y && t.getMonth() === m - 1 && t.getDate() === d && t <= new Date();
+  };
+  const ageOn = (y, m, d) => {
+    const now = new Date(), had = now.getMonth() + 1 > m || (now.getMonth() + 1 === m && now.getDate() >= d);
+    return now.getFullYear() - y - (had ? 0 : 1);
+  };
+
+  function open({ replacing = false, design = null, account = false, onDone, onOpenFile, onCancel } = {}) {
+    const st = { level: '', year: '', first: '', last: '', sport: '', position: '', number: '', photo: null, email: '' };
+    const PRE = account ? 3 : 0, TOTAL = PRE + STEPS;
     const root = h(`<div class="fr" role="dialog" aria-modal="true" aria-label="Start your page">
       <header class="fr-top">
         <div class="brand"><img src="assets/brand/athlesite-mark-on-light.svg" alt="Athlesite"><span>Studio</span></div>
-        <div class="fr-progress" role="progressbar" aria-label="Progress" aria-valuemin="1" aria-valuemax="${STEPS}"><i></i></div>
+        <div class="fr-progress" role="progressbar" aria-label="Progress" aria-valuemin="1" aria-valuemax="${TOTAL}"><i></i></div>
         <div class="fr-top-end">
           <button type="button" class="link-btn fr-open">Open a page file</button>
           ${replacing ? '<button type="button" class="btn fr-cancel">Back to my page</button>' : ''}
@@ -84,8 +108,122 @@
     const head = (i, q, sub) => `${i > 0 ? '<button type="button" class="fr-back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button>' : '<span class="fr-back fr-back-ghost" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Back</span>'}
       <p class="fr-eyebrow">${i === 0 ? 'Let’s build your page' : `Step ${i + 1} of ${STEPS}`}</p>
       <h1 class="fr-q" tabindex="-1">${q}</h1>${sub ? `<p class="fr-sub">${sub}</p>` : ''}`;
+    // The account screens have no Back: once the age is answered it's closed for the session (as in
+    // the product), and the code screen offers "Use a different email" instead.
+    const headA = (eyebrow, q, sub) => `<span class="fr-back fr-back-ghost" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
+      <p class="fr-eyebrow">${eyebrow}</p>
+      <h1 class="fr-q" tabindex="-1">${q}</h1>${sub ? `<p class="fr-sub">${sub}</p>` : ''}`;
+    const to = (s) => go(PRE + s); // setup steps are numbered from their own first question
 
-    const steps = [
+    // — Account: age, email, code + terms —
+    const accountSteps = [
+      // Age, before anything else. Only its answer is used, and the form forgets the date at once.
+      () => {
+        const el = h(`<div class="fr-step">${headA('Before we start', 'What’s your date of birth?', 'We ask so we know which parts of Athlesite you can use. We don’t save your date of birth.')}
+          <form class="fr-form" novalidate>
+            <div class="field-row fr-dob">
+              <label class="field"><span class="field-label">Month</span><select name="m"><option value="">Month</option>${MONTHS.map((n, k) => `<option value="${k + 1}">${n}</option>`).join('')}</select></label>
+              <label class="field is-short"><span class="field-label">Day</span><input name="d" inputmode="numeric" maxlength="2" placeholder="Day" autocomplete="off"></label>
+              <label class="field is-short"><span class="field-label">Year</span><input name="y" inputmode="numeric" maxlength="4" placeholder="Year" autocomplete="off"></label>
+            </div>
+            <p class="fr-error" role="alert" hidden></p>
+            <div class="fr-actions"><button type="submit" class="btn btn-go" disabled>Continue</button></div>
+          </form>
+        </div>`);
+        const f = el.querySelector('form'), btn = f.querySelector('.btn-go'), err = f.querySelector('.fr-error');
+        const sync = () => {
+          for (const k of ['d', 'y']) f[k].value = f[k].value.replace(/\D/g, '');
+          btn.disabled = !(f.m.value && f.d.value && f.y.value.length === 4);
+          err.hidden = true;
+        };
+        f.addEventListener('input', sync);
+        f.addEventListener('change', sync);
+        f.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const y = +f.y.value, m = +f.m.value, d = +f.d.value;
+          if (!realDate(y, m, d)) { err.textContent = 'That doesn’t look like a real date. Please check the day and month.'; err.hidden = false; return; }
+          const age = ageOn(y, m, d);
+          f.reset();
+          if (age < 13) blocked('child'); else if (age < 18) blocked('minor'); else go(1);
+        });
+        el._focus = () => f.m.focus({ preventScroll: true });
+        return el;
+      },
+      // Email: where the code goes, and how they get back in later.
+      () => {
+        const el = h(`<div class="fr-step">${headA('Your account', 'What’s your email?', 'We’ll email you a code to confirm it’s you. This is how you get back in to edit your page later.')}
+          <form class="fr-form" novalidate>
+            <label class="field"><span class="field-label">Email</span><input name="email" type="email" inputmode="email" autocomplete="email" spellcheck="false" autocapitalize="none" placeholder="you@example.com" value="${esc(st.email)}"></label>
+            <p class="fr-error" role="alert" hidden></p>
+            <div class="fr-actions"><button type="submit" class="btn btn-go" disabled>Send code</button></div>
+          </form>
+        </div>`);
+        const f = el.querySelector('form'), btn = f.querySelector('.btn-go'), err = f.querySelector('.fr-error');
+        const sync = () => { st.email = f.email.value; btn.disabled = !st.email.trim(); err.hidden = true; };
+        f.addEventListener('input', sync);
+        sync();
+        f.addEventListener('submit', (e) => {
+          e.preventDefault();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(st.email.trim())) {
+            err.textContent = 'Enter your email address, like you@example.com.'; err.hidden = false; f.email.focus(); return;
+          }
+          btn.disabled = true; btn.textContent = 'Sending…';
+          setTimeout(() => { sentAt = Date.now(); go(2); }, 500); // the prototype only pretends to send
+        });
+        el._focus = () => f.email.focus({ preventScroll: true });
+        return el;
+      },
+      // Code, and the adult terms: the account exists once both are done.
+      () => {
+        const el = h(`<div class="fr-step">${headA('Your account', 'Enter the code we emailed you', `Sent to ${esc(maskEmail(st.email))}. It may take a minute — check spam too.`)}
+          <form class="fr-form" novalidate>
+            <label class="field"><span class="field-label">Code</span><input name="code" class="fr-code" inputmode="numeric" autocomplete="one-time-code" spellcheck="false" placeholder="Paste or type your code"></label>
+            <label class="fr-check"><input type="checkbox" name="terms"><span>I confirm I’m 18 or older and agree to Athlesite’s Terms and Privacy Policy.</span></label>
+            <div class="fr-actions"><button type="submit" class="btn btn-go" disabled>Verify</button><button type="button" class="fr-skip fr-change">Use a different email</button><button type="button" class="fr-skip fr-resend"></button></div>
+            <p class="fr-proto">Prototype: no email is sent, and any code works.</p>
+          </form>
+        </div>`);
+        const f = el.querySelector('form'), btn = f.querySelector('.btn-go'), resend = f.querySelector('.fr-resend');
+        const sync = () => { btn.disabled = !(f.code.value.trim() && f.terms.checked); };
+        f.addEventListener('input', sync);
+        f.addEventListener('change', sync);
+        const tick = () => {
+          if (at !== 2) return; // stops once they leave the code screen
+          const left = Math.ceil(30 - (Date.now() - sentAt) / 1000);
+          resend.disabled = left > 0;
+          resend.textContent = left > 0 ? `Resend in ${left}s` : 'Resend code';
+          if (left > 0) setTimeout(tick, 1000);
+        };
+        tick();
+        resend.addEventListener('click', () => { sentAt = Date.now(); tick(); announce('A new code is on its way.'); });
+        f.querySelector('.fr-change').addEventListener('click', () => go(1));
+        f.addEventListener('submit', (e) => {
+          e.preventDefault();
+          if (btn.disabled) return;
+          btn.disabled = true; btn.textContent = 'Checking…';
+          setTimeout(() => { S.session = { email: st.email.trim() }; to(0); }, 500);
+        });
+        el._focus = () => f.code.focus({ preventScroll: true });
+        return el;
+      },
+    ];
+    let sentAt = 0;
+    const announce = (msg) => { const live = document.getElementById('studio-live'); if (live) live.textContent = msg; };
+
+    // Under 18: the product's two messages, no second attempt, no way round (age-gate-copy.ts).
+    function blocked(kind) {
+      const minor = kind === 'minor';
+      const el = h(`<div class="fr-step fr-blocked"><span class="fr-back fr-back-ghost" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Back</span>
+        <h1 class="fr-q" tabindex="-1">${minor ? 'Athlesite accounts for athletes under 18 aren’t available yet.' : 'Athlesite isn’t available for athletes under 13.'}</h1>
+        <p class="fr-sub">${minor ? 'We’re building guardian approval before opening this part of the pilot. Thanks for your patience — we’d love to have you when it’s ready.' : 'Thanks for checking us out. We hope to see you here when you’re older.'}</p>
+        <div class="fr-actions"><a class="fr-skip" href="${HOME}">Back to Athlesite</a></div>
+      </div>`);
+      root.classList.add('is-blocked');
+      stage.replaceChildren(el);
+      el.querySelector('.fr-q').focus({ preventScroll: true });
+    }
+
+    const setup = [
       // 1 · Level, then the class year
       () => {
         const el = h(`<div class="fr-step">${head(0, 'Where do you play?', 'About a minute. Everything can be changed later.')}
@@ -119,7 +257,7 @@
           const b = e.target.closest('[data-y]');
           if (!b) return;
           st.year = b.dataset.y;
-          go(1);
+          to(1);
         });
         if (st.level) showYears();
         return el;
@@ -139,7 +277,7 @@
         f.first.value = st.first; f.last.value = st.last;
         const sync = () => { st.first = f.first.value; st.last = f.last.value; go_.disabled = !st.first.trim(); };
         f.addEventListener('input', sync);
-        f.addEventListener('submit', (e) => { e.preventDefault(); sync(); if (st.first.trim()) go(2); else f.first.focus(); });
+        f.addEventListener('submit', (e) => { e.preventDefault(); sync(); if (st.first.trim()) to(2); else f.first.focus(); });
         sync();
         el._focus = () => f.first.focus({ preventScroll: true });
         return el;
@@ -155,9 +293,9 @@
           if (!b) return;
           if (st.sport !== b.dataset.v) { st.position = ''; }
           st.sport = b.dataset.v;
-          go(3);
+          to(3);
         });
-        el.querySelector('.fr-skip').addEventListener('click', () => { st.sport = ''; st.position = ''; go(3); });
+        el.querySelector('.fr-skip').addEventListener('click', () => { st.sport = ''; st.position = ''; to(3); });
         return el;
       },
       // 4 · Position (catalog suggestions or their own words) + number
@@ -191,8 +329,8 @@
           if (chips) chips.querySelectorAll('[data-v]').forEach((x) => { x.classList.remove('is-on'); x.setAttribute('aria-pressed', 'false'); });
         });
         if (f.num) f.num.addEventListener('input', () => { f.num.value = f.num.value.replace(/[^0-9]/g, '').slice(0, 3); st.number = f.num.value; });
-        f.addEventListener('submit', (e) => { e.preventDefault(); go(4); });
-        el.querySelector('.fr-skip').addEventListener('click', () => { st.position = ''; st.number = ''; go(4); });
+        f.addEventListener('submit', (e) => { e.preventDefault(); to(4); });
+        el.querySelector('.fr-skip').addEventListener('click', () => { st.position = ''; st.number = ''; to(4); });
         return el;
       },
       // 5 · Cover photo (optional), then into the editor
@@ -238,13 +376,15 @@
         return el;
       },
     ];
+    const steps = [...(account ? accountSteps : []), ...setup];
 
     function go(i) {
       if (i === at) return;
       const dir = i > at ? 1 : -1, old = stage.firstElementChild;
       at = i;
       const el = steps[i]();
-      bar.style.setProperty('--p', (i + 1) / STEPS);
+      bar.style.setProperty('--p', (i + 1) / TOTAL);
+      root.classList.toggle('is-account', i < PRE);
       bar.setAttribute('aria-valuenow', String(i + 1));
       const back = el.querySelector('.fr-back');
       if (back) back.addEventListener('click', () => go(i - 1));

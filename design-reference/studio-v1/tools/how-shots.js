@@ -37,7 +37,7 @@ module.exports = async (t) => {
   const calm = () => t.ev(`if (!document.getElementById('how-calm')) document.head.insertAdjacentHTML('beforeend', '<style id="how-calm">*{caret-color:transparent!important}:focus-visible{outline:none!important}</style>'); return 1`);
 
   // ———— 1 · Create: the real setup ————
-  await t.ev(`localStorage.clear(); indexedDB.deleteDatabase('athlesite-studio-photos'); setTimeout(() => location.href = location.pathname + '?start=1', 50); return 1`);
+  await t.ev(`localStorage.clear(); indexedDB.deleteDatabase('athlesite-studio-photos'); setTimeout(() => location.href = location.pathname + '?start=1&account=0', 50); return 1`);
   await t.sleep(3200);
   await calm();
   await t.clickSel('.fr-choice[data-v=hs]'); await t.sleep(700);

@@ -116,8 +116,11 @@ html.studio-tint *,html.studio-tint *::before,html.studio-tint *::after{transiti
     function renderNow(build) {
       if (!latest) return;
       const playing = pendingIntro;
+      // Visitor view shows what a visitor gets: only the fields a published page may show (public-view.js),
+      // as the product's 'view as visitor' must use the same projection as the public page.
+      const shown = mode === 'visitor' && A.publicView ? A.publicView(latest) : latest;
       // Photos stored on this device become object URLs just for this render.
-      let html = A.renderSite(A.studio.photos ? A.studio.photos.resolve(latest) : latest, { intro: playing ? 'always' : 'never', prompts: mode === 'edit' });
+      let html = A.renderSite(A.studio.photos ? A.studio.photos.resolve(shown) : shown, { intro: playing ? 'always' : 'never', prompts: mode === 'edit' });
       html = html.replace('</head>', `<style id="studio-css">${SETTLE_CSS}${mode === 'edit' ? EDIT_CSS : ''}</style></head>`);
       // The opening keeps its own motion; everything else settles while the new frame is prepared.
       if (!playing) html = html.replace('<html lang="en">', '<html lang="en" class="studio-settle">');
