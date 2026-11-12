@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC"><!-- the phone's browser bar matches the Studio's top bar -->
 <title>Athlesite Studio</title>
+<script>
+  // A visit that opens in the setup (a new athlete, or ?start from the homepage) hides the editor before the
+  // first paint, so it never flashes before the setup covers it. app.js lifts this if no setup opens.
+  (function () {
+    var q = new URLSearchParams(location.search), saved = null;
+    try { saved = localStorage.getItem('athlesite-studio-v1'); } catch (e) {}
+    if (!q.get('a') && !q.get('ex') && (!saved || q.has('start'))) document.documentElement.classList.add('fr-boot');
+  })();
+</script>
 <link rel="icon" href="assets/brand/athlesite-mark-on-light.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">

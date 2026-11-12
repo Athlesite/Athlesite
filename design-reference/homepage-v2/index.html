@@ -123,20 +123,72 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 /* Portrait screens: a tall window that fills the height, so no blank band opens under it before Section 02. */
 @media(max-aspect-ratio:1/1){.win{--winW:min(88vw,720px)}.win-screen{height:min(calc(var(--winW) * 1.6),calc(100svh - 300px))}}
 
-/* The athlete's site, laid over the shrunk photo. */
-.site{position:absolute;inset:0;pointer-events:none}
+/* The athlete's site, laid over the shrunk photo: Jordan's real page in the Cinematic look
+   (../studio-v1/site.html?ex=jordan-bell), measured at 1440×900 and at 390×844 and set in the window's own
+   units (1cqw = 1% of the page's width), so the window shows the page an athlete really gets (Willy,
+   2026-11-11). Three layers, revealed in turn by heroFrame(): the nav, the hero, the stats strip. */
+.site{position:absolute;inset:0;overflow:hidden;border-radius:0 0 14px 14px;pointer-events:none;color:#f4f5f7}
 .site>*{opacity:0;will-change:transform,opacity}
-.site-nav{position:absolute;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:3cqh 3.4cqw;font:500 max(9px,1.05cqw)/1 var(--sans)}
-.site-nav b{font:400 max(12px,1.5cqw)/1 var(--display);letter-spacing:.06em}
-.site-nav span{display:flex;gap:2.4cqw;opacity:.85}
-.site-hero{position:absolute;left:4cqw;bottom:22cqh}
-.site-hero small{display:block;font:500 max(8px,1cqw)/1.3 var(--mono);letter-spacing:.14em;opacity:.8}
-.site-hero h3{margin:1.4cqh 0 2.4cqh;font:400 max(30px,7.4cqw)/.88 var(--display);letter-spacing:-.01em}
-.site-hero a{display:inline-flex;gap:.7cqw;align-items:center;padding:1.1cqh 1.6cqw;border-radius:99px;background:#fff;color:var(--ink);font:600 max(9px,1.05cqw)/1 var(--sans);text-decoration:none}
-.site-stats{position:absolute;inset:auto 0 0;display:grid;grid-template-columns:repeat(4,1fr);padding:2.6cqh 4cqw;border-top:1px solid #ffffff26;background:linear-gradient(0deg,#05070ae6,#05070a8c)} /* darker instead of a backdrop blur: the window scales every frame of the handoff */
-.site-stats b{display:block;font:400 max(16px,2.6cqw)/1 var(--display);letter-spacing:.01em}
-.site-stats small{font:500 max(7px,.85cqw)/1 var(--mono);letter-spacing:.14em;opacity:.7}
-@container (aspect-ratio < 1){.site-nav span{display:none}.site-hero{bottom:17cqh;left:6cqw}.site-hero h3{font-size:16cqw}.site-hero small{font-size:2.6cqw}.site-hero a{font-size:3.2cqw;padding:1.2cqh 3.6cqw}.site-stats{padding:2cqh 6cqw}.site-stats b{font-size:5.4cqw}.site-stats small{font-size:1.9cqw}}
+.site-nav{position:absolute;inset:0 0 auto;z-index:2;display:flex;align-items:center;gap:.6cqw;height:7.1cqh;padding:0 5cqw;background:linear-gradient(#00000073,#0000)}
+.sn-brand{display:flex;align-items:center;gap:1cqw;margin-right:auto}
+.sn-brand b{font:400 max(10px,1.81cqw)/1 var(--display);letter-spacing:.01em}
+.sn-brand small{font:500 max(6px,.83cqw)/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.sn-links{display:flex;padding:.3cqw;border-radius:999px;background:#07090c61}
+.sn-links em{padding:.95cqw 1.05cqw;font:500 max(6px,.9cqw)/1 var(--sans);font-style:normal}
+.sn-menu{display:none}
+.sn-cta{display:inline-flex;align-items:center;gap:.5cqw;margin-left:.6cqw;padding:1.05cqw 1.6cqw;border-radius:999px;background:#6ea2ff;color:#07090c;font:600 max(6px,.9cqw)/1 var(--sans)}
+.site-hero{position:absolute;inset:0;background:linear-gradient(90deg,#07090ce0 0%,#07090c66 42%,#0000 70%),linear-gradient(0deg,#07090c 0%,#07090c99 22%,#0000 50%)}
+.sh-num{position:absolute;right:5.6cqw;bottom:17cqh;font:400 24cqw/.82 var(--display);letter-spacing:.06em;color:transparent;-webkit-text-stroke:1.5px #f4f5f74d}
+.sh-copy{position:absolute;left:6.4cqw;bottom:17.5cqh}
+.sh-kick{display:flex;align-items:center;gap:.8cqw;margin:0 0 1.5cqw;color:#6ea2ff;font:500 max(6px,.83cqw)/1 var(--mono);letter-spacing:.2em;text-transform:uppercase}
+.sh-kick>i:first-child{width:2.8cqw;height:1px;margin-right:.6cqw;background:currentColor}
+.sh-kick .sep{font-style:normal}
+.site-hero h3{margin:0;font:400 10.63cqw/.93 var(--display);letter-spacing:-.005em;text-transform:uppercase}
+.site-hero h3 span{color:#6ea2ff}
+.sh-meta{display:flex;flex-wrap:wrap;align-items:center;margin:2.2cqw 0 0;font:500 max(6px,.83cqw)/1.4 var(--mono);letter-spacing:.16em;text-transform:uppercase}
+.sh-meta span+span::before{content:"";display:inline-block;width:1px;height:.9cqw;margin:0 1.1cqw;vertical-align:-.1cqw;background:#f4f5f766}
+.sh-tag{max-width:27.6cqw;margin:1.5cqw 0 0;color:#f4f5f7d1;font:400 max(7px,1.39cqw)/1.45 var(--sans)}
+.sh-act{display:flex;gap:.8cqw;margin:2.2cqw 0 0}
+.sh-act span{display:inline-flex;align-items:center;justify-content:center;gap:.7cqw;padding:1.15cqw 1.9cqw;border-radius:999px;font:500 max(6px,.97cqw)/1 var(--sans)}
+.sh-film{background:#f4f5f7;color:#07090c}
+.sh-contact{box-shadow:inset 0 0 0 1px #f4f5f747}
+.site-strip{position:absolute;inset:auto 1.4cqw 0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #1f252e}
+.site-strip>div{padding:2.6cqh 1.7cqw 2.8cqh}
+.site-strip>div:first-child{padding-left:5cqw}
+.site-strip>div+div{border-left:1px solid #1f252e}
+.site-strip span{display:block;color:#8b93a1;font:500 max(6px,.76cqw)/1 var(--mono);letter-spacing:.14em;text-transform:uppercase}
+.site-strip b{display:block;margin-top:1.3cqw;font:400 max(12px,3.06cqw)/1 var(--display);font-weight:400}
+/* A portrait window shows the page's phone layout. */
+@container (aspect-ratio < 1){
+  /* --u is 1% of a phone page's width: the window's width, or less when the window is too short for it
+     (a near-square tablet window), so the phone layout always fits its height. */
+  .site{--u:min(1cqw,.63cqh)}
+  .site-nav{height:auto;padding:calc(4 * var(--u)) 5cqw;gap:0}
+  .sn-brand small,.sn-links{display:none}
+  .sn-brand b{font-size:calc(6.7 * var(--u))}
+  .sn-menu{display:inline-flex;align-items:center;gap:calc(1.8 * var(--u));padding:calc(2.4 * var(--u)) calc(4.4 * var(--u));border-radius:999px;box-shadow:inset 0 0 0 1px #f4f5f742;font:500 calc(3.33 * var(--u))/1 var(--sans)}
+  .sn-menu i{width:calc(3.6 * var(--u));height:calc(.9 * var(--u));border-block:1px solid currentColor}
+  .sn-cta{margin-left:calc(2.6 * var(--u));padding:calc(2.5 * var(--u)) calc(5 * var(--u));font-size:calc(3.33 * var(--u));gap:calc(1.6 * var(--u))}
+  .site-hero{background:linear-gradient(0deg,#07090c 8%,#07090cb3 42%,#0000 75%)}
+  .sh-num{top:calc(16 * var(--u));bottom:auto;right:5cqw;font-size:calc(30.8 * var(--u))}
+  .sh-copy{left:5.1cqw;right:5.1cqw;bottom:calc(49 * var(--u))}
+  .sh-kick{gap:calc(2.4 * var(--u));margin-bottom:calc(4.5 * var(--u));font-size:calc(3.08 * var(--u))}
+  .sh-kick>i:first-child{width:calc(10 * var(--u));margin-right:0}
+  .site-hero h3{font-size:calc(16.41 * var(--u))}
+  .sh-meta{margin-top:calc(4 * var(--u));font-size:calc(3.08 * var(--u));row-gap:calc(1.2 * var(--u))}
+  .sh-meta span+span::before{height:calc(3 * var(--u));margin:0 calc(2.4 * var(--u))}
+  .sh-meta span:last-child::before{display:none}
+  .sh-meta span:last-child{flex-basis:100%}
+  .sh-tag{max-width:none;margin-top:calc(3.4 * var(--u));font-size:calc(4.36 * var(--u))}
+  .sh-act{gap:calc(3 * var(--u));margin-top:calc(4.6 * var(--u))}
+  .sh-act span{flex:1;padding:calc(3.7 * var(--u)) 0;font-size:calc(3.59 * var(--u));gap:calc(2 * var(--u))}
+  .site-strip{inset:auto 0 0;grid-template-columns:1fr 1fr}
+  .site-strip>div,.site-strip>div:first-child{padding:calc(4.2 * var(--u)) 5cqw}
+  .site-strip>div:nth-child(3){border-left:0}
+  .site-strip>div:nth-child(n+3){border-top:1px solid #1f252e}
+  .site-strip span{font-size:calc(2.82 * var(--u))}
+  .site-strip b{margin-top:calc(2.4 * var(--u));font-size:calc(7.69 * var(--u))}
+}
 
 /* ---------- Section shared ---------- */
 .section{position:relative;padding:clamp(96px,14vh,160px) var(--gutter)}
@@ -164,6 +216,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 .card-shine{position:absolute;inset:0;border-radius:18px;pointer-events:none;background:linear-gradient(115deg,transparent 30%,#ffffff1a 50%,transparent 70%);opacity:0;will-change:opacity}
 /* The style chip sits under the card like an exhibit label: on the card it would cover someone's design. */
 .card-tag{position:absolute;top:calc(100% + 14px);left:50%;translate:-50% 0;white-space:nowrap;padding:6px 11px;border-radius:99px;background:#ffffffa6;border:1px solid #0000000f;color:var(--ink-2);font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.card-tag b{font-weight:600;color:var(--blue)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .carousel-foot{display:flex;justify-content:center;gap:28px;margin-top:6px;color:var(--muted);font:500 12px var(--mono);letter-spacing:.18em;text-transform:uppercase}
 /* Stops the drift for good (it otherwise resumes after a pause): motion that runs on by itself needs a way to stop it. */
@@ -192,6 +245,8 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 .modal-info ul{display:grid;gap:10px;margin:0 0 28px;padding:0;list-style:none;font-size:14px;color:#ffffffd9}
 .modal-info li{display:flex;gap:10px;align-items:baseline}
 .modal-info li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--blue-light);translate:0 -2px}
+/* Examples are labelled as examples (CFul, 2026-11-10). */
+.modal-info .ex{display:inline-block;margin-right:12px;padding:5px 10px 4px;border-radius:99px;background:var(--blue);color:#fff}
 .modal-actions{display:flex;flex-wrap:wrap;gap:12px}
 .modal-actions .btn-ghost{color:#fff}
 .modal-info .modal-note{margin:16px 0 0;font-size:13px;color:#ffffff8c}
@@ -215,6 +270,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 
 /* ---------- Scene 3 · How it works (pinned) ---------- */
 .how{height:420vh;background:var(--paper)}
+@media(max-width:640px){.hero-scene{height:240vh}.how{height:300vh}} /* phones: less scrolling through the two pinned stretches */
 .how-sticky{position:sticky;top:0;height:100vh;height:100svh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:clamp(24px,5vw,80px);padding:96px var(--gutter) 48px;max-width:1400px;margin:0 auto}
 .how-steps{display:grid;gap:clamp(10px,2vh,20px)}
 .how-steps .eyebrow{margin-bottom:8px}
@@ -257,26 +313,45 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 }
 
 /* ---------- FAQ ---------- */
-.faq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(32px,6vw,96px);max-width:1400px;margin:0 auto}
-.faq h2{margin:14px 0 0;font:400 clamp(48px,6vw,104px)/.9 var(--display);text-transform:uppercase}
-.faq h2 .serif-i{color:var(--blue)}
-.qa{border-top:1px solid var(--line)}
-.qa:last-child{border-bottom:1px solid var(--line)}
-.qa button{display:flex;justify-content:space-between;gap:24px;width:100%;padding:26px 0;border:0;background:none;text-align:left;font:500 clamp(18px,1.5vw,22px)/1.3 var(--sans);letter-spacing:-.01em;cursor:pointer}
-.qa button i{flex:none;position:relative;width:16px;height:16px;margin-top:5px}
-.qa button i::before,.qa button i::after{content:"";position:absolute;left:0;top:7px;width:16px;height:1.5px;background:currentColor;transition:transform .35s var(--ease)}
+/* FAQ: the question column on the left stays in view beside the answers; each question is its own soft card
+   on the cream (references: collectui FAQ designs, 2026-11-12), not a row between hairlines. */
+.faq{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(32px,6vw,104px);align-items:start;max-width:1400px;margin:0 auto}
+.faq-intro{position:sticky;top:120px;display:grid;justify-items:start;gap:18px}
+/* Heading: the page's condensed face, the second line in a quiet grey (two tones, not the italic accent word). */
+.faq h2{margin:0;font:400 clamp(56px,6.4vw,108px)/.9 var(--display);letter-spacing:-.005em;text-transform:uppercase}
+.faq h2 span{color:#86878A} /* the quiet tone, still 3:1 on the cream (large text) */
+.faq-intro>p{max-width:30ch;margin:0;color:var(--ink-2);font-size:clamp(16px,1.2vw,18px)}
+/* Still have a question: a white card like the questions beside it, the Instagram mark in a cream circle. */
+.faq-ask{display:flex;align-items:center;gap:14px;width:min(100%,380px);margin-top:clamp(10px,2vh,20px);padding:14px 18px 14px 14px;border-radius:18px;background:#fff;color:var(--ink);text-decoration:none;box-shadow:0 0 0 1px rgba(110,98,78,.12),0 1px 2px rgba(110,98,78,.06);transition:box-shadow .3s var(--ease),transform .2s var(--ease)}
+.faq-ask>i{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:50%;background:var(--bg)}
+.faq-ask>i svg{width:20px;height:20px}
+.faq-ask>span{display:grid;gap:2px;min-width:0}
+.faq-ask b{font-weight:600;font-size:16px;letter-spacing:-.01em}
+.faq-ask small{color:var(--muted);font-size:14px}
+.faq-ask-go{flex:none;width:18px;height:18px;margin-left:auto;color:var(--muted);transition:transform .3s var(--ease),color .2s}
+.faq-ask:active{transform:scale(.98)}
+@media(hover:hover) and (pointer:fine){.faq-ask:hover{box-shadow:0 0 0 1px rgba(110,98,78,.2),0 16px 34px -20px rgba(60,48,30,.38)}.faq-ask:hover .faq-ask-go{color:var(--ink);transform:translate(2px,-2px)}}
+#qas{display:grid;gap:10px}
+.qa{border-radius:18px;background:#fff;box-shadow:0 0 0 1px rgba(110,98,78,.12),0 1px 2px rgba(110,98,78,.06);transition:box-shadow .3s var(--ease)}
+.qa.is-open{box-shadow:0 0 0 1px rgba(110,98,78,.16),0 16px 34px -20px rgba(60,48,30,.38)}
+.qa button{display:flex;align-items:center;justify-content:space-between;gap:20px;width:100%;padding:22px 22px 22px 26px;border:0;background:none;text-align:left;font:500 clamp(17px,1.35vw,20px)/1.3 var(--sans);letter-spacing:-.01em;cursor:pointer}
+/* The sign: a plus in a small cream circle that turns into a minus when open, dark when open. */
+.qa button i{flex:none;position:relative;width:32px;height:32px;border-radius:50%;background:var(--bg);transition:background .3s,color .3s}
+.qa button i::before,.qa button i::after{content:"";position:absolute;left:10px;top:15.25px;width:12px;height:1.5px;background:currentColor;transition:transform .35s var(--ease)}
 .qa button i::after{transform:rotate(90deg)}
+.qa.is-open button i{background:var(--ink);color:#fff}
 .qa.is-open button i::after{transform:rotate(0)}
 .qa-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease)}
 .qa.is-open .qa-body{grid-template-rows:1fr}
 .qa-body>div{overflow:hidden}
-.qa-body p{margin:0;padding:0 40px 26px 0;color:var(--ink-2);max-width:620px}
-@media(max-width:860px){.faq{grid-template-columns:1fr}}
+.qa-body p{margin:0;padding:0 64px 24px 26px;color:var(--ink-2);max-width:640px}
+/* Phones and tablets: heading, line, the questions, then "Still have a question?" after them. */
+@media(max-width:860px){.faq{grid-template-columns:1fr;row-gap:18px}.faq-intro{display:contents}#qas{order:1;margin-top:10px}.faq-ask{order:2;margin-top:14px;justify-self:start}}
 
 /* ---------- Claim your name ---------- */
 .claim{background:var(--night);color:#fff;text-align:center;overflow:hidden}
 .claim .eyebrow{color:#ffffff80}
-.claim-line{margin:22px 0 0;font:400 clamp(36px,8.4vw,150px)/.95 var(--display);text-transform:uppercase;letter-spacing:-.01em;white-space:nowrap}
+.claim-line{margin:0;font:400 clamp(36px,8.4vw,150px)/.95 var(--display);text-transform:uppercase;letter-spacing:-.01em;white-space:nowrap}
 .claim-line .dom{color:#ffffff3d}
 .claim-line .slug{color:var(--blue-light)}
 .claim-line .caret{display:inline-block;width:.06em;height:.8em;margin-left:.04em;vertical-align:-.02em;background:var(--blue-light)}
@@ -288,14 +363,33 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 .claim-input:focus-within{box-shadow:inset 0 0 0 1.5px var(--blue-light)}
 .claim-note{margin-top:16px;min-height:1.5em;color:#ffffff80;font-size:13px}
 @media(max-width:640px){.claim-form .btn{flex:1 1 100%;justify-content:center}} /* full width under the full-width field */
-/* The page closes on the wordmark at full width, with plain links above it and the fine print under it. */
-.footer{padding:clamp(40px,7vh,72px) var(--gutter) 28px;background:var(--night);color:#ffffffc2;font-size:15px;border-top:1px solid #ffffff14}
-.footer-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 32px}
+/* The page closes on the logo: the A mark and the wordmark as a lockup, with plain links beside it and the
+   fine print under it. Sized so the brand files stay sharp: every copy of the logo is a raster image (no
+   vector wordmark exists yet), and stretched across the page the wordmark looked soft (Willy, 2026-11-11). */
+.footer{padding:clamp(48px,8vh,88px) var(--gutter) 28px;background:var(--night);color:#ffffffc2;font-size:15px;border-top:1px solid #ffffff14}
+.footer-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:28px 40px}
+.footer-brand{display:flex;align-items:center;gap:clamp(14px,1.4vw,22px)}
+.footer .footer-brand{margin:0;padding:0}
+.footer-mark{width:auto;height:clamp(56px,5.6vw,84px)}
+.footer-word{width:auto;height:clamp(16px,1.6vw,24px)}
+/* Right side: the page links, and under them a line of their own for the socials, set off by a hairline. */
+.footer-end{display:grid;justify-items:end;gap:clamp(18px,2.2vw,26px)}
 .footer-links{display:flex;flex-wrap:wrap;gap:4px 28px}
+.footer-follow{display:flex;align-items:center;justify-content:flex-end;gap:16px;justify-self:stretch;padding-top:clamp(18px,2.2vw,26px);border-top:1px solid #ffffff14}
+.footer-follow>span{color:#ffffff73;font-size:13px}
+/* The links line up with the middle of the A mark. */
+@media(min-width:641px){.footer-row{align-items:flex-start}.footer-links{margin-top:calc(clamp(56px,5.6vw,84px) / 2 - 12px)}}
+@media(max-width:640px){.footer-end{justify-items:start;justify-self:stretch}.footer-follow{justify-content:flex-start}}
+/* Instagram and TikTok: two quiet round buttons, 44px to tap. */
+.footer-social{display:flex;gap:10px}
+.footer .footer-social a{display:grid;place-items:center;width:44px;height:44px;margin:0;padding:0;border-radius:50%;box-shadow:inset 0 0 0 1px #ffffff26;color:#ffffffc2;transition:color .2s,box-shadow .2s,background .2s}
+.footer-social svg{width:20px;height:20px}
+.footer .footer-social a:active{transform:scale(.94)}
+@media(hover:hover) and (pointer:fine){.footer .footer-social a:hover{color:#fff;background:#ffffff0f;box-shadow:inset 0 0 0 1px #ffffff4d}}
 .footer a{margin:-12px 0;padding:12px 0;text-decoration:none} /* a 44px tap target without moving the line */
-.footer-word{width:100%;height:auto;margin:clamp(40px,8vh,88px) 0 clamp(20px,3vh,32px)}
-.footer-fine{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;color:#ffffff73;font-size:13px}
-@media(max-width:640px){.footer-row{flex-direction:column;align-items:flex-start}.footer-links{gap:4px 22px}}
+.footer-fine{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;margin-top:clamp(40px,7vh,72px);color:#ffffff73;font-size:13px}
+.footer-fine a{color:#ffffffc2}
+@media(max-width:640px){.footer-row{flex-direction:column;align-items:flex-start}.footer-links{gap:4px 22px}.footer-fine{flex-direction:column}}
 
 /* ---------- Entrance ---------- */
 .js .rise{opacity:0;transform:translateY(28px)}
@@ -359,9 +453,23 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
       </div>
       <div class="win-screen" id="winScreen">
         <div class="site">
-          <div class="site-nav"><b>JORDAN BELL</b><span><em>Story</em><em>Film</em><em>Stats</em><em>Contact</em></span></div>
-          <div class="site-hero"><small>WIDE RECEIVER · #14 · CLASS OF 2027</small><h3>JORDAN<br>BELL</h3><a>▶ Watch highlights</a></div>
-          <div class="site-stats"><div><b>6′1″</b><small>HEIGHT</small></div><div><b>185</b><small>WEIGHT</small></div><div><b>4.42</b><small>40 YARD</small></div><div><b>12</b><small>OFFERS</small></div></div>
+          <div class="site-nav">
+            <span class="sn-brand"><b>JB</b><small>Jordan Bell</small></span>
+            <span class="sn-links"><em>Film</em><em>Stats</em><em>About</em><em>Beyond the game</em><em>Milestones</em><em>Gallery</em><em>NIL</em><em>Details</em></span>
+            <span class="sn-menu"><i></i>Menu</span>
+            <span class="sn-cta">Contact <svg viewBox="0 0 12 12" width="8" height="8" fill="none"><path d="M3 9 9 3M4 3h5v5" stroke="currentColor" stroke-width="1.4"/></svg></span>
+          </div>
+          <div class="site-hero">
+            <div class="sh-num">14</div>
+            <div class="sh-copy">
+              <p class="sh-kick"><i></i>Football <i class="sep">/</i> Class of 2027</p>
+              <h3>Jordan<br><span>Bell</span></h3>
+              <p class="sh-meta"><span>Wide receiver</span><span>No. 14</span><span>Northview High School</span></p>
+              <p class="sh-tag">Driven by the chase. Focused on what’s next.</p>
+              <p class="sh-act"><span class="sh-film">▶ Watch film</span><span class="sh-contact">Contact</span></p>
+            </div>
+          </div>
+          <div class="site-strip"><div><span>Receiving yards</span><b>842</b></div><div><span>Receptions</span><b>54</b></div><div><span>Touchdowns</span><b>9</b></div><div><span>Height</span><b>6′1″</b></div></div>
         </div>
       </div>
     </div>
@@ -373,7 +481,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 <section class="section styles" id="styles" aria-labelledby="styles-title">
   <div class="sec-head rise">
     <div><p class="eyebrow">02 · Made to feel like you</p><h2 id="styles-title">Same ambition.<br><span class="serif-i">Your own</span> look.</h2></div>
-    <p>Every Athlesite starts in the same studio and ends up looking like its athlete. Drag through fifteen of them, then open one up.</p>
+    <p>Every Athlesite starts in the same studio and ends up looking like its athlete. Drag through fifteen examples, then open one up.</p>
   </div>
   <div class="carousel" id="carousel" role="list" aria-label="Example athlete websites"></div>
   <p class="sr-only" id="carouselHelp">Left and right arrow keys move through the examples. Enter opens one.</p>
@@ -387,7 +495,7 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
       <p class="eyebrow" id="how-title">03 · From athlete to Athlesite</p>
       <div class="step is-active"><span>01</span><h3>Create</h3><p>Your name, your sport, your story. Guided, not a blank page.</p></div>
       <div class="step"><span>02</span><h3>Personalize</h3><p>Pick a style, your colors, your photos. It stays premium whatever you choose.</p></div>
-      <div class="step"><span>03</span><h3>Publish</h3><p>You decide when it goes live and what is public.</p></div>
+      <div class="step"><span>03</span><h3>Publish</h3><p>It stays private until you publish it. You can take it down any time.</p></div>
       <div class="step"><span>04</span><h3>Share</h3><p>One link in your bio, your emails, your film. That’s the whole pitch.</p></div>
       <div class="how-progress"><i id="howBar"></i></div>
     </div>
@@ -398,20 +506,28 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 <!-- FAQ -->
 <section class="section" id="faq" aria-labelledby="faq-title">
   <div class="faq">
-    <div class="rise"><p class="eyebrow">04 · Before you start</p><h2 id="faq-title">Good<br><span class="serif-i">questions</span></h2></div>
+    <div class="faq-intro rise">
+      <h2 id="faq-title">Questions,<br><span>answered.</span></h2>
+      <p>What you get, who can join and who sees your page.</p>
+      <a class="faq-ask" href="https://www.instagram.com/joinathlesite/" target="_blank" rel="noopener noreferrer">
+        <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4.8" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.7" r="1" fill="currentColor"/></svg></i>
+        <span><b>Still have a question?</b><small>Message @joinathlesite on Instagram</small></span>
+        <svg class="faq-ask-go" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
     <div class="rise" id="qas">
-      <div class="qa"><button aria-expanded="false">What is an Athlesite?<i></i></button><div class="qa-body"><div><p>A professional website for an athlete: your story, film, stats, recruiting information and socials in one place, at one link you own.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">What is an Athlesite?<i></i></button><div class="qa-body"><div><p>A professional website for an athlete, at one link you own: your story, your film, your stats and what a coach looks for first, from position and class year to height and weight.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Can high-school athletes sign up?<i></i></button><div class="qa-body"><div><p>Athlesite is built for high-school athletes and recruiting. At launch, accounts are open to athletes 18 and over. Accounts for younger athletes, set up with a parent or guardian, are on the way.</p></div></div></div>
       <div class="qa"><button aria-expanded="false">Do I need to know how to build a website?<i></i></button><div class="qa-body"><div><p>No. A guided setup asks for your information and media, and the studio handles the design. You choose the style; it always looks finished.</p></div></div></div>
       <div class="qa"><button aria-expanded="false">Do I need to be recruited or have an NIL deal?<i></i></button><div class="qa-body"><div><p>No. Start where you are today. Your site can introduce you before a recruiting conversation or business opportunity exists.</p></div></div></div>
-      <div class="qa"><button aria-expanded="false">Who controls what’s public?<i></i></button><div class="qa-body"><div><p>You do. You decide when your site goes live and what it shows, and you can take it private again at any time.</p></div></div></div>
-      <div class="qa"><button aria-expanded="false">Are the athletes shown here real customers?<i></i></button><div class="qa-body"><div><p>No. The athletes and sites on this page are fictional demonstrations, and the images are illustrative. No endorsements or recruiting outcomes are implied.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Who controls what’s public?<i></i></button><div class="qa-body"><div><p>You do. Your page stays private until you publish it, and you can take it private again at any time.</p></div></div></div>
+      <div class="qa"><button aria-expanded="false">Are the athletes shown here real customers?<i></i></button><div class="qa-body"><div><p>No. The athletes and pages here are fictional examples, and the images are illustrative. No endorsements or recruiting outcomes are implied.</p></div></div></div>
     </div>
   </div>
 </section>
 
 <!-- Claim -->
 <section class="section claim" id="claim" aria-labelledby="claim-title">
-  <p class="eyebrow">05 · Your name belongs out there</p>
   <h2 class="claim-line" id="claim-title" aria-label="Claim your Athlesite link"><span class="dom">athlesite.com/</span><span class="slug" id="claimSlug">yourname</span><i class="caret" aria-hidden="true"></i></h2>
   <form class="claim-form" id="claimForm">
     <label class="claim-input"><span>athlesite.com/</span><input id="claimInput" name="slug" autocomplete="off" spellcheck="false" placeholder="yourname" aria-label="Your link name" aria-describedby="claimNote" maxlength="30"></label>
@@ -423,11 +539,21 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 
 <footer class="footer">
   <div class="footer-row">
-    <nav class="footer-links" aria-label="Footer"><a href="#styles">Examples</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="../studio-v1/studio.html?start=1">Create your Athlesite</a></nav>
-    <a href="#top">Back to top ↑</a>
+    <a class="footer-brand" href="#top" aria-label="Athlesite, back to top">
+      <img class="footer-mark" src="assets/brand/athlesite-mark-on-dark-360.webp" alt="" width="360" height="259" loading="lazy" decoding="async">
+      <img class="footer-word" src="assets/brand/athlesite-wordmark-on-dark-1200.webp" alt="" width="1200" height="92" loading="lazy" decoding="async">
+    </a>
+    <div class="footer-end">
+      <nav class="footer-links" aria-label="Footer"><a href="#styles">Examples</a><a href="#how">How it works</a><a href="#faq">FAQ</a><a href="../studio-v1/studio.html?start=1">Create your Athlesite</a></nav>
+      <!-- Athlesite's own accounts, as in every earlier homepage draft (Logo Sheet/athlesite-homepage-v2-footer-*.html).
+           On the right (Willy), but on their own line under the page links with a label, not mixed in with them. -->
+      <div class="footer-follow"><span>Follow Athlesite</span><div class="footer-social">
+        <a href="https://www.instagram.com/joinathlesite/" target="_blank" rel="noopener noreferrer" aria-label="Athlesite on Instagram"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.8" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.7" r="1" fill="currentColor"/></svg></a>
+        <a href="https://www.tiktok.com/@athlesite" target="_blank" rel="noopener noreferrer" aria-label="Athlesite on TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.2 3c.36 2.33 1.78 3.83 4.05 4.14v2.95a7.3 7.3 0 0 1-4-1.27v6.08a5.1 5.1 0 1 1-5.1-5.1c.25 0 .5.02.74.06v3.04a2.1 2.1 0 1 0 1.36 1.97V3h2.95Z" fill="currentColor"/></svg></a>
+      </div></div>
+    </div>
   </div>
-  <img class="footer-word" src="assets/brand/athlesite-wordmark-on-dark-2400.webp" alt="Athlesite" width="2400" height="183" loading="lazy" decoding="async">
-  <div class="footer-fine"><span>© 2026 Athlesite</span><span>Design preview · fictional athletes · illustrative imagery</span></div>
+  <div class="footer-fine"><span>© 2026 Athlesite</span><span>Example athletes on this page are fictional.</span><a href="#top">Back to top ↑</a></div>
 </footer>
 
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -707,8 +833,8 @@ for (let i = 0; i < N; i++) {
   const el = document.createElement('div');
   el.className = 'card'; el.setAttribute('role', 'listitem'); el.tabIndex = i === 0 ? 0 : -1; // one Tab stop; arrows move between cards
   el.setAttribute('aria-describedby', 'carouselHelp');
-  el.setAttribute('aria-label', `${s.name}, ${s.sport}, ${s.style} style. Open preview.`);
-  el.innerHTML = `<div class="card-shadow"></div><div class="card-inner">${A.renderCard(s.p)}</div><div class="card-shine"></div><span class="card-tag" aria-hidden="true">${esc(s.style)} · ${esc(s.sport)}</span>`;
+  el.setAttribute('aria-label', `Example page: ${s.name}, ${s.sport}, ${s.style} style. Open preview.`);
+  el.innerHTML = `<div class="card-shadow"></div><div class="card-inner">${A.renderCard(s.p)}</div><div class="card-shine"></div><span class="card-tag" aria-hidden="true"><b>Example</b> · ${esc(s.style)} · ${esc(s.sport)}</span>`;
   carousel.appendChild(el);
   cards.push({ el, shine: el.querySelector('.card-shine'), site: i % SITES.length, z: null, op: null, sh: null });
 }
@@ -719,6 +845,15 @@ fitCards();
 document.fonts?.ready.then(() => requestAnimationFrame(fitCards));
 document.fonts?.addEventListener?.('loadingdone', () => requestAnimationFrame(fitCards));
 addEventListener('resize', fitCards);
+// The cards' photos are decoded as Section 02 comes within a screen and a half, before it scrolls in. Left
+// until the cards appear, each photo decodes several times over (once per size as the cards scale in:
+// ~60 decodes, ~2s of decoding inside half a second) and the scroll into the section stutters. Decoded
+// once at full size, one after another, they are reused at every size (2026-11-10: ~2s → ~13ms).
+new IntersectionObserver(([e], io) => {
+  if (!e.isIntersecting) return;
+  io.disconnect();
+  [...carousel.querySelectorAll('img')].reduce((p, im) => p.then(() => im.decode().catch(() => {})), Promise.resolve());
+}, { rootMargin: '0px 0px 150% 0px' }).observe($('#styles'));
 
 // Motion runs on elapsed time, not frames, so it moves the same at 60 and 120 Hz and through a dropped frame.
 const GLIDE = 250, AUTO_SPEED = .027, AUTO_DELAY = 3200, GAP = 22; // fling decay (ms), drift (px/ms), idle before drift (ms), gap (px)
@@ -728,7 +863,9 @@ let settle = null; // { to, tau }
 let wheelAt = 0; // last sideways wheel input; the carousel settles once it stops
 let laidX = NaN, settled = false; // skip frames where nothing moved (e.g. while a card is open)
 let kbHold = false; // keyboard focus is on a card: no drifting away from under it
-// The drift also holds while a mouse is over the cards, and stops for good with the Pause button.
+// The drift also holds while a mouse is moved over the cards, and stops for good with the Pause button.
+// Only a real move counts: scrolling the page slides the cards under a still pointer, which the browser
+// reports as hovering, and the drift never started (Willy, 2026-11-11). Scrolling lets go of the hold.
 let hoverHold = false, userPaused = false;
 const pauseBtn = $('#carouselPause');
 if (reduced) pauseBtn.hidden = true; // nothing drifts with reduced motion
@@ -738,8 +875,9 @@ pauseBtn.addEventListener('click', () => {
   if (!userPaused) lastInput = performance.now() - AUTO_DELAY; // Play starts the drift straight away
 });
 if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
-  carousel.addEventListener('mouseenter', () => { hoverHold = true; });
-  carousel.addEventListener('mouseleave', () => { hoverHold = false; lastInput = performance.now(); });
+  carousel.addEventListener('mousemove', e => { if (e.movementX || e.movementY) hoverHold = true; });
+  carousel.addEventListener('mouseleave', () => { if (hoverHold) { hoverHold = false; lastInput = performance.now(); } });
+  addEventListener('scroll', () => { hoverHold = false; }, { passive: true });
 }
 // Read once per resize, not every frame (a computed-style read each frame forces a style pass).
 let CW = 0, WIDTH = 0;
@@ -876,7 +1014,7 @@ let openFlight = null; // the card's flight into the phone, so a close during it
 let activeCard = null, closing = false, lastFocus = null, liveToken = 0, liveTimer = 0, stepToken = 0;
 const activeSite = () => SITES[cards[activeCard].site];
 function fill(s) {
-  $('#modalStyle').textContent = `${s.style} style · ${s.sport}`;
+  $('#modalStyle').innerHTML = `<span class="ex">Example</span>${esc(s.style)} style · ${esc(s.sport)}`;
   $('#modalTitle').textContent = s.name;
   $('#modalDesc').textContent = s.desc;
   $('#modalList').innerHTML = s.list.map(t => `<li>${esc(t)}</li>`).join('');

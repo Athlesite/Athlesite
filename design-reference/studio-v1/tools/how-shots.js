@@ -33,8 +33,12 @@ module.exports = async (t) => {
     await t.send('DOM.enable');
     await t.send('DOM.setFileInputFiles', { files, objectId: r.result.result.objectId });
   };
-  // No blinking caret or focus ring frozen mid-blink in a still picture.
-  const calm = () => t.ev(`if (!document.getElementById('how-calm')) document.head.insertAdjacentHTML('beforeend', '<style id="how-calm">*{caret-color:transparent!important}:focus-visible{outline:none!important}</style>'); return 1`);
+  // Scroll the tools sheet so an element sits near its top: the sheet scrolls inside .screen, so a plain
+  // scrollIntoView can leave it below the phone's edge (the "Styles from real pages" strip pushed the looks down).
+  const toView = (sel) => t.ev(`const s = document.querySelector('.screen'), c = document.querySelector(${JSON.stringify(sel)}); if (!s || !c) return 0; s.scrollTop += c.getBoundingClientRect().top - s.getBoundingClientRect().top - 56; return 1`);
+  // No blinking caret or focus ring frozen mid-blink in a still picture, and no prototype-only notes
+  // (the Publish dialog's "Prototype: nothing goes online") in pictures of the product.
+  const calm = () => t.ev(`if (!document.getElementById('how-calm')) document.head.insertAdjacentHTML('beforeend', '<style id="how-calm">*{caret-color:transparent!important}:focus-visible{outline:none!important}.pub-proto{display:none!important}</style>'); return 1`);
 
   // ———— 1 · Create: the real setup ————
   await t.ev(`localStorage.clear(); indexedDB.deleteDatabase('athlesite-studio-photos'); setTimeout(() => location.href = location.pathname + '?start=1&account=0', 50); return 1`);
@@ -73,11 +77,13 @@ module.exports = async (t) => {
   await t.sleep(400);
   await shot('style-1', '.design-open');
   await t.clickSel('.design-open'); await t.sleep(1200);
+  await toView('.look-cards'); await t.sleep(400);
   await shot('style-2', '.look-cards [data-v=editorial]');
   // Editorial, Highlight, then back to Cinematic (the look of his page everywhere else on the homepage),
   // with its colors in view.
   for (const [i, look, next] of [[3, 'editorial', 'highlight'], [4, 'highlight', 'cinematic']]) {
     await t.clickSel(`.look-cards [data-v=${look}]`); await t.sleep(1600);
+    await toView('.look-cards'); await t.sleep(300);
     await shot('style-' + i, `.look-cards [data-v=${next}]`);
   }
   await t.clickSel('.look-cards [data-v=cinematic]'); await t.sleep(1600);
@@ -96,29 +102,26 @@ module.exports = async (t) => {
   await t.sleep(500);
   await shot('live-1', '.sec-row[data-key=details] .eye');
   await t.clickSel('.sec-row[data-key=details] .eye'); await t.sleep(1400);
-  await shot('live-2');
-  // The publish switch (decided in the product: a page is private until its athlete publishes it;
-  // the Studio doesn't have it yet). Drawn with the Studio's own block and switch, with the product's words.
-  const PUBLISH = (on) => `(() => {
-    let b = document.getElementById('how-publish');
-    if (!b) {
-      b = document.createElement('section'); b.id = 'how-publish'; b.className = 'block';
-      b.innerHTML = '<header><h3>Visibility</h3><p>Controls whether anyone besides you can see your page.</p></header><div class="block-body"><button type="button" class="switch" role="switch" aria-checked="false"><span class="switch-label">Published</span><span class="switch-track" aria-hidden="true"><span></span></span></button><p class="hint"></p></div>';
-      const s = document.querySelector('.screen'); s.prepend(b); s.scrollTop = 0;
-    }
-    b.querySelector('.switch').setAttribute('aria-checked', '${on}');
-    b.querySelector('.hint').textContent = ${on} ? 'Anyone with your link can see your page: athlesite.com/jordanbell' : 'Only you can see your page. It isn’t at your link until you publish it.';
-    return 1; })()`;
-  await t.ev(`return ${PUBLISH(false)}`); await t.sleep(400);
-  await shot('live-3', '#how-publish .switch');
-  await t.ev(`return ${PUBLISH(true)}`); await t.sleep(600);
+  await shot('live-2', '#publish-btn');
+  // The Studio's real Publish (publish.js): choose the link, see what visitors get, publish. The prototype
+  // counts every example's link as taken, his own included; this is his page, so his link is freed for the
+  // picture (the product checks names against other athletes, not the page being published).
+  await t.ev(`const ex = window.Athlesite.EXAMPLES['jordan-bell']; if (ex && ex.data) ex.data.slug = ''; return 1`);
+  await t.clickSel('#publish-btn'); await t.sleep(900);
+  await t.ev(`const i = document.querySelector('#pub-slug'); i.value = 'jordanbell'; i.dispatchEvent(new Event('input', { bubbles: true })); i.blur(); return 1`);
+  await t.sleep(600);
+  if (await t.ev(`return document.querySelector('.pub-go').disabled`)) problems.push('Publish refused jordanbell: ' + await t.ev(`return document.querySelector('.pub-check').textContent`));
+  await shot('live-3', '.pub-go');
+  await t.clickSel('.pub-go'); await t.sleep(1000);
   await shot('live-4');
 
   // ———— 4 · Share: his link, opened on someone else's phone ————
   // The opening, held where his name fills the screen, then the settled page (the homepage scrolls it).
   const site = 'file:///' + path.join(STUDIO, 'site.html').split(path.sep).join('/') + '?ex=jordan-bell&embed=1';
   await t.send('Page.navigate', { url: site + '&introAt=p3' });
-  await t.sleep(2600);
+  // Wait until the held intro is really drawn (fonts in, name placed): a fixed wait caught a black frame.
+  for (let i = 0; i < 40 && !(await t.ev(`return !!document.querySelector('.intro.is-p3') && document.fonts.status === 'loaded'`).catch(() => false)); i++) await t.sleep(200);
+  await t.sleep(600);
   await shot('share-1');
   await t.send('Page.navigate', { url: site + '&static=1' });
   await t.sleep(2600);

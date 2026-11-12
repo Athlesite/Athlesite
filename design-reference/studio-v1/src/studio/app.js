@@ -330,5 +330,6 @@
   S.photos.cleanup(S.photos.refsIn(saved || store.get()).concat(S.photos.refsIn(store.get())));
   panel.go('home', { focusTitle: false });
   if (q.get('device') === 'phone') { preview.setDevice('phone'); device.set('phone', true); }
+  if (!fresh) document.documentElement.classList.remove('fr-boot');
   if (fresh) startFirstRun({ replacing: !!saved, from: q.get('from') || '', look: q.get('look') || '', slug: q.get('slug') || '', account: !saved && q.get('account') !== '0' });
 })();

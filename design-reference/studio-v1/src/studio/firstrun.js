@@ -69,7 +69,9 @@
     behind.forEach((el) => { el.inert = true; });
     document.body.append(root);
     document.body.classList.add('has-fr');
-    requestAnimationFrame(() => root.classList.add('is-in'));
+    // Opening the visit (studio.html's fr-boot): already on screen, no fade. From the editor: a quick fade in.
+    if (document.documentElement.classList.contains('fr-boot')) root.classList.add('is-in');
+    else requestAnimationFrame(() => root.classList.add('is-in'));
 
     let at = -1;
     const close = (then) => {
@@ -78,6 +80,7 @@
       root.classList.remove('is-in');
       root.classList.add('is-out');
       document.body.classList.remove('has-fr');
+      document.documentElement.classList.remove('fr-boot'); // the editor shows as the setup fades out
       setTimeout(() => root.remove(), reduced() ? 0 : 420);
       if (then) then();
     };

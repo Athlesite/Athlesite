@@ -94,3 +94,13 @@ have to complete this part".
 22. **Launch shows only today's public fields; the Studio keeps the rest, privately.** The editor now
     tags the six sections a published page can't show yet as **Private**: Stats, Results, Your section,
     Milestones, Gallery and NIL. Athletes aren't surprised when a visitor doesn't see them.
+
+## After the homepage chat's report (2026-11-12)
+23. **No editor flash before the setup.** Opening from the homepage ("Create your Athlesite", "Claim it",
+    "Start with this style") used to show the editor for ~0.3s before the date-of-birth screen faded in
+    over it (33 frames, recorded).
+    - Now a tiny script in `studio.html`'s head marks a visit that will open in the setup before the
+      first paint, and only the setup is drawn, with no fade.
+    - The editor appears as the setup closes. If the Studio ends up opening no setup, it un-hides the
+      editor at once, so the screen can't stay blank.
+    - Recorded again: 0 editor frames at desktop and phone. `studio-account.js` now checks it every run.

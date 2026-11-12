@@ -1,4 +1,5 @@
 // Steps for drive.js on studio.html: the account screens before the setup and the Publish step.
+// - Opening in the setup (?start=1, a new athlete) never shows the editor first, not even for a frame.
 // - A new athlete answers the date of birth first; a non-date is caught; 13–17 and under 13 get the
 //   product's own messages with no way round; the date isn't left anywhere on the page.
 // - Email, then code + terms: Verify waits for both; then the setup's first question.
@@ -17,8 +18,16 @@ module.exports = async (t) => {
   const W = await t.ev('return innerWidth');
   const thisYear = new Date().getFullYear();
 
+  // — No editor flash: from the first frame, a visit that opens in the setup shows only the setup —
+  await t.send('Page.addScriptToEvaluateOnNewDocument', { source: `(() => { const t0 = performance.now(); let leaks = 0;
+    const tick = () => { const bar = document.querySelector('.bar'), fr = document.querySelector('.fr');
+      if (bar && getComputedStyle(bar).visibility !== 'hidden' && bar.getBoundingClientRect().height > 0 && !(fr && +getComputedStyle(fr).opacity > 0.99)) leaks++;
+      if (performance.now() - t0 < 1500) requestAnimationFrame(tick); else window.__leaks = leaks; };
+    requestAnimationFrame(tick); })();` });
+
   // — Age —
   await fresh();
+  expect('no frame of the editor before the setup', (await t.ev('return window.__leaks')) === 0, await t.ev('return window.__leaks'));
   expect('a new athlete is asked their date of birth first', (await q()) === 'What’s your date of birth?', await q());
   expect('Continue waits for a whole date', await t.ev(`return document.querySelector('.fr-form .btn-go').disabled`), 'enabled');
   await dob(2, 30, 2001); await t.clickSel('.fr-form .btn-go'); await t.sleep(400);
