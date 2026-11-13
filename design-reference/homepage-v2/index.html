@@ -7,7 +7,10 @@
 <meta name="theme-color" content="#F3F1EC">
 <title>Athlesite — Your story. One home.</title>
 <meta name="description" content="Athlesite gives every athlete their own premium website: one link for coaches, scouts, brands and everyone else.">
-<link rel="icon" href="assets/brand/athlesite-mark-on-light.svg">
+<!-- Tab icon: the metallic A mark the page opens with (from Logo Sheet/athlesite-a-mark-clean-transparent-2048.png). -->
+<link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/brand/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Geist:wght@300..800&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -73,7 +76,10 @@ em.serif,.serif-i{font-family:var(--serif);font-style:italic;font-weight:400;let
 .brand .on-light{position:absolute;opacity:0;transition:opacity .35s}
 .brand .on-light.mark{left:0;top:50%;translate:0 -50%}
 .brand .on-dark{transition:opacity .35s}
-.nav.is-light .brand .on-light{opacity:1}.nav.is-light .brand .on-dark{opacity:0}
+
+/* On the cream bar the metallic A mark the page opens with stays (Willy, 2026-11-12); only the wordmark turns
+   black, because the silver lettering nearly disappears on cream. */
+.nav.is-light .brand .word.on-light{opacity:1}.nav.is-light .brand .word.on-dark{opacity:0}
 .brand .wordwrap{position:relative;display:grid}
 .brand .wordwrap img{grid-area:1/1}
 .brand .wordwrap .on-light{position:static}

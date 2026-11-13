@@ -28,7 +28,7 @@ this folder is served by the Next.js app (it serves `public/` and `src/app/` onl
 
 | | |
 | --- | --- |
-| Studio lab | `athlesite-design` @ `e0e2e73` (local design repo, 2026-11-10) |
+| Studio lab | `athlesite-design` @ `959b53d` (local design repo, 2026-11-10) |
 | Homepage | same lab commit (the homepage chat's commits through `c48d461`) |
 | Product compared against | `main` @ `ef04553` (2026-10-14) |
 
